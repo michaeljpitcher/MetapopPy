@@ -88,7 +88,6 @@ class NetworkTestCase(unittest.TestCase):
         self.network.add_node(1)
         self.network.prepare()
 
-
         e = NAEvent1(self.compartments[0], self.compartments[1])
 
         self.network.attach_event(e, 1)
@@ -115,60 +114,6 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(self.network.node[1][Network.TOTAL_RATE], e1.rate() + e2.rate())
         self.assertEqual(e1.rate(), e1.REACTION_PARAMETER * 1)
         self.assertEqual(e2.rate(), e1.REACTION_PARAMETER * 2)
-
-    def test_perform_an_event(self):
-        self.network.add_nodes_from([1,2,3])
-        self.network.prepare()
-
-        NAEvent1.REACTION_PARAMETER = 0.1
-        NAEvent2.REACTION_PARAMETER = 0.3
-
-        for i in [1,2,3]:
-            e1 = NAEvent1(self.compartments[0], self.compartments[1])
-            e2 = NAEvent2(self.compartments[1], self.compartments[2])
-            self.network.attach_event(e1, i)
-            self.network.attach_event(e2, i)
-
-        self.network.node[1][Network.COMPARTMENTS][self.compartments[0]] = 1
-        self.network.node[1][Network.COMPARTMENTS][self.compartments[1]] = 2
-        self.network.node[2][Network.COMPARTMENTS][self.compartments[0]] = 3
-        self.network.node[2][Network.COMPARTMENTS][self.compartments[1]] = 4
-        self.network.update_rates_at_patch(1)
-        self.network.update_rates_at_patch(2)
-
-        self.assertEqual(self.network.node[1][Network.TOTAL_RATE],
-                         (NAEvent1.REACTION_PARAMETER * 1) + (NAEvent2.REACTION_PARAMETER * 1.5 * 2))
-        self.assertEqual(self.network.node[2][Network.TOTAL_RATE],
-                         (NAEvent1.REACTION_PARAMETER * 3) + (NAEvent2.REACTION_PARAMETER * 1.5 * 4))
-
-        numpy.random.seed(101)
-        self.network.perform_an_event()
-        # Event 2 at patch 2
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[1]], 2)
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[2]], 0)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[1]], 4)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[2]], 1)
-        numpy.random.seed(66)
-        self.network.perform_an_event()
-        # Event 2 at patch 1
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[1]], 2)
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[2]], 1)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[1]], 4)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[2]], 1)
-        numpy.random.seed(1)
-        self.network.perform_an_event()
-        # Event 1 at patch 2
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[1]], 2)
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[2]], 1)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[1]], 5)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[2]], 1)
-        numpy.random.seed(9)
-        self.network.perform_an_event()
-        # Event 1 at patch 1
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[1]], 3)
-        self.assertEqual(self.network.node[1][Network.COMPARTMENTS][self.compartments[2]], 1)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[1]], 5)
-        self.assertEqual(self.network.node[2][Network.COMPARTMENTS][self.compartments[2]], 1)
 
     def test_update_patch(self):
         self.network.add_nodes_from([1, 2, 3])
