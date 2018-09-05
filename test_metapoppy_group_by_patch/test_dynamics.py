@@ -96,6 +96,41 @@ class DynamicsTestCase(unittest.TestCase):
             for a in self.e_atts:
                 self.assertEqual(edge[a], data[a])
 
+    def test_do(self):
+        params = {Dynamics.INITIAL_PATCHES: {1: {Network.COMPARTMENTS: {self.comps[0]: 1},
+                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
+                                                                     self.p_atts[2]: 3.5}},
+                                             2: {Network.COMPARTMENTS: {self.comps[1]: 6},
+                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
+                                                                     self.p_atts[2]: 3.5}}},
+                 Dynamics.INITIAL_EDGES: {(1, 2): {self.e_atts[0]: 0.1, self.e_atts[1]: 0.2, self.e_atts[2]: 0.3},
+                                          (2, 3): {self.e_atts[0]: 0.4, self.e_atts[1]: 0.5, self.e_atts[2]: 0.6}},
+                 Network.EVENTS: {NAEvent.__name__: {Event.REACTION_PARAMETER: 0.11}}
+                 }
+
+        self.dynamics.set_maximum_time(100)
+        self.dynamics.setUp(params)
+        self.dynamics.do(params)
+
+    def test_run(self):
+        params = {Dynamics.INITIAL_PATCHES: {1: {Network.COMPARTMENTS: {self.comps[0]: 1},
+                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
+                                                                      self.p_atts[2]: 3.5}},
+                                             2: {Network.COMPARTMENTS: {self.comps[1]: 6},
+                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
+                                                                      self.p_atts[2]: 3.5}}},
+                  Dynamics.INITIAL_EDGES: {(1, 2): {self.e_atts[0]: 0.1, self.e_atts[1]: 0.2, self.e_atts[2]: 0.3},
+                                           (2, 3): {self.e_atts[0]: 0.4, self.e_atts[1]: 0.5, self.e_atts[2]: 0.6}},
+                  Network.EVENTS: {NAEvent.__name__: {Event.REACTION_PARAMETER: 0.11}}
+                  }
+        a = self.dynamics.set(params)
+        rc = a.run()
+        self.assertItemsEqual(rc.keys(), [epyc.Experiment.RESULTS, epyc.Experiment.PARAMETERS,
+                                          epyc.Experiment.METADATA])
+        self.assertFalse(rc[epyc.Experiment.RESULTS])
+        self.assertEqual(rc[epyc.Experiment.PARAMETERS], params)
+        print rc[epyc.Experiment.METADATA]
+
 
 if __name__ == '__main__':
     unittest.main()
