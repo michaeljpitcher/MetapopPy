@@ -7,7 +7,7 @@ from network import *
 class Dynamics(epyc.Experiment, object):
     INITIAL_PATCHES = 'initial_patches'
     INITIAL_EDGES = 'initial_edges'
-    INITIAL_TIME = 'inital_time'
+    INITIAL_TIME = 'initial_time'
 
     # the default maximum simulation time
     DEFAULT_MAX_TIME = 20000  #: Default maximum simulation time.
@@ -16,7 +16,7 @@ class Dynamics(epyc.Experiment, object):
     def __init__(self, g):
         """
         Create MetapopPy dynamics to run over the given network.
-        :param g:
+        :param g: Network on which to run dynamics
         """
         assert isinstance(g, Network), "Graph must be instance of MetapopPy Network class"
         epyc.Experiment.__init__(self)
@@ -148,11 +148,11 @@ class Dynamics(epyc.Experiment, object):
 
     def tearDown(self):
         """
-        After a simulation ends, destroy the used graph.
+        After a simulation ends, remove the used graph.
         :return:
         """
         # Perform the default tear-down
         epyc.Experiment.tearDown(self)
 
-        # Destroy the worked-on model
+        # Remove the worked-on model
         self._graph = None
