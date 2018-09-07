@@ -43,7 +43,7 @@ class Event(object):
 
     def _calculate_state_variable(self, patch, edges):
         """
-        Calculate the state variable that determines rate of this event occuring. Must be overridden by sub-class.
+        Calculate the state variable that determines rate of this event occurring. Must be overridden by sub-class.
         :param patch:
         :param edges:
         :return:
