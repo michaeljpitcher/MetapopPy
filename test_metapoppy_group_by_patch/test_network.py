@@ -171,5 +171,26 @@ class NetworkTestCase(unittest.TestCase):
                          (NAEvent3.REACTION_PARAMETER * 2.3))
 
 
+class TypedNetworkTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.patch_types = ['alpha', 'beta', 'gamma']
+        self.compartments = ['a', 'b', 'c']
+        self.patch_attributes = ['d', 'e', 'f']
+        self.edge_attributes = ['g', 'h', 'i']
+        self.network = TypedNetwork(self.compartments, self.patch_attributes, self.edge_attributes)
+
+    def test_set_get_patch_type(self):
+        self.network.add_nodes_from([1,2,3])
+        self.network.set_patch_type(1, self.patch_types[0])
+        self.network.set_patch_type(2, self.patch_types[0])
+        self.network.set_patch_type(3, self.patch_types[1])
+
+        self.network.prepare()
+        self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[0]), [1, 2])
+        self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[1]), [3])
+        self.assertFalse(self.network.get_patches_by_type(self.patch_types[2]))
+
+
 if __name__ == '__main__':
     unittest.main()
