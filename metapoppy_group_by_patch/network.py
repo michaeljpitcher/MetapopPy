@@ -53,11 +53,11 @@ class Network(networkx.Graph):
         :return:
         """
         # Prepare the network
-        for n in self.nodes():
-            self.node[n][Network.COMPARTMENTS] = dict([(c, 0) for c in self._compartments])
-            self.node[n][Network.ATTRIBUTES] = dict([(c, 0) for c in self._patch_attributes])
-            self.node[n][Network.EVENTS] = []
-            self.node[n][Network.TOTAL_RATE] = 0.0
+        for _,patch_data in self.nodes(data=True):
+            patch_data[Network.COMPARTMENTS] = dict([(c, 0) for c in self._compartments])
+            patch_data[Network.ATTRIBUTES] = dict([(c, 0) for c in self._patch_attributes])
+            patch_data[Network.EVENTS] = []
+            patch_data[Network.TOTAL_RATE] = 0.0
         for u, v in self.edges():
             for a in self._edge_attributes:
                 self.edge[u][v][a] = 0.0
@@ -136,3 +136,43 @@ class Network(networkx.Graph):
             self.edge[u][v][att] += value
         self.update_rates_at_patch(u)
         self.update_rates_at_patch(v)
+
+
+class TypedNetwork(Network):
+    """
+    A MetapopPy network where patches are assigned a "type", which can restrict which dynamics occurs there.
+    """
+
+    PATCH_TYPE = 'patch_type'
+
+    def __init__(self, compartments, patch_attributes, edge_attributes):
+        """
+        Create a network
+        :param compartments: List of population compartments
+        :param patch_attributes: List of patch attributes
+        :param edge_attributes: List of edge attributes
+        """
+        patch_attributes.append(TypedNetwork.PATCH_TYPE)
+        Network.__init__(self, compartments, patch_attributes, edge_attributes)
+        self._patch_types = {}
+
+    def set_patch_type(self, patch_id, patch_type):
+        self.node[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
+
+    def get_patches_by_type(self, patch_type):
+        if patch_type not in self._patch_types:
+            return []
+        else:
+            return self._patch_types[patch_type]
+
+    def prepare(self):
+        # Ensure every patch has been given a type
+        for n,d in self.nodes(data=True):
+            assert TypedNetwork.PATCH_TYPE in d, "Node {0} must be assigned a patch type".format(n)
+            # Create the shortcut list for this patch type if we haven't seen it yet
+            if d[TypedNetwork.PATCH_TYPE] not in self._patch_types:
+                self._patch_types[d[TypedNetwork.PATCH_TYPE]] = [n]
+            else:
+                # Add to the list if it already exists
+                self._patch_types[d[TypedNetwork.PATCH_TYPE]].append(n)
+        Network.prepare(self)
