@@ -1,3 +1,3 @@
 from events import *
-from lungnetwork import *
-from tbdynamics import *
+from pulmonary_network import *
+from tb_dynamics import *

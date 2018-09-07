@@ -1,19 +1,20 @@
-from metapoppy_group_by_patch import *
+from metapoppy_group_by_patch.network import TypedNetwork
 
 
-class PulmonaryNetwork(Network):
+class PulmonaryNetwork(TypedNetwork):
 
-    # Patch types TODO - may not be needed?
+    # Patch types
     ALVEROLAR_PATCH = 'alveolar_patch'
     LYMPHATIC_PATCH = 'lymphatic_patch'
 
     # COMPARTMENTS
     BACTERIUM_EXTRACELLUAR_REPLICATING = 'bacterium_extracellular_replicating'
     BACTERIUM_EXTRACELLUAR_DORMANT = 'bacterium_extracellular_dormant'
+    EXTRACELLULAR_BACTERIA = [BACTERIUM_EXTRACELLUAR_REPLICATING, BACTERIUM_EXTRACELLUAR_DORMANT]
     BACTERIUM_INTRACELLUAR_MACROPHAGE = 'bacterium_intracellular_macrophage'
     BACTERIUM_INTRACELLUAR_DENDRITIC = 'bacterium_intracellular_dendritic'
-    ALL_BACTERIA = [BACTERIUM_EXTRACELLUAR_REPLICATING, BACTERIUM_EXTRACELLUAR_DORMANT,
-                    BACTERIUM_INTRACELLUAR_MACROPHAGE, BACTERIUM_INTRACELLUAR_DENDRITIC]
+    INTRACELLULAR_BACTERIA = [BACTERIUM_INTRACELLUAR_DENDRITIC, BACTERIUM_INTRACELLUAR_MACROPHAGE]
+    ALL_BACTERIA = INTRACELLULAR_BACTERIA + EXTRACELLULAR_BACTERIA
 
     MACROPHAGE_RESTING = 'macrophage_resting'
     MACROPHAGE_ACTIVATED = 'macrophage_activated'
@@ -40,14 +41,15 @@ class PulmonaryNetwork(Network):
     ALL_EDGE_ATTRIBUTES = []
 
     def __init__(self):
-        Network.__init__(self, PulmonaryNetwork.ALL_COMPARTMENTS, PulmonaryNetwork.ALL_ALVEOLAR_ATTRIBUTES,
-                         PulmonaryNetwork.ALL_EDGE_ATTRIBUTES)
+        TypedNetwork.__init__(self, PulmonaryNetwork.ALL_COMPARTMENTS, PulmonaryNetwork.ALL_ALVEOLAR_ATTRIBUTES,
+                              PulmonaryNetwork.ALL_EDGE_ATTRIBUTES)
 
-        self._patch_types = {PulmonaryNetwork.ALVEROLAR_PATCH: [], PulmonaryNetwork.LYMPHATIC_PATCH: []}
-
-    def add_patch(self, patch_id, patch_type):
-        self._patch_types[patch_type].append(patch_id)
+    def add_alveolar_patch(self, patch_id):
         self.add_node(patch_id)
+        self.set_patch_type(patch_id, PulmonaryNetwork.ALVEROLAR_PATCH)
 
-    def get_alveolar_patches(self):
-        return self._patch_types[PulmonaryNetwork.ALVEROLAR_PATCH]
+    def add_lymphatic_patch(self, patch_id):
+        self.add_node(patch_id)
+        self.set_patch_type(patch_id, PulmonaryNetwork.LYMPHATIC_PATCH)
+
+    # TODO: build functions
