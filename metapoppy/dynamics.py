@@ -8,6 +8,9 @@ class Dynamics(epyc.Experiment, object):
     INITIAL_PATCHES = 'initial_patches'
     INITIAL_EDGES = 'initial_edges'
     INITIAL_TIME = 'initial_time'
+    MAX_TIME = 'max_time'
+
+    EVENTS = 'events'
 
     # the default maximum simulation time
     DEFAULT_MAX_TIME = 20000  #: Default maximum simulation time.
@@ -25,13 +28,26 @@ class Dynamics(epyc.Experiment, object):
         self._edge_attributes = g.edge_attributes()
 
         # Prepare the network
-        self._graphPrototype = g
-        self._graphPrototype.prepare()
+        self.network_prototype = g
+        self.network_prototype.prepare(lambda a, b, c, e: self._propagate_updates(a, b, c, e))
 
-        self._create_events(self._graphPrototype)
+        self._events = []
+        self._create_events(self.network_prototype)
 
-        self._graph = None
-        self._maxTime = self.DEFAULT_MAX_TIME
+        self._patch_ids = self.network_prototype.nodes()
+
+        self._rate_table = numpy.array([[d, ] * len(self._patch_ids) for d in [0.0, ] * len(self._events)],
+                                       dtype=numpy.float)
+
+        self._network = None
+        self._start_time = self.DEFAULT_START_TIME
+        self._max_time = self.DEFAULT_MAX_TIME
+
+    def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
+        for e in range(len(self._events)):
+            event = self._events[e]
+            self._rate_table[e][patch_id] = event.calculate_rate_at_patch(self._network, patch_id)
+        # TODO - only update events dependent on atts/comps changed
 
     def _create_events(self, network):
         raise NotImplementedError
@@ -41,14 +57,7 @@ class Dynamics(epyc.Experiment, object):
         The network this set of dynamics runs upon
         :return:
         """
-        return self._graph
-
-    def set_maximum_time(self, t):
-        """
-        Set the maximum simulated time
-        :param t: The maximum time
-        """
-        self._maxTime = t
+        return self._network
 
     def _at_equilibrium(self, t):
         """
@@ -57,7 +66,15 @@ class Dynamics(epyc.Experiment, object):
         :param t: Current simulated time
         :return: True to finish simulation
         """
-        return t >= self._maxTime
+        return t >= self._max_time
+
+    def _seed_events(self, event_parameters):
+        """
+        Set the event reaction parameters
+        :param event_parameters:
+        :return:
+        """
+        raise NotImplementedError
 
     def setUp(self, params):
         """
@@ -69,26 +86,26 @@ class Dynamics(epyc.Experiment, object):
         epyc.Experiment.setUp(self, params)
 
         # Make a copy of the network prototype
-        self._graph = self._graphPrototype.copy()
+        self._network = self.network_prototype.copy()
 
         # Seed the network patches
         for patch_id, data in params[Dynamics.INITIAL_PATCHES].iteritems():
-            self._graph.update_patch(patch_id, data[Network.COMPARTMENTS], data[Network.ATTRIBUTES])
+            self._network.update_patch(patch_id, data[Network.COMPARTMENTS], data[Network.ATTRIBUTES])
 
         # Seed the network edges
         for (u,v), data in params[Dynamics.INITIAL_EDGES].iteritems():
-            self._graph.update_edge(u,v,data)
+            self._network.update_edge(u, v, data[Dynamics.INITIAL_EDGES])
 
         # Set the event reactions parameters using the initial conditions
-        self._seed_events(params[Network.EVENTS])
+        self._seed_events(params[Dynamics.EVENTS])
 
-    def _seed_events(self, event_parameters):
-        """
-        Set the event reaction parameters
-        :param params:
-        :return:
-        """
-        raise NotImplementedError
+        # Allow for designated start time (used for time/age specific events)
+        if Dynamics.INITIAL_TIME in params:
+            self._start_time = params[Dynamics.INITIAL_TIME]
+
+        # Set the maximum run time
+        if Dynamics.MAX_TIME in params:
+            self._max_time = params[Dynamics.MAX_TIME]
 
     def do(self, params):
         """
@@ -98,45 +115,28 @@ class Dynamics(epyc.Experiment, object):
         :return:
         """
 
-        # Allow for designated start time (used for time/age specific events)
-        if Dynamics.INITIAL_TIME in params:
-            time = params[Dynamics.INITIAL_TIME]
-        else:
-            time = Dynamics.DEFAULT_START_TIME
+        time = self._start_time
 
         while not self._at_equilibrium(time):
-            # TODO - this is inefficient, should post changes to dynamics
-            # Get the total rate by summing rates at all patches
-            total_network_rate = sum([d[Network.TOTAL_RATE] for _, d in self._graph.nodes(data=True)])
+            # Get the total rate by summing rates of all events at all patches
+            total_network_rate = numpy.sum(self._rate_table)
 
-            # No events can occur, so end
+            # If no events can occur, then end
             if total_network_rate == 0:
                 break
 
             # Calculate the timestep delta
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
-            # Choose an event
-            r = numpy.random.random() * total_network_rate
-            count = 0
+            # Choose an event and patch based on the values in the rate table
+            index_choice = numpy.random.choice(range(0, self._rate_table.size),
+                                               p=self._rate_table.flatten() / total_network_rate)
+            event = self._events[index_choice / len(self._events)]
+            patch = self._patch_ids[index_choice % len(self._patch_ids)]
 
-            # Loop through all patches adding the total rate at each patch
-            for n, d in self._graph.nodes(data=True):
-                # If the total rate at this patch would exceed the r number, this is where an event will occur
-                if count + d[Network.TOTAL_RATE] > r:
-                    # Find the event which tips the count over r
-                    for e in d[Network.EVENTS]:
-                        count += e.rate()
-                        if count >= r:
-                            # Perform the event and stop iterations
-                            e.perform(self._graph)
-                            # Stop looping through events
-                            break
-                    # Stop looping through patches
-                    break
-                # Have not exceeded threshold, so continue
-                else:
-                    count += d[Network.TOTAL_RATE]
+            # Perform the event. Handler will propagate the effects of any network updates
+            event.perform(self._network.node[patch], self._network.edges([patch]))
+
             # Move simulated time forward
             time += dt
 
@@ -144,7 +144,7 @@ class Dynamics(epyc.Experiment, object):
         return self.get_results()
 
     def get_results(self):
-        return None
+        raise NotImplementedError
 
     def tearDown(self):
         """
@@ -155,4 +155,8 @@ class Dynamics(epyc.Experiment, object):
         epyc.Experiment.tearDown(self)
 
         # Remove the worked-on model
-        self._graph = None
+        self._network = None
+
+        # Reset rate table
+        self._rate_table = numpy.array([[d, ] * len(self._patch_ids) for d in [0.0, ] * len(self._events)],
+                                       dtype=numpy.float)

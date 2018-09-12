@@ -2,3 +2,4 @@
 *.xml
 .idea/*.*
 *.pyc
+sandbox.py

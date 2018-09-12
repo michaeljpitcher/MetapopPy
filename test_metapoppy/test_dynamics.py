@@ -1,5 +1,5 @@
 import unittest
-from metapoppy_group_by_patch import *
+from metapoppy import *
 
 
 class NAEvent(Event):
