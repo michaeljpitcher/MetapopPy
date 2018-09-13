@@ -87,15 +87,19 @@ class Network(networkx.Graph):
             for attr, change in attribute_changes.iteritems():
                 patch_data[Network.ATTRIBUTES][attr] += change
         if self._handler:
-            self._handler(patch_id, compartment_changes, attribute_changes, {})
+            if not compartment_changes:
+                compartment_changes = {}
+            if not attribute_changes:
+                attribute_changes = {}
+            self._handler(patch_id, compartment_changes.keys(), attribute_changes.keys(), {})
 
     def update_edge(self, u,v, attribute_changes):
         edge = self.edge[u][v]
         for attr, change in attribute_changes.iteritems():
             edge[attr] += change
         if self._handler:
-            self._handler(u, {}, {}, {(u,v): attribute_changes})
-            self._handler(v, {}, {}, {(u,v): attribute_changes})
+            self._handler(u, [], [], attribute_changes.keys())
+            self._handler(v, [], [], attribute_changes.keys())
 
 
 class TypedNetwork(Network):

@@ -26,9 +26,8 @@ class PatchTypeEvent(Event):
         Event.__init__(self)
 
     def calculate_rate_at_patch(self, network, patch_id):
-        patch_data = network.node[patch_id]
-        if patch_data[TypedNetwork.PATCH_TYPE] == self._patch_type:
-            return self._reaction_parameter * self._calculate_state_variable_at_patch(network, patch_id)
+        if network.node[patch_id][TypedNetwork.PATCH_TYPE] == self._patch_type:
+            return Event.calculate_rate_at_patch(self, network, patch_id)
         else:
             return 0.0
 

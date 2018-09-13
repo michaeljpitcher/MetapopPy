@@ -4,7 +4,6 @@ from metapoppy import *
 compartments = ['a','b','c']
 attributes = ['d','e','f']
 
-
 class EventTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -20,7 +19,7 @@ class EventTestCase(unittest.TestCase):
                 return network.get_compartment_value(patch_id, compartments[0])
 
             def perform(self, network, patch_id):
-                network.update_patch(patch_id, {compartments[1]:1})
+                network.update_patch(patch_id, {compartments[1]: 1})
 
         self.event = NAEvent()
 
@@ -47,7 +46,7 @@ class PatchTypeEventTestCase(unittest.TestCase):
         self.network.set_patch_type(2, self.patch_types[1])
         self.network.prepare()
 
-        class NAEvent(PatchTypeEvent):
+        class NAPatchTypeEvent(PatchTypeEvent):
             def __init__(self, patch_type):
                 PatchTypeEvent.__init__(self, patch_type)
 
@@ -55,10 +54,10 @@ class PatchTypeEventTestCase(unittest.TestCase):
                 return network.get_compartment_value(patch_id, compartments[0])
 
             def perform(self, network, patch_id):
-                network.update_patch(patch_id, {compartments[1]:1})
+                network.update_patch(patch_id, {compartments[1]: 1})
 
-        self.event_type1 = NAEvent(self.patch_types[0])
-        self.event_type2 = NAEvent(self.patch_types[1])
+        self.event_type1 = NAPatchTypeEvent(self.patch_types[0])
+        self.event_type2 = NAPatchTypeEvent(self.patch_types[1])
 
     def test_calculate_rate(self):
         self.event_type1.set_reaction_parameter(0.1)

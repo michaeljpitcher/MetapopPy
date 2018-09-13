@@ -13,7 +13,7 @@ class Dynamics(epyc.Experiment, object):
     EVENTS = 'events'
 
     # the default maximum simulation time
-    DEFAULT_MAX_TIME = 20000  #: Default maximum simulation time.
+    DEFAULT_MAX_TIME = 100  #: Default maximum simulation time.
     DEFAULT_START_TIME = 0
 
     def __init__(self, g):
@@ -31,22 +31,27 @@ class Dynamics(epyc.Experiment, object):
         self.network_prototype = g
         self.network_prototype.prepare(lambda a, b, c, e: self._propagate_updates(a, b, c, e))
 
-        self._events = []
-        self._create_events(self.network_prototype)
+        # Create the events
+        self._events = self._create_events(self.network_prototype)
 
-        self._patch_ids = self.network_prototype.nodes()
+        # Obtain the patches of the network (for lookup purposes)
+        patch_ids = self.network_prototype.nodes()
+        self._patch_columns = dict([(patch_ids[n], n) for n in range(len(patch_ids))])
 
-        self._rate_table = numpy.array([[d, ] * len(self._patch_ids) for d in [0.0, ] * len(self._events)],
+        # Create a rate table. Rows are events, columns are patches
+        self._rate_table = numpy.array([[d, ] * len(patch_ids) for d in [0.0, ] * len(self._events)],
                                        dtype=numpy.float)
 
+        # Initial network is empty. Will be overwritten with a copy of the prototype network for each experiment.
         self._network = None
         self._start_time = self.DEFAULT_START_TIME
         self._max_time = self.DEFAULT_MAX_TIME
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
-        for e in range(len(self._events)):
-            event = self._events[e]
-            self._rate_table[e][patch_id] = event.calculate_rate_at_patch(self._network, patch_id)
+        for row in range(len(self._events)):
+            col = self._patch_columns[patch_id]
+            event = self._events[row]
+            self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
         # TODO - only update events dependent on atts/comps changed
 
     def _create_events(self, network):
@@ -88,16 +93,11 @@ class Dynamics(epyc.Experiment, object):
         # Make a copy of the network prototype
         self._network = self.network_prototype.copy()
 
-        # Seed the network patches
-        for patch_id, data in params[Dynamics.INITIAL_PATCHES].iteritems():
-            self._network.update_patch(patch_id, data[Network.COMPARTMENTS], data[Network.ATTRIBUTES])
-
-        # Seed the network edges
-        for (u,v), data in params[Dynamics.INITIAL_EDGES].iteritems():
-            self._network.update_edge(u, v, data[Dynamics.INITIAL_EDGES])
-
         # Set the event reactions parameters using the initial conditions
-        self._seed_events(params[Dynamics.EVENTS])
+        self._seed_events(params)
+
+        # Seed the network patches & edges
+        self._seed_network(params)
 
         # Allow for designated start time (used for time/age specific events)
         if Dynamics.INITIAL_TIME in params:
@@ -107,15 +107,24 @@ class Dynamics(epyc.Experiment, object):
         if Dynamics.MAX_TIME in params:
             self._max_time = params[Dynamics.MAX_TIME]
 
+    def _seed_network(self, params):
+        raise NotImplementedError
+
     def do(self, params):
         """
-        Run a metapoppy simulation. Uses Gillespie simulation - all events are given a rate based on the state of the
-        network. An event is chosen and performed, the network is updated, time is incremented and new rates calculated.
+        Run a MetapopPy simulation. Uses Gillespie simulation - all combinations of events and patches are given a rate
+        based on the state of the network. An event and patch combination are chosen and performed, the event is
+        performed, updating the patch (and others). Time is incremented (based on total rates) and new rates calculated.
         :param params:
         :return:
         """
 
         time = self._start_time
+
+        number_events = len(self._events)
+        number_patches = len(self._patch_columns)
+
+        indexes = range(0, self._rate_table.size)
 
         while not self._at_equilibrium(time):
             # Get the total rate by summing rates of all events at all patches
@@ -129,10 +138,10 @@ class Dynamics(epyc.Experiment, object):
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
             # Choose an event and patch based on the values in the rate table
-            index_choice = numpy.random.choice(range(0, self._rate_table.size),
-                                               p=self._rate_table.flatten() / total_network_rate)
-            event = self._events[index_choice / len(self._events)]
-            patch = self._patch_ids[index_choice % len(self._patch_ids)]
+            index_choice = numpy.random.choice(indexes, p=self._rate_table.flatten() / total_network_rate)
+            # Given the index, find the event and patch this refers to
+            event = self._events[index_choice / number_events]
+            patch = self._network.nodes[index_choice % number_patches]
 
             # Perform the event. Handler will propagate the effects of any network updates
             event.perform(self._network.node[patch], self._network.edges([patch]))
@@ -158,5 +167,4 @@ class Dynamics(epyc.Experiment, object):
         self._network = None
 
         # Reset rate table
-        self._rate_table = numpy.array([[d, ] * len(self._patch_ids) for d in [0.0, ] * len(self._events)],
-                                       dtype=numpy.float)
+        self._rate_table.fill(0.0)

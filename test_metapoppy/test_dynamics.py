@@ -1,135 +1,94 @@
 import unittest
 from metapoppy import *
 
+compartments = ['a','b','c']
+patch_attributes = ['d','e','f']
+edge_attributes = ['g','h','i']
 
-class NAEvent(Event):
-    REACTION_PARAMETER = 0.5
 
-    def __init__(self, sv_comp, perf_comp):
-        self.sv_comp = sv_comp
-        self.perf_comp = perf_comp
+class NAEvent1(Event):
+    def __init__(self):
         Event.__init__(self)
 
-    def _calculate_state_variable(self, patch, edges):
-        return patch[Network.COMPARTMENTS][self.sv_comp]
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return network.get_compartment_value(patch_id, compartments[0])
 
-    def perform(self, network):
-        network.update_patch(self._patch_id, {self.perf_comp: 2})
+    def perform(self, network, patch_id):
+        network.update_patch(patch_id, {compartments[1]: 1})
 
+
+class NAEvent2(Event):
+    def __init__(self):
+        Event.__init__(self)
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return network.get_compartment_value(patch_id, compartments[1]) * 2
+
+    def perform(self, network, patch_id):
+        network.update_patch(patch_id, {compartments[2]: 2})
 
 class NADynamics(Dynamics):
+
+    INITIAL_COMP_0 = 'initial_comp_0'
+    INITIAL_COMP_1 = 'initial_comp_1'
+    INITIAL_EDGE_0 = 'initial_edge_0'
+
     def __init__(self, g):
         Dynamics.__init__(self, g)
 
     def _create_events(self, network):
-        event1 = NAEvent(self._compartments[0], self._compartments[1])
-        network.attach_event(event1, 1)
-        event2 = NAEvent(self._compartments[1], self._compartments[2])
-        network.attach_event(event2, 2)
+        events = [NAEvent1(), NAEvent2()]
+        return events
 
-    def _seed_events(self, params):
-        NAEvent.REACTION_PARAMETER = params[NAEvent.__name__][Event.REACTION_PARAMETER]
+    def _seed_network(self, params):
+        value_comp_0 = params[NADynamics.INITIAL_COMP_0]
+        value_comp_1 = params[NADynamics.INITIAL_COMP_1]
+        for p in self._network.nodes():
+            self._network.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1})
+
+    def _seed_events(self, event_parameters):
+        event1 = next(e for e in self._events if isinstance(e, NAEvent1))
+        event1.set_reaction_parameter(event_parameters[NAEvent1.__name__])
+        event2 = next(e for e in self._events if isinstance(e, NAEvent2))
+        event2.set_reaction_parameter(event_parameters[NAEvent2.__name__])
+
+    def get_results(self):
+        pass
 
 
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.comps = ['a','b','c']
-        self.p_atts = ['d','e','f']
-        self.e_atts = ['g','h','i']
-
-        self.network = Network(self.comps, self.p_atts, self.e_atts)
+        self.network = Network(compartments, patch_attributes, edge_attributes)
         self.network.add_nodes_from([1,2,3])
         self.network.add_edges_from([(1,2),(2,3)])
 
         self.dynamics = NADynamics(self.network)
 
     def test_setUp(self):
-        params = {Dynamics.INITIAL_PATCHES: {1: {Network.COMPARTMENTS:{self.comps[0]: 1},
-                                                 Network.ATTRIBUTES:{self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                     self.p_atts[2]: 3.5}},
-                                             2: {Network.COMPARTMENTS:{self.comps[1]: 6},
-                                                 Network.ATTRIBUTES:{self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                     self.p_atts[2]: 3.5}}},
-                  Dynamics.INITIAL_EDGES: {(1, 2): {self.e_atts[0]: 0.1, self.e_atts[1]: 0.2, self.e_atts[2]: 0.3},
-                                           (2, 3): {self.e_atts[0]: 0.4, self.e_atts[1]: 0.5, self.e_atts[2]: 0.6}},
-                  Network.EVENTS: {NAEvent.__name__: {Event.REACTION_PARAMETER: 0.11}}
-                  }
+        params = {NAEvent1.__name__: 0.1, NAEvent2.__name__: 0.2, NADynamics.INITIAL_COMP_0: 3,
+                  NADynamics.INITIAL_COMP_1: 5}
         self.dynamics.setUp(params)
 
-        # Graph
-        self.assertTrue(self.dynamics.network())
+        # Events set up
+        rps = [0.1, 0.2]
+        event1 = next(e for e in self.dynamics._events if isinstance(e, NAEvent1))
+        self.assertEqual(event1._reaction_parameter, rps[0])
+        event2 = next(e for e in self.dynamics._events if isinstance(e, NAEvent2))
+        self.assertEqual(event2._reaction_parameter, rps[1])
 
-        # Events
-        self.assertEqual(len(self.dynamics.network().node[1][Network.EVENTS]), 1)
-        event_at_1 = self.dynamics.network().node[1][Network.EVENTS][0]
-        self.assertTrue(isinstance(event_at_1, NAEvent))
-        self.assertEqual(event_at_1.sv_comp, self.comps[0])
-        self.assertEqual(event_at_1.perf_comp, self.comps[1])
-        self.assertEqual(event_at_1.REACTION_PARAMETER, 0.11)
+        # Populations updated
+        for a in [1, 2, 3]:
+            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[0]],
+                             params[NADynamics.INITIAL_COMP_0])
+            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[1]],
+                             params[NADynamics.INITIAL_COMP_1])
+            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[2]], 0)
 
-        self.assertEqual(len(self.dynamics.network().node[2][Network.EVENTS]), 1)
-        event_at_2 = self.dynamics.network().node[2][Network.EVENTS][0]
-        self.assertTrue(isinstance(event_at_2, NAEvent))
-        self.assertEqual(event_at_2.sv_comp, self.comps[1])
-        self.assertEqual(event_at_2.perf_comp, self.comps[2])
-        self.assertEqual(event_at_2.REACTION_PARAMETER, 0.11)
-
-        self.assertEqual(len(self.dynamics.network().node[3][Network.EVENTS]), 0)
-
-        # Comps & atts
-        for p, data in params[Dynamics.INITIAL_PATCHES].iteritems():
-            for c in self.comps:
-                if c in data[Network.COMPARTMENTS]:
-                    self.assertEqual(self.dynamics.network().get_compartment_value(p, c), data[Network.COMPARTMENTS][c])
-                else:
-                    self.assertEqual(self.dynamics.network().get_compartment_value(p, c), 0)
-            for a in self.p_atts:
-                if a in data[Network.ATTRIBUTES]:
-                    self.assertEqual(self.dynamics.network().get_attribute_value(p, a), data[Network.ATTRIBUTES][a])
-                else:
-                    self.assertEqual(self.dynamics.network().get_attribute_value(p, a), 0)
-
-        # Edges
-        for (u, v), data in params[Dynamics.INITIAL_EDGES].iteritems():
-            edge = self.dynamics.network().edge[u][v]
-            for a in self.e_atts:
-                self.assertEqual(edge[a], data[a])
-
-    def test_do(self):
-        params = {Dynamics.INITIAL_PATCHES: {1: {Network.COMPARTMENTS: {self.comps[0]: 1},
-                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                     self.p_atts[2]: 3.5}},
-                                             2: {Network.COMPARTMENTS: {self.comps[1]: 6},
-                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                     self.p_atts[2]: 3.5}}},
-                 Dynamics.INITIAL_EDGES: {(1, 2): {self.e_atts[0]: 0.1, self.e_atts[1]: 0.2, self.e_atts[2]: 0.3},
-                                          (2, 3): {self.e_atts[0]: 0.4, self.e_atts[1]: 0.5, self.e_atts[2]: 0.6}},
-                 Network.EVENTS: {NAEvent.__name__: {Event.REACTION_PARAMETER: 0.11}}
-                 }
-
-        self.dynamics.set_maximum_time(100)
-        self.dynamics.setUp(params)
-        self.dynamics.do(params)
-
-    def test_run(self):
-        params = {Dynamics.INITIAL_PATCHES: {1: {Network.COMPARTMENTS: {self.comps[0]: 1},
-                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                      self.p_atts[2]: 3.5}},
-                                             2: {Network.COMPARTMENTS: {self.comps[1]: 6},
-                                                 Network.ATTRIBUTES: {self.p_atts[0]: 0.5, self.p_atts[1]: 1.5,
-                                                                      self.p_atts[2]: 3.5}}},
-                  Dynamics.INITIAL_EDGES: {(1, 2): {self.e_atts[0]: 0.1, self.e_atts[1]: 0.2, self.e_atts[2]: 0.3},
-                                           (2, 3): {self.e_atts[0]: 0.4, self.e_atts[1]: 0.5, self.e_atts[2]: 0.6}},
-                  Network.EVENTS: {NAEvent.__name__: {Event.REACTION_PARAMETER: 0.11}}
-                  }
-        a = self.dynamics.set(params)
-        rc = a.run()
-        self.assertItemsEqual(rc.keys(), [epyc.Experiment.RESULTS, epyc.Experiment.PARAMETERS,
-                                          epyc.Experiment.METADATA])
-        self.assertFalse(rc[epyc.Experiment.RESULTS])
-        self.assertEqual(rc[epyc.Experiment.PARAMETERS], params)
-        print rc[epyc.Experiment.METADATA]
+        # Population updates feeds through to event rates
+        for col in range(0, 3):
+            self.assertAlmostEqual(self.dynamics._rate_table[0][col], rps[0] * params[NADynamics.INITIAL_COMP_0])
+            self.assertAlmostEqual(self.dynamics._rate_table[1][col], rps[1] * 2 * params[NADynamics.INITIAL_COMP_1])
 
 
 if __name__ == '__main__':
