@@ -73,10 +73,10 @@ class Dynamics(epyc.Experiment, object):
         """
         return t >= self._max_time
 
-    def _seed_events(self, event_parameters):
+    def _seed_events(self, params):
         """
         Set the event reaction parameters
-        :param event_parameters:
+        :param params:
         :return:
         """
         raise NotImplementedError
@@ -150,9 +150,9 @@ class Dynamics(epyc.Experiment, object):
             time += dt
 
         # TODO - experimental results. Maybe need to track populations over time
-        return self.get_results()
+        return self._get_results()
 
-    def get_results(self):
+    def _get_results(self):
         raise NotImplementedError
 
     def tearDown(self):

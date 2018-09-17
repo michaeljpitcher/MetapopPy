@@ -46,13 +46,13 @@ class NADynamics(Dynamics):
         for p in self._network.nodes():
             self._network.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1})
 
-    def _seed_events(self, event_parameters):
+    def _seed_events(self, params):
         event1 = next(e for e in self._events if isinstance(e, NAEvent1))
-        event1.set_reaction_parameter(event_parameters[NAEvent1.__name__])
+        event1.set_reaction_parameter(params[NAEvent1.__name__])
         event2 = next(e for e in self._events if isinstance(e, NAEvent2))
-        event2.set_reaction_parameter(event_parameters[NAEvent2.__name__])
+        event2.set_reaction_parameter(params[NAEvent2.__name__])
 
-    def get_results(self):
+    def _get_results(self):
         pass
 
 
