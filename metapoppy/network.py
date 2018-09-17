@@ -50,14 +50,25 @@ class Network(networkx.Graph):
         and rates. All set to zero, will be seeded with a value once simulation runs.
         :return:
         """
-        # Prepare the network
+        self._prepare_compartments()
+        self._prepare_attributes()
+        self._prepare_edges()
+        self._handler = handler
+
+    def _prepare_compartments(self):
+        # Prepare the network compartments
         for _, patch_data in self.nodes(data=True):
             patch_data[Network.COMPARTMENTS] = dict([(c, 0) for c in self._compartments])
-            patch_data[Network.ATTRIBUTES] = dict([(c, 0) for c in self._patch_attributes])
+
+    def _prepare_attributes(self):
+        # Prepare the network attributes
+        for _, patch_data in self.nodes(data=True):
+            patch_data[Network.ATTRIBUTES] = dict([(a, 0) for a in self._patch_attributes])
+
+    def _prepare_edges(self):
         for u, v in self.edges():
             for a in self._edge_attributes:
                 self.edge[u][v][a] = 0.0
-        self._handler = handler
 
     def get_compartment_value(self, patch_id, compartment):
         """
@@ -109,15 +120,21 @@ class TypedNetwork(Network):
 
     PATCH_TYPE = 'patch_type'
 
-    def __init__(self, compartments, patch_attributes, edge_attributes):
+    def __init__(self, compartments, patch_attributes_by_type, edge_attributes):
         """
         Create a network
         :param compartments: List of population compartments
-        :param patch_attributes: List of patch attributes
+        :param patch_attributes: List of patch attributes, grouped by patch type
         :param edge_attributes: List of edge attributes
         """
-        patch_attributes.append(TypedNetwork.PATCH_TYPE)
-        Network.__init__(self, compartments, patch_attributes, edge_attributes)
+
+        self._attribute_by_type = patch_attributes_by_type
+
+        all_patch_attributes = []
+        for a in patch_attributes_by_type.values():
+            all_patch_attributes += a
+        all_patch_attributes.append(TypedNetwork.PATCH_TYPE)
+        Network.__init__(self, compartments, all_patch_attributes, edge_attributes)
         self._patch_types = {}
 
     def set_patch_type(self, patch_id, patch_type):
@@ -139,3 +156,13 @@ class TypedNetwork(Network):
             # Add to the list
             self._patch_types[patch_data[TypedNetwork.PATCH_TYPE]].append(patch_id)
         Network.prepare(self, handler)
+
+    def _prepare_attributes(self):
+        # Prepare the network attributes
+        for _, patch_data in self.nodes(data=True):
+            p_type = patch_data[TypedNetwork.PATCH_TYPE]
+            if p_type in self._attribute_by_type:
+                attributes = self._attribute_by_type[p_type]
+                patch_data[Network.ATTRIBUTES] = dict([(a, 0) for a in attributes])
+            else:
+                patch_data[Network.ATTRIBUTES] = {}
