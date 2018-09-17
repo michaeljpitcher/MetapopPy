@@ -36,7 +36,7 @@ class NADynamics(Dynamics):
     def __init__(self, g):
         Dynamics.__init__(self, g)
 
-    def _create_events(self, network):
+    def _create_events(self):
         events = [NAEvent1(), NAEvent2()]
         return events
 

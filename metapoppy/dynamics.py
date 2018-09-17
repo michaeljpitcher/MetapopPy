@@ -32,7 +32,7 @@ class Dynamics(epyc.Experiment, object):
         self.network_prototype.prepare(lambda a, b, c, e: self._propagate_updates(a, b, c, e))
 
         # Create the events
-        self._events = self._create_events(self.network_prototype)
+        self._events = self._create_events()
 
         # Obtain the patches of the network (for lookup purposes)
         patch_ids = self.network_prototype.nodes()
@@ -54,7 +54,7 @@ class Dynamics(epyc.Experiment, object):
             self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
         # TODO - only update events dependent on atts/comps changed
 
-    def _create_events(self, network):
+    def _create_events(self):
         raise NotImplementedError
 
     def network(self):
