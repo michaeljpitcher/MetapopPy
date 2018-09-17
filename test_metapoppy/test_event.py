@@ -39,7 +39,8 @@ class PatchTypeEventTestCase(unittest.TestCase):
 
     def setUp(self):
         self.patch_types = ['type1', 'type2']
-        self.network = TypedNetwork(compartments, attributes, [])
+        self.typed_attributes = {self.patch_types[0]: attributes[0], self.patch_types[1]: attributes[1]}
+        self.network = TypedNetwork(compartments, self.typed_attributes, [])
         self.network.add_node(1)
         self.network.set_patch_type(1, self.patch_types[0])
         self.network.add_node(2)

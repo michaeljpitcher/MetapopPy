@@ -97,7 +97,7 @@ class TypedNetworkTestCase(unittest.TestCase):
     def setUp(self):
         self.patch_types = ['alpha', 'beta', 'gamma']
         self.compartments = ['a', 'b', 'c']
-        self.patch_attributes = ['d', 'e', 'f']
+        self.patch_attributes = {self.patch_types[0]: ['d', 'e'], self.patch_types[1]: ['f']}
         self.edge_attributes = ['g', 'h', 'i']
         self.network = TypedNetwork(self.compartments, self.patch_attributes, self.edge_attributes)
 
@@ -111,6 +111,18 @@ class TypedNetworkTestCase(unittest.TestCase):
         self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[0]), [1, 2])
         self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[1]), [3])
         self.assertFalse(self.network.get_patches_by_type(self.patch_types[2]))
+
+        # Correct attributes
+        self.network.add_node(4)
+        self.network.set_patch_type(4, self.patch_types[2])
+        self.network.prepare()
+        for _,d in self.network.nodes(data=True):
+            if d[TypedNetwork.PATCH_TYPE] == self.patch_types[0]:
+                self.assertItemsEqual(d[Network.ATTRIBUTES], self.patch_attributes[self.patch_types[0]])
+            elif d[TypedNetwork.PATCH_TYPE] == self.patch_types[1]:
+                self.assertItemsEqual(d[Network.ATTRIBUTES], self.patch_attributes[self.patch_types[1]])
+            elif d[TypedNetwork.PATCH_TYPE] == self.patch_types[2]:
+                self.assertFalse(d[Network.ATTRIBUTES])
 
 
 if __name__ == '__main__':
