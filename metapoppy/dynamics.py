@@ -35,6 +35,7 @@ class Dynamics(epyc.Experiment, object):
         self._events = self._create_events()
 
         # Obtain the patches of the network (for lookup purposes)
+        assert self.network_prototype.nodes(), "Empty network is invalid"
         patch_ids = self.network_prototype.nodes()
         self._patch_columns = dict([(patch_ids[n], n) for n in range(len(patch_ids))])
 
