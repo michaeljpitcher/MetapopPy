@@ -5,22 +5,19 @@ from tbmetapoppy import *
 class TBDynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.dynamics = TBDynamics()
+        self.boundary = [(0, 5), (0, 10), (10, 10), (10, 0), (0, 0)]
+        network_config = {PulmonaryNetwork.TOPOLOGY: PulmonaryNetwork.SPACE_FILLING_TREE_2D,
+                          PulmonaryNetwork.BOUNDARY: self.boundary,
+                          PulmonaryNetwork.LENGTH_DIVISOR: 2,
+                          PulmonaryNetwork.MINIMUM_AREA: 6}
+        self.dynamics = TBDynamics(network_config)
 
-    def test_create_events(self):
-        pass
+    def test_initialise(self):
+        # Rows = number of events, cols = number of nodes
+        self.assertEqual(self.dynamics._rate_table.shape, (2, 17))
 
-    def test_seed_events(self, params):
-        # TODO
-        pass
-
-    def test_seed_network(self, params):
-        # TODO
-        pass
-
-    def test_get_results(self):
-        # TODO
-        pass
+        self.assertEqual(len([e for e in self.dynamics._events if isinstance(e, ExtracellularBacterialReplication)]),
+                         len(TBDynamics.EXTRACELLULAR_BACTERIA))
 
 
 if __name__ == '__main__':
