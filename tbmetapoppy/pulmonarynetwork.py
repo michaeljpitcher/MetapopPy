@@ -27,7 +27,7 @@ class PulmonaryNetwork(TypedNetwork):
     def __init__(self, network_config, compartments):
         TypedNetwork.__init__(self, compartments, PulmonaryNetwork.PATCH_ATTRIBUTES, PulmonaryNetwork.EDGE_ATTRIBUTES)
 
-        self._alveolar_positions = []
+        self._alveolar_positions = {}
         if network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
 
@@ -118,14 +118,49 @@ class PulmonaryNetwork(TypedNetwork):
             else:
                 alveolar_positions.append(new_split_point)
 
+        # Create lymph patch
         self.add_node(PulmonaryNetwork.LYMPH_PATCH)
         self.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
 
+        # Create the alveolar patches
         index = 1
         for pos in alveolar_positions:
             self.add_node(index)
             self.set_patch_type(index, PulmonaryNetwork.ALVEOLAR_PATCH)
-            self._alveolar_positions.append(pos)
-
+            self._alveolar_positions[index] = pos
+            # Add an edge from this alveolar patch to lymph patch
             self.add_edge(PulmonaryNetwork.LYMPH_PATCH, index)
             index += 1
+
+    def pulmonary_attribute_seeding(self, ventilation_skew, perfusion_skew, drainage_skew):
+        seeding = {}
+
+        ys = [y for _,y in self._alveolar_positions.values()]
+        y_max = max(ys)
+        y_min = min(ys)
+        y_diff = y_max - y_min
+
+        total_v = 0
+        total_q = 0
+        total_d = 0
+
+        for index, pos in self._alveolar_positions.iteritems():
+            seeding[index] = {}
+            vent_value = (1 + (y_max - pos[1])*((ventilation_skew-1)/y_diff))
+            perf_value = (1 + (y_max - pos[1])*((perfusion_skew-1)/y_diff))
+            drain_value = (1 + (y_max - pos[1])*((drainage_skew-1)/y_diff))
+            total_v += vent_value
+            total_q += perf_value
+            total_d += drain_value
+            seeding[index] = {PulmonaryNetwork.VENTILATION: vent_value,
+                              PulmonaryNetwork.PERFUSION: perf_value,
+                              PulmonaryNetwork.DRAINAGE: drain_value}
+
+        # Normalise
+        for d in seeding.values():
+            d[PulmonaryNetwork.VENTILATION] /= total_v
+            d[PulmonaryNetwork.PERFUSION] /= total_q
+            d[PulmonaryNetwork.DRAINAGE] /= total_d
+            d[PulmonaryNetwork.OXYGEN_TENSION] = d[PulmonaryNetwork.VENTILATION] / d[PulmonaryNetwork.PERFUSION]
+
+        return seeding
