@@ -33,9 +33,10 @@ class Dynamics(epyc.Experiment, object):
 
         # Create the events
         self._events = self._create_events()
+        assert self._events, "No events created"
+        assert self.network_prototype.nodes(), "Empty network is invalid"
 
         # Obtain the patches of the network (for lookup purposes)
-        assert self.network_prototype.nodes(), "Empty network is invalid"
         patch_ids = self.network_prototype.nodes()
         self._patch_columns = dict([(patch_ids[n], n) for n in range(len(patch_ids))])
 
@@ -49,6 +50,15 @@ class Dynamics(epyc.Experiment, object):
         self._max_time = self.DEFAULT_MAX_TIME
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
+        """
+        When a patch ID is changed, update the relevant entries in the rate table. This function is passed as a lambda
+        function to the network, and is called whenever a change is made.
+        :param patch_id:
+        :param compartment_changes:
+        :param attribute_changes:
+        :param edge_changes:
+        :return:
+        """
         for row in range(len(self._events)):
             col = self._patch_columns[patch_id]
             event = self._events[row]
