@@ -25,42 +25,52 @@ class CellDeath(Event):
 
 
 class MacrophageBursting(CellDeath):
-    SIGMOID = 0
-    CARRYING_CAPACITY = 0
-
     def __init__(self):
+        self._sigmoid = 0
+        self._capacity = 0
         CellDeath.__init__(self, TBDynamics.MACROPHAGE_INFECTED)
+
+    def set_parameters(self, sigmoid, capacity):
+        self._sigmoid = sigmoid
+        self._capacity = capacity
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, TBDynamics.BACTERIUM_INTRACELLULAR_MACROPHAGE)
         if not bac:
             return 0
         mac = network.get_compartment_value(patch_id, TBDynamics.MACROPHAGE_INFECTED)
-        return mac * ((float(bac) ** MacrophageBursting.SIGMOID) / (bac ** MacrophageBursting.SIGMOID +
-                ((MacrophageBursting.CARRYING_CAPACITY * mac) ** MacrophageBursting.SIGMOID)))
-
-
-
-class MacrophageDestroysBacterium(CellDeath):
-    def __init__(self, macrophage_type, bacterium_type):
-        self._macrophage_type = macrophage_type
-        self._bacterium_type = bacterium_type
-        CellDeath.__init__(self, bacterium_type)
-
-    def _calculate_state_variable_at_patch(self, network, patch_id):
-        return network.get_compartment_value(patch_id, self._bacterium_type) * \
-               network.get_compartment_value(patch_id, self._macrophage_type)
+        return mac * ((float(bac) ** self._sigmoid) / (bac ** self._sigmoid +
+                ((self._capacity * mac) ** self._sigmoid)))
 
 
 class TCellDestroysMacrophage(CellDeath):
-    HALF_SAT = 0
-
     def __init__(self):
+        self._half_sat = 0
         CellDeath.__init__(self, TBDynamics.MACROPHAGE_INFECTED)
+
+    def set_parameters(self, half_sat):
+        self._half_sat = half_sat
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         tcell = network.get_compartment_value(patch_id, TBDynamics.T_CELL_ACTIVATED)
         if not tcell:
             return 0
         mac = network.get_compartment_value(patch_id, TBDynamics.MACROPHAGE_INFECTED)
-        return mac * (float(tcell) / (tcell + TCellDestroysMacrophage.HALF_SAT))
+        return mac * (float(tcell) / (tcell + self._half_sat))
+
+
+class MacrophageDestroysBacterium(CellDeath):
+    def __init__(self, macrophage_type, bacterium_type):
+        self._macrophage_type = macrophage_type
+        self._bacterium_type = bacterium_type
+        self._half_sat = 0
+        CellDeath.__init__(self, bacterium_type)
+
+    def set_parameters(self, half_sat):
+        self._half_sat = half_sat
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        mac = network.get_compartment_value(patch_id, self._macrophage_type)
+        if not mac:
+            return 0
+        return network.get_compartment_value(patch_id, self._bacterium_type) * float(mac) / (mac + self._half_sat)
