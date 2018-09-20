@@ -29,19 +29,23 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
         self.assertEqual(len(self.tree_network.edges([PulmonaryNetwork.LYMPH_PATCH])), 16)
 
     def test_pulmonary_attribute_seeding(self):
-        seeding = self.tree_network.pulmonary_attribute_seeding(3,2,1)
+        params = {PulmonaryNetwork.VENTILATION_SKEW: 3, PulmonaryNetwork.PERFUSION_SKEW: 2,
+                  PulmonaryNetwork.DRAINAGE_SKEW: 1}
+        self.tree_network.seed_pulmonary_attributes(params)
 
-        self.assertEqual(sum(a[PulmonaryNetwork.VENTILATION] for a in seeding.values()), 1)
-        self.assertEqual(sum(a[PulmonaryNetwork.PERFUSION] for a in seeding.values()), 1)
-        self.assertEqual(sum(a[PulmonaryNetwork.DRAINAGE] for a in seeding.values()), 1)
+        alv_patch_ids = self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH)
+
+        for att in [PulmonaryNetwork.VENTILATION, PulmonaryNetwork.PERFUSION, PulmonaryNetwork.DRAINAGE]:
+            self.assertEqual(sum(self.tree_network.get_attribute_value(a, att) for a in alv_patch_ids), 1)
 
         # Check all drainage values are the same (since we've set the skew to 1)
-        self.assertEqual(len(set([a[PulmonaryNetwork.DRAINAGE] for a in seeding.values()])), 1)
+        self.assertEqual(len(set([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE) for a in
+                                  alv_patch_ids])), 1)
 
-        for d in seeding.values():
-            self.assertEqual(d[PulmonaryNetwork.OXYGEN_TENSION],
-                             d[PulmonaryNetwork.VENTILATION] / d[PulmonaryNetwork.PERFUSION])
-
+        for a in alv_patch_ids:
+            self.assertEqual(self.tree_network.get_attribute_value(a, PulmonaryNetwork.OXYGEN_TENSION),
+                             self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION) /
+                             self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION),)
 
 if __name__ == '__main__':
     unittest.main()
