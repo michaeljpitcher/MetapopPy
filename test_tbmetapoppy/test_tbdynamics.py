@@ -14,10 +14,9 @@ class TBDynamicsTestCase(unittest.TestCase):
 
     def test_initialise(self):
         # Rows = number of events, cols = number of nodes
-        self.assertEqual(self.dynamics._rate_table.shape, (2, 17))
+        self.assertEqual(self.dynamics._rate_table.shape, (32, 17))
 
-        self.assertEqual(len([e for e in self.dynamics._events if isinstance(e, ExtracellularBacterialReplication)]),
-                         len(TBDynamics.EXTRACELLULAR_BACTERIA))
+
 
 
 if __name__ == '__main__':

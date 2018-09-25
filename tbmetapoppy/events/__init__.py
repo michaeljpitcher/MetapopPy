@@ -4,5 +4,4 @@ from cell_death import *
 from cell_infection import *
 from cell_recruitment import *
 from cell_translocation import *
-from macrophage_activation import *
-from tcell_activation import *
+from cell_activation import *

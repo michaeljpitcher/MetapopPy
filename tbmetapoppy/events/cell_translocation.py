@@ -44,12 +44,31 @@ class CellTranslocationToLung(PatchTypeEvent):
 
     def perform(self, network, patch_id):
         edges = network.edges([patch_id],data=True)
-        total_perfusion = sum(d[PulmonaryNetwork.PERFUSION] for _,_,d in edges)
+        perfusions = [d[PulmonaryNetwork.PERFUSION] for _, _, d in edges]
+        total_perfusion = sum(perfusions)
 
-        neighbours = [n for _,n,_ in edges]
-        perfusions = [d[PulmonaryNetwork.PERFUSION] for _,_,d in edges]
+        lung_patch_id = numpy.random.choice([n for _,n,_ in edges], p=numpy.array(perfusions)/total_perfusion)
+        network.update_patch(patch_id, {self._cell_type: -1})
+        network.update_patch(lung_patch_id, {self._cell_type: 1})
 
-        lung_patch_id = numpy.random.choice(neighbours, p=numpy.array(perfusions)/total_perfusion)
+
+class TCellTranslocationToLungByInfection(CellTranslocationToLung):
+    def __init__(self):
+        CellTranslocationToLung.__init__(self, T_CELL_ACTIVATED)
+
+    def perform(self, network, patch_id):
+        edges = network.edges([patch_id],data=True)
+
+        infections = [d[PulmonaryNetwork.PERFUSION] *
+                      (network.get_compartment_value(n, BACTERIUM_EXTRACELLULAR_DORMANT) +
+                       network.get_compartment_value(n, BACTERIUM_EXTRACELLULAR_REPLICATING)) for _, n, d in edges]
+
+        total_infection = sum(infections)
+
+        if not total_infection:
+            return CellTranslocationToLung.perform(self, network, patch_id)
+
+        lung_patch_id = numpy.random.choice([n for _,n,_ in edges], p=numpy.array(infections)/total_infection)
         network.update_patch(patch_id, {self._cell_type: -1})
         network.update_patch(lung_patch_id, {self._cell_type: 1})
 
