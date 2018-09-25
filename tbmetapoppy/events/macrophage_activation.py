@@ -1,4 +1,4 @@
-from tbmetapoppy import *
+from ..tbcompartments import *
 from metapoppy.event import Event
 
 
@@ -10,14 +10,14 @@ class MacrophageActivationByTCell(Event):
         Event.__init__(self)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        t_cell = network.get_compartment_value(patch_id, TBDynamics.T_CELL_ACTIVATED)
+        t_cell = network.get_compartment_value(patch_id, T_CELL_ACTIVATED)
         if not t_cell:
             return 0
-        return network.get_compartment_value(patch_id, TBDynamics.MACROPHAGE_RESTING) * \
+        return network.get_compartment_value(patch_id, MACROPHAGE_RESTING) * \
             (t_cell / (t_cell + MacrophageActivationByTCell.HALF_SAT))
 
     def perform(self, network, patch_id):
-        network.update_patch(patch_id, {TBDynamics.MACROPHAGE_RESTING: -1, TBDynamics.MACROPHAGE_ACTIVATED: 1})
+        network.update_patch(patch_id, {MACROPHAGE_RESTING: -1, MACROPHAGE_ACTIVATED: 1})
 
 
 class MacrophageActivationByBacteria(Event):
@@ -27,13 +27,13 @@ class MacrophageActivationByBacteria(Event):
         Event.__init__(self)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        bac = network.get_compartment_value(patch_id, TBDynamics.BACTERIUM_EXTRACELLULAR_REPLICATING) + \
-              network.get_compartment_value(patch_id, TBDynamics.BACTERIUM_EXTRACELLULAR_DORMANT)
+        bac = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING) + \
+              network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
         if not bac:
             return 0
-        return network.get_compartment_value(patch_id, TBDynamics.MACROPHAGE_RESTING) * \
+        return network.get_compartment_value(patch_id, MACROPHAGE_RESTING) * \
                (bac / (bac + MacrophageActivationByBacteria.HALF_SAT))
 
     def perform(self, network, patch_id):
-        network.update_patch(patch_id, {TBDynamics.MACROPHAGE_RESTING: -1, TBDynamics.MACROPHAGE_ACTIVATED: 1})
+        network.update_patch(patch_id, {MACROPHAGE_RESTING: -1, MACROPHAGE_ACTIVATED: 1})
 

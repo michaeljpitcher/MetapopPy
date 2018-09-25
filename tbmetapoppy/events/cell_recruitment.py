@@ -1,4 +1,4 @@
-from tbmetapoppy import *
+from tbmetapoppy.pulmonarynetwork import PulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
 
 

@@ -1,5 +1,6 @@
-from tbmetapoppy import *
+from tbmetapoppy.pulmonarynetwork import PulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
+from ..tbcompartments import *
 
 # TODO - more advanced dormancy dynamics
 
@@ -18,12 +19,11 @@ class BacteriumBecomesDormant(PatchTypeEvent):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         o2 = network.get_attribute_value(patch_id, PulmonaryNetwork.OXYGEN_TENSION)
-        return network.get_compartment_value(patch_id, TBDynamics.BACTERIUM_EXTRACELLULAR_REPLICATING) * \
+        return network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING) * \
             ((o2 ** self._sigmoid) / (self._half_sat ** self._sigmoid + o2 ** self._sigmoid))
 
     def perform(self, network, patch_id):
-        network.update_patch(patch_id, {TBDynamics.BACTERIUM_EXTRACELLULAR_REPLICATING: -1,
-                                        TBDynamics.BACTERIUM_EXTRACELLULAR_DORMANT: 1})
+        network.update_patch(patch_id, {BACTERIUM_EXTRACELLULAR_REPLICATING: -1, BACTERIUM_EXTRACELLULAR_DORMANT: 1})
 
 
 class BacteriumBecomesReplicating(PatchTypeEvent):
@@ -40,9 +40,8 @@ class BacteriumBecomesReplicating(PatchTypeEvent):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         o2 = network.get_attribute_value(patch_id, PulmonaryNetwork.OXYGEN_TENSION)
-        return network.get_compartment_value(patch_id, TBDynamics.BACTERIUM_EXTRACELLULAR_DORMANT) * \
+        return network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT) * \
             ((o2 ** self._sigmoid) / (self._half_sat ** self._sigmoid + o2 ** self._sigmoid))
 
     def perform(self, network, patch_id):
-        network.update_patch(patch_id, {TBDynamics.BACTERIUM_EXTRACELLULAR_DORMANT: -1,
-                                        TBDynamics.BACTERIUM_EXTRACELLULAR_REPLICATING: 1})
+        network.update_patch(patch_id, {BACTERIUM_EXTRACELLULAR_DORMANT: -1, BACTERIUM_EXTRACELLULAR_REPLICATING: 1})
