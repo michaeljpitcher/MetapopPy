@@ -124,7 +124,7 @@ class TypedNetwork(Network):
         """
         Create a network
         :param compartments: List of population compartments
-        :param patch_attributes: List of patch attributes, grouped by patch type
+        :param patch_attributes_by_type: List of patch attributes, grouped by patch type
         :param edge_attributes: List of edge attributes
         """
 
@@ -140,9 +140,11 @@ class TypedNetwork(Network):
     def set_patch_type(self, patch_id, patch_type):
         self.node[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
 
-    def get_patches_by_type(self, patch_type):
+    def get_patches_by_type(self, patch_type, data=False):
         if patch_type not in self._patch_types:
             return []
+        elif data:
+            return [(n, self.node[n]) for n in self._patch_types[patch_type]]
         else:
             return self._patch_types[patch_type]
 

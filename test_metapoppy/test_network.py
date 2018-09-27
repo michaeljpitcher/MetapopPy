@@ -112,6 +112,11 @@ class TypedNetworkTestCase(unittest.TestCase):
         self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[1]), [3])
         self.assertFalse(self.network.get_patches_by_type(self.patch_types[2]))
 
+        self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[0], data=True),
+                              [(d, self.network.node[d]) for d in [1, 2]])
+        self.assertItemsEqual(self.network.get_patches_by_type(self.patch_types[1], data=True),
+                              [(d, self.network.node[d]) for d in [3]])
+
         # Correct attributes
         self.network.add_node(4)
         self.network.set_patch_type(4, self.patch_types[2])
