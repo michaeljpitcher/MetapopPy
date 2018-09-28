@@ -16,19 +16,19 @@ class Dynamics(epyc.Experiment, object):
     DEFAULT_MAX_TIME = 100  #: Default maximum simulation time.
     DEFAULT_START_TIME = 0
 
-    def __init__(self, g):
+    def __init__(self, network):
         """
         Create MetapopPy dynamics to run over the given network.
-        :param g: Network on which to run dynamics
+        :param network: Network on which to run dynamics
         """
-        assert isinstance(g, Network), "Graph must be instance of MetapopPy Network class"
+        assert isinstance(network, Network), "Graph must be instance of MetapopPy Network class"
         epyc.Experiment.__init__(self)
-        self._compartments = g.compartments()
-        self._patch_attributes = g.patch_attributes()
-        self._edge_attributes = g.edge_attributes()
+        self._compartments = network.compartments()
+        self._patch_attributes = network.patch_attributes()
+        self._edge_attributes = network.edge_attributes()
 
         # Prepare the network
-        self.network_prototype = g
+        self.network_prototype = network
         self.network_prototype.prepare(lambda a, b, c, e: self._propagate_updates(a, b, c, e))
 
         # Create the events
@@ -138,6 +138,7 @@ class Dynamics(epyc.Experiment, object):
         indexes = range(0, self._rate_table.size)
 
         while not self._at_equilibrium(time):
+            print "t=", time
             # Get the total rate by summing rates of all events at all patches
             total_network_rate = numpy.sum(self._rate_table)
 
@@ -151,11 +152,11 @@ class Dynamics(epyc.Experiment, object):
             # Choose an event and patch based on the values in the rate table
             index_choice = numpy.random.choice(indexes, p=self._rate_table.flatten() / total_network_rate)
             # Given the index, find the event and patch this refers to
-            event = self._events[index_choice / number_events]
-            patch = self._network.nodes[index_choice % number_patches]
+            event = self._events[index_choice / number_patches]
+            patch_id = self._patch_columns[index_choice % number_patches]
 
             # Perform the event. Handler will propagate the effects of any network updates
-            event.perform(self._network.node[patch], self._network.edges([patch]))
+            event.perform(self._network, patch_id)
 
             # Move simulated time forward
             time += dt
