@@ -14,11 +14,11 @@ class PulmonaryNetwork(TypedNetwork):
     PATCH_ATTRIBUTES = {ALVEOLAR_PATCH: [VENTILATION, PERFUSION, OXYGEN_TENSION, DRAINAGE]}
 
     # Edge attributes
-    # TODO - more edge attributes
     EDGE_ATTRIBUTES = [PERFUSION]
 
     # Configuration
     TOPOLOGY = 'topology'
+    SINGLE_PATCH = 'single_patch'
     SPACE_FILLING_TREE_2D = 'space_filling_tree_2d'
     BOUNDARY = 'boundary'
     LENGTH_DIVISOR = 'length_divisor'
@@ -29,17 +29,26 @@ class PulmonaryNetwork(TypedNetwork):
     PERFUSION_SKEW = 'perfusion_skew'
     DRAINAGE_SKEW = 'drainage_skew'
 
-
     def __init__(self, network_config, compartments):
         TypedNetwork.__init__(self, compartments, PulmonaryNetwork.PATCH_ATTRIBUTES, PulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
-        if network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
+        if network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SINGLE_PATCH:
+            self._build_single_patch_network()
+        elif network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
 
-    def build_bps_network(self):
-        # TODO - build bps_network
-        pass
+    def _build_single_patch_network(self):
+        # Create lymph patch
+        self.add_node(PulmonaryNetwork.LYMPH_PATCH)
+        self.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
+
+        # Create the alveolar patches
+        self.add_node(PulmonaryNetwork.ALVEOLAR_PATCH)
+        self.set_patch_type(PulmonaryNetwork.ALVEOLAR_PATCH, PulmonaryNetwork.ALVEOLAR_PATCH)
+        self._alveolar_positions[PulmonaryNetwork.ALVEOLAR_PATCH] = (1, 1)
+        # Add an edge from this alveolar patch to lymph patch
+        self.add_edge(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.ALVEOLAR_PATCH)
 
     def _build_2d_space_filling_tree(self, network_config):
 
