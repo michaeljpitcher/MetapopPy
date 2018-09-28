@@ -47,5 +47,41 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
                              self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION) /
                              self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION),)
 
+    def test_seed_alveolar_patches(self):
+        params = {PulmonaryNetwork.VENTILATION_SKEW: 1, PulmonaryNetwork.PERFUSION_SKEW: 2,
+                  PulmonaryNetwork.DRAINAGE_SKEW: 1}
+        self.tree_network.seed_pulmonary_attributes(params)
+
+        rates = {self.compartments[0]: (50, 0.2), self.compartments[1]: (100, 1.1)}
+        self.tree_network.seed_alveolar_patches(rates)
+
+        for _, d in self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH, data=True):
+            self.assertEqual(d[TypedNetwork.COMPARTMENTS][self.compartments[0]],
+                            int(round(float(d[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
+                            rates[self.compartments[0]][0]) / rates[self.compartments[0]][1])))
+            self.assertEqual(d[TypedNetwork.COMPARTMENTS][self.compartments[1]],
+                            int(round(float(d[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
+                            rates[self.compartments[1]][0]) / rates[self.compartments[1]][1])))
+            self.assertFalse(d[TypedNetwork.COMPARTMENTS][self.compartments[2]])
+
+        for c in self.compartments:
+            self.assertFalse(self.tree_network.get_compartment_value(PulmonaryNetwork.LYMPH_PATCH, c))
+
+    def test_seed_lymph_patch(self):
+        params = {PulmonaryNetwork.VENTILATION_SKEW: 1, PulmonaryNetwork.PERFUSION_SKEW: 2,
+                  PulmonaryNetwork.DRAINAGE_SKEW: 1}
+        self.tree_network.seed_pulmonary_attributes(params)
+
+        rates = {self.compartments[1]: (100, 1.1), self.compartments[2]: (69, 0.5)}
+        self.tree_network.seed_lymph_patches(rates)
+
+        self.assertEqual(self.tree_network.get_compartment_value(PulmonaryNetwork.LYMPH_PATCH, self.compartments[1]),
+                         int(round(float(rates[self.compartments[1]][0]) / rates[self.compartments[1]][1])))
+
+        for n,d in self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH, data=True):
+            for c in self.compartments:
+                self.assertFalse(d[PulmonaryNetwork.COMPARTMENTS][c])
+
+
 if __name__ == '__main__':
     unittest.main()
