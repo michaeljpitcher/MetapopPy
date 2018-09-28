@@ -5,8 +5,6 @@ from network import *
 
 
 class Dynamics(epyc.Experiment, object):
-    INITIAL_PATCHES = 'initial_patches'
-    INITIAL_EDGES = 'initial_edges'
     INITIAL_TIME = 'initial_time'
     MAX_TIME = 'max_time'
 
@@ -132,13 +130,13 @@ class Dynamics(epyc.Experiment, object):
 
         time = self._start_time
 
-        number_events = len(self._events)
         number_patches = len(self._patch_columns)
 
         indexes = range(0, self._rate_table.size)
+        print "t=", time
 
         while not self._at_equilibrium(time):
-            print "t=", time
+
             # Get the total rate by summing rates of all events at all patches
             total_network_rate = numpy.sum(self._rate_table)
 
@@ -160,12 +158,13 @@ class Dynamics(epyc.Experiment, object):
 
             # Move simulated time forward
             time += dt
+            print "t=", time
 
         # TODO - experimental results. Maybe need to track populations over time
         return self._get_results()
 
     def _get_results(self):
-        raise NotImplementedError
+        return dict([(n,d[Network.COMPARTMENTS]) for n,d in self._network.nodes(data=True)])
 
     def tearDown(self):
         """
