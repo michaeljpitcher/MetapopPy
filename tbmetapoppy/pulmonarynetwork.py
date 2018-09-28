@@ -173,7 +173,22 @@ class PulmonaryNetwork(TypedNetwork):
             q = values[PulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
             d = values[PulmonaryNetwork.DRAINAGE] / total_d
-            self.update_patch(patch_id, {}, {PulmonaryNetwork.VENTILATION: v,
-                                             PulmonaryNetwork.PERFUSION: q,
-                                             PulmonaryNetwork.OXYGEN_TENSION: o2,
-                                             PulmonaryNetwork.DRAINAGE: d})
+            self.update_patch(patch_id, attribute_changes={PulmonaryNetwork.VENTILATION: v,
+                                                           PulmonaryNetwork.PERFUSION: q,
+                                                           PulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                           PulmonaryNetwork.DRAINAGE: d})
+
+    def seed_alveolar_patches(self, recruitment_death_rates):
+        for n in self.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
+            perfusion = self.get_attribute_value(n, PulmonaryNetwork.PERFUSION)
+            seed_amounts = {}
+            for cell, (recruit_rate, death_rate) in recruitment_death_rates.iteritems():
+                seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
+            self.update_patch(n, seed_amounts)
+
+    def seed_lymph_patches(self, recruitment_death_rates):
+        for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
+            seed_amounts = {}
+            for cell, (recruit_rate, death_rate) in recruitment_death_rates.iteritems():
+                seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
+            self.update_patch(n, seed_amounts)
