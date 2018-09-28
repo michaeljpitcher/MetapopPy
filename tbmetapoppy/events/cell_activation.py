@@ -6,12 +6,7 @@ class CellActivation(Event):
     def __init__(self, resting_cell, triggers):
         self._half_sat = 0
         self._resting_cell = resting_cell
-        if resting_cell == MACROPHAGE_RESTING:
-            self._activated_cell = MACROPHAGE_ACTIVATED
-        elif resting_cell == T_CELL_NAIVE:
-            self._activated_cell = T_CELL_ACTIVATED
-        else:
-            raise Exception, "Invalid cell"
+        self._activated_cell = ACTIVATED_CELL[self._resting_cell]
         self._triggers = triggers
         Event.__init__(self)
 

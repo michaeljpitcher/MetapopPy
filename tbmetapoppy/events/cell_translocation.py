@@ -7,6 +7,10 @@ import numpy
 class CellTranslocationToLymph(PatchTypeEvent):
     def __init__(self, cell_type):
         self._cell_type = cell_type
+        if cell_type in INTERNAL_BACTERIA_FOR_CELL:
+            self._internal_compartment = INTERNAL_BACTERIA_FOR_CELL[cell_type]
+        else:
+            self._internal_compartment = None
         PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
@@ -16,20 +20,14 @@ class CellTranslocationToLymph(PatchTypeEvent):
     def perform(self, network, patch_id):
         changes_lung = {self._cell_type: -1}
         changes_lymph = {self._cell_type: 1}
-
         # TODO - assumes only one lymph patch with PulmonaryNetwork.LYMPH_PATCH as patch ID
         lymph_id = PulmonaryNetwork.LYMPH_PATCH
-
-        if self._cell_type == MACROPHAGE_INFECTED:
-            bac_to_transfer = int(round(float(
-                network.get_compartment_value(patch_id, BACTERIUM_INTRACELLULAR_MACROPHAGE)) /
-                network.get_compartment_value(patch_id, MACROPHAGE_INFECTED)))
-            changes_lung[BACTERIUM_INTRACELLULAR_MACROPHAGE] = -1 * bac_to_transfer
-            changes_lymph[BACTERIUM_INTRACELLULAR_MACROPHAGE] = bac_to_transfer
-        elif self._cell_type == DENDRITIC_CELL_MATURE:
-            changes_lung[BACTERIUM_INTRACELLULAR_DENDRITIC] = -1
-            changes_lymph[BACTERIUM_INTRACELLULAR_DENDRITIC] = 1
-
+        if self._internal_compartment:
+            internals_to_transfer = int(round(float(
+                                     network.get_compartment_value(patch_id, self._internal_compartment)) /
+                                     network.get_compartment_value(patch_id, self._cell_type)))
+            changes_lung[self._internal_compartment] = -1 * internals_to_transfer
+            changes_lymph[self._internal_compartment] = internals_to_transfer
         network.update_patch(patch_id, changes_lung)
         network.update_patch(lymph_id, changes_lymph)
 

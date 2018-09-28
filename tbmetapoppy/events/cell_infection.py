@@ -7,14 +7,8 @@ class CellInfection(Event):
     def __init__(self, cell_type):
         self._half_sat = 0
         self._cell_type = cell_type
-        if cell_type == MACROPHAGE_RESTING:
-            self._infected_cell_type = MACROPHAGE_INFECTED
-            self._internalised_bac_type = BACTERIUM_INTRACELLULAR_MACROPHAGE
-        elif cell_type == DENDRITIC_CELL_IMMATURE:
-            self._infected_cell_type = DENDRITIC_CELL_MATURE
-            self._internalised_bac_type = BACTERIUM_INTRACELLULAR_DENDRITIC
-        else:
-            raise Exception,"Invalid cell type"
+        self._infected_cell_type = INFECTED_CELL[self._cell_type]
+        self._internalised_bac_type = INTERNAL_BACTERIA_FOR_CELL[self._infected_cell_type]
         Event.__init__(self)
 
     def set_parameters(self, half_sat):

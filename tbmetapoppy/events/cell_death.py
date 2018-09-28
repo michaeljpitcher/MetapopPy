@@ -5,10 +5,8 @@ from ..tbcompartments import *
 class CellDeath(Event):
     def __init__(self, dying_compartment):
         self._dying_compartment = dying_compartment
-        if dying_compartment == MACROPHAGE_INFECTED:
-            self._internal_compartment = BACTERIUM_INTRACELLULAR_MACROPHAGE
-        elif dying_compartment == DENDRITIC_CELL_MATURE:
-            self._internal_compartment = BACTERIUM_INTRACELLULAR_DENDRITIC
+        if dying_compartment in INTERNAL_BACTERIA_FOR_CELL:
+            self._internal_compartment = INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
         else:
             self._internal_compartment = None
         Event.__init__(self)
