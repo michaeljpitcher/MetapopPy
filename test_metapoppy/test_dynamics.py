@@ -33,8 +33,8 @@ class NADynamics(Dynamics):
     INITIAL_COMP_1 = 'initial_comp_1'
     INITIAL_EDGE_0 = 'initial_edge_0'
 
-    def __init__(self, g):
-        Dynamics.__init__(self, g)
+    def __init__(self, network):
+        Dynamics.__init__(self, network)
 
     def _create_events(self):
         events = [NAEvent1(), NAEvent2()]
