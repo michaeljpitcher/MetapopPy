@@ -10,7 +10,7 @@ class Network(networkx.Graph):
     COMPARTMENTS = 'compartments'
     ATTRIBUTES = 'attributes'
 
-    def __init__(self, compartments, patch_attributes, edge_attributes):
+    def __init__(self, compartments, patch_attributes, edge_attributes, template=None):
         """
         Create a network
         :param compartments: List of population compartments
@@ -22,6 +22,12 @@ class Network(networkx.Graph):
         self._edge_attributes = edge_attributes
         self._handler = None
         networkx.Graph.__init__(self)
+
+        if template:
+            for n in template.nodes():
+                self.add_node(n)
+            for (u,v) in template.edges():
+                self.add_edge(u, v)
 
     def compartments(self):
         """
