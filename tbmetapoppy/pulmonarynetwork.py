@@ -186,6 +186,7 @@ class PulmonaryNetwork(TypedNetwork):
                                                            PulmonaryNetwork.PERFUSION: q,
                                                            PulmonaryNetwork.OXYGEN_TENSION: o2,
                                                            PulmonaryNetwork.DRAINAGE: d})
+            self.update_edge(patch_id, PulmonaryNetwork.LYMPH_PATCH, {PulmonaryNetwork.PERFUSION: q})
 
     def seed_alveolar_patches(self, recruitment_death_rates):
         for n in self.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
