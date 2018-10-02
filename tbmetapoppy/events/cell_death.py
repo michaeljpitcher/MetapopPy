@@ -31,7 +31,8 @@ class MacrophageBursting(CellDeath):
         self._capacity = 0
         CellDeath.__init__(self, MACROPHAGE_INFECTED)
 
-    def set_parameters(self, sigmoid, capacity):
+    def set_parameters(self, reaction_parameter, sigmoid, capacity):
+        self.set_reaction_parameter(reaction_parameter)
         self._sigmoid = sigmoid
         self._capacity = capacity
 
@@ -49,7 +50,8 @@ class TCellDestroysMacrophage(CellDeath):
         self._half_sat = 0
         CellDeath.__init__(self, MACROPHAGE_INFECTED)
 
-    def set_parameters(self, half_sat):
+    def set_parameters(self, reaction_parameter, half_sat):
+        self.set_reaction_parameter(reaction_parameter)
         self._half_sat = half_sat
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
@@ -67,7 +69,8 @@ class MacrophageDestroysBacterium(CellDeath):
         self._half_sat = 0
         CellDeath.__init__(self, bacterium_type)
 
-    def set_parameters(self, half_sat):
+    def set_parameters(self, reaction_parameter, half_sat):
+        self.set_reaction_parameter(reaction_parameter)
         self._half_sat = half_sat
 
     def _calculate_state_variable_at_patch(self, network, patch_id):

@@ -72,18 +72,20 @@ class MacrophageBurstingTestCase(unittest.TestCase):
     def setUp(self):
         self.event = MacrophageBursting()
         self.rp = 0.1
-        self.event.set_reaction_parameter(self.rp)
+        self.sig = 2
+        self.cap = 20
+        self.event.set_parameters(self.rp, self.sig, self.cap)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
         self.network.prepare()
 
     def test_rate(self):
-        self.event.set_parameters(2, 20)
+
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, {MACROPHAGE_INFECTED: 3,
                                       BACTERIUM_INTRACELLULAR_MACROPHAGE: 10})
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1),
-                         self.rp * 3.0 * (10.0 ** 2) / (10**2 + (20 * 3) ** 2))
+                         self.rp * 3.0 * (10.0 ** self.sig) / (10**self.sig + (self.cap * 3) ** self.sig))
 
 
 class TCellDestroysMacrophageTestCase(unittest.TestCase):
@@ -91,16 +93,17 @@ class TCellDestroysMacrophageTestCase(unittest.TestCase):
     def setUp(self):
         self.event = TCellDestroysMacrophage()
         self.rp = 0.1
-        self.event.set_reaction_parameter(self.rp)
+        self.hs = 10
+        self.event.set_parameters(self.rp, self.hs)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
         self.network.prepare()
 
     def test_rate(self):
-        self.event.set_parameters(10)
+
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, {MACROPHAGE_INFECTED: 3, T_CELL_ACTIVATED: 7})
-        self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, 1), self.rp * 3.0 * 7.0 / (7 + 10))
+        self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, 1), self.rp * 3.0 * 7.0 / (7 + self.hs))
 
 
 class MacrophageDestroysBacteriumTestCase(unittest.TestCase):
@@ -109,17 +112,18 @@ class MacrophageDestroysBacteriumTestCase(unittest.TestCase):
         self.event = MacrophageDestroysBacterium(MACROPHAGE_RESTING,
                                                  BACTERIUM_EXTRACELLULAR_REPLICATING)
         self.rp = 0.1
-        self.event.set_reaction_parameter(self.rp)
+        self.hs = 100
+        self.event.set_parameters(self.rp, self.hs)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
         self.network.prepare()
 
     def test_rate(self):
-        self.event.set_parameters(100)
+
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, {MACROPHAGE_RESTING: 3,
                                       BACTERIUM_EXTRACELLULAR_REPLICATING: 7})
-        self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), self.rp * 7.0 * 3.0 / (3 + 100))
+        self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), self.rp * 7.0 * 3.0 / (3 + self.hs))
 
 
 if __name__ == '__main__':

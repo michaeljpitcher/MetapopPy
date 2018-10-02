@@ -10,19 +10,20 @@ class MacrophageActivationTestCase(unittest.TestCase):
         self.event_t = CellActivation(T_CELL_NAIVE, [DENDRITIC_CELL_MATURE, MACROPHAGE_INFECTED])
 
         self.rp = 0.1
-        self.event_mr_t.set_reaction_parameter(self.rp)
-        self.event_mr_b.set_reaction_parameter(self.rp)
-        self.event_t.set_reaction_parameter(self.rp)
+        self.hs1 = 100
+        self.hs2 = 200
+        self.hs3 = 300
+
+        self.event_mr_t.set_parameters(self.rp, self.hs1)
+        self.event_mr_b.set_parameters(self.rp, self.hs2)
+        self.event_t.set_parameters(self.rp, self.hs3)
+
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
         self.network.prepare()
 
     def test_rate(self):
-        self.event_mr_t.set_parameters(100)
-        self.event_mr_b.set_parameters(200)
-        self.event_t.set_parameters(300)
-
         self.assertFalse(self.event_mr_t.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_mr_b.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
@@ -33,29 +34,29 @@ class MacrophageActivationTestCase(unittest.TestCase):
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={T_CELL_ACTIVATED: 5})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + 100)))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + self.hs1)))
         self.assertFalse(self.event_mr_b.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={BACTERIUM_EXTRACELLULAR_REPLICATING: 7})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + 100)))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (7.0 / (7 + 200)))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + self.hs1)))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (7.0 / (7 + self.hs2)))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={BACTERIUM_EXTRACELLULAR_DORMANT: 11})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + 100)))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + 200)))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + self.hs1)))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + self.hs2)))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={DENDRITIC_CELL_MATURE: 13})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + 100)))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + 200)))
-        self.assertEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.rp * 3 * (13.0 / (13 + 300)))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + self.hs1)))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + self.hs2)))
+        self.assertEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.rp * 3 * (13.0 / (13 + self.hs3)))
 
         self.network.update_patch(1, compartment_changes={MACROPHAGE_INFECTED: 17})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + 100)))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + 200)))
-        self.assertAlmostEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.rp * 3 * (30.0 / (30 + 300)))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (5.0 / (5 + self.hs1)))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.rp * 2 * (18.0 / (18 + self.hs2)))
+        self.assertAlmostEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.rp * 3 * (30.0 / (30 + self.hs3)))
 
     def test_perform(self):
         self.network.update_patch(1, {MACROPHAGE_RESTING: 2, T_CELL_NAIVE: 1})

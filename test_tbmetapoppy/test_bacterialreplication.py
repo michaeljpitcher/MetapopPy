@@ -31,18 +31,20 @@ class IntracellularBacterialReplicationTestCase(unittest.TestCase):
     def setUp(self):
         self.event = IntracellularBacterialReplication()
         self.rp = 0.1
-        self.event.set_reaction_parameter(self.rp)
+        self.sig = 2
+        self.hs = 30
+        self.event.set_parameters(self.rp, self.sig, self.hs)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
         self.network.prepare()
 
     def test_rate(self):
-        self.event.set_parameters(2, 30)
+
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, {BACTERIUM_INTRACELLULAR_MACROPHAGE: 18,
                                       MACROPHAGE_INFECTED: 5})
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1),
-                         0.1 * 18 * (1 - (1.0 * (18 ** 2) / (18 ** 2 + (5 * 30) ** 2))))
+                         0.1 * 18 * (1 - (1.0 * (18 ** self.sig) / (18 ** self.sig + (5 * self.hs) ** self.sig))))
 
     def test_perform(self):
         self.network.update_patch(1, {MACROPHAGE_INFECTED: 1,

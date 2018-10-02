@@ -12,7 +12,8 @@ class BacteriumBecomesDormant(PatchTypeEvent):
         self._half_sat = 0
         PatchTypeEvent.__init__(self,  PulmonaryNetwork.ALVEOLAR_PATCH)
 
-    def set_parameters(self, sigmoid, half_sat):
+    def set_parameters(self, reaction_parameter, sigmoid, half_sat):
+        self.set_reaction_parameter(reaction_parameter)
         assert sigmoid < 0, "Sigmoid must be negative"
         self._sigmoid = sigmoid
         self._half_sat = half_sat
@@ -35,7 +36,8 @@ class BacteriumBecomesReplicating(PatchTypeEvent):
         self._half_sat = 0
         PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH)
 
-    def set_parameters(self, sigmoid, half_sat):
+    def set_parameters(self, reaction_parameter, sigmoid, half_sat):
+        self.set_reaction_parameter(reaction_parameter)
         assert sigmoid > 0, "Sigmoid must be positive"
         self._sigmoid = sigmoid
         self._half_sat = half_sat

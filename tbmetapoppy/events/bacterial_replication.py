@@ -20,7 +20,8 @@ class IntracellularBacterialReplication(Replication):
         self._carrying_capacity = 0
         Replication.__init__(self, BACTERIUM_INTRACELLULAR_MACROPHAGE)
 
-    def set_parameters(self, sigmoid, carrying_capacity):
+    def set_parameters(self, reaction_parameter, sigmoid, carrying_capacity):
+        self.set_reaction_parameter(reaction_parameter)
         self._sigmoid = sigmoid
         self._carrying_capacity = carrying_capacity
 

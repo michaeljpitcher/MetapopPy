@@ -10,7 +10,8 @@ class CellActivation(Event):
         self._triggers = triggers
         Event.__init__(self)
 
-    def set_parameters(self, half_sat):
+    def set_parameters(self, reaction_parameter, half_sat):
+        self.set_reaction_parameter(reaction_parameter)
         self._half_sat = half_sat
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
