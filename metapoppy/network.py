@@ -24,10 +24,8 @@ class Network(networkx.Graph):
         networkx.Graph.__init__(self)
 
         if template:
-            for n in template.nodes():
-                self.add_node(n)
-            for (u,v) in template.edges():
-                self.add_edge(u, v)
+            self.add_nodes_from(template.nodes())
+            self.add_edges_from(template.edges())
 
     def compartments(self):
         """
@@ -52,7 +50,7 @@ class Network(networkx.Graph):
 
     def prepare(self, handler=None):
         """
-        Prepare the network. Adds data to the node dictionary, for subpopulation, environmental attributes and events
+        Prepare the network. Adds data to the node dictionary for subpopulation, environmental attributes and events
         and rates. All set to zero, will be seeded with a value once simulation runs.
         :return:
         """
@@ -62,16 +60,26 @@ class Network(networkx.Graph):
         self._handler = handler
 
     def _prepare_compartments(self):
-        # Prepare the network compartments
+        """
+        Prepare the network compartments (assumes all patches have same compartments)
+        :return:
+        """
         for _, patch_data in self.nodes(data=True):
             patch_data[Network.COMPARTMENTS] = dict([(c, 0) for c in self._compartments])
 
     def _prepare_attributes(self):
-        # Prepare the network attributes
+        """
+        Prepare the network attributes (assumes all patches have same attributes)
+        :return:
+        """
         for _, patch_data in self.nodes(data=True):
             patch_data[Network.ATTRIBUTES] = dict([(a, 0) for a in self._patch_attributes])
 
     def _prepare_edges(self):
+        """
+        Prepare edge attributes (assumes all edges have the same attributes)
+        :return:
+        """
         for u, v in self.edges():
             for a in self._edge_attributes:
                 self.edge[u][v][a] = 0.0
@@ -95,6 +103,14 @@ class Network(networkx.Graph):
         return self.node[patch_id][Network.ATTRIBUTES][attribute]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
+        """
+        Update the given patch with the given changes. If a handler is attached, this will be called with the changes
+        in order to propagate the updates.
+        :param patch_id: ID of patch changed
+        :param compartment_changes: dict of Key:compartment, Value: amount changed
+        :param attribute_changes: dict of Key:attribute, Value: amount changed
+        :return:
+        """
         patch_data = self.node[patch_id]
         if compartment_changes:
             for comp, change in compartment_changes.iteritems():
@@ -103,6 +119,7 @@ class Network(networkx.Graph):
         if attribute_changes:
             for attr, change in attribute_changes.iteritems():
                 patch_data[Network.ATTRIBUTES][attr] += change
+        # Propagate the changes
         if self._handler:
             if not compartment_changes:
                 compartment_changes = {}
