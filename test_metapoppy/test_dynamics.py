@@ -65,10 +65,10 @@ class DynamicsTestCase(unittest.TestCase):
 
         self.dynamics = NADynamics(self.network)
 
-    def test_setUp(self):
+    def test_configure(self):
         params = {NAEvent1.__name__: 0.1, NAEvent2.__name__: 0.2, NADynamics.INITIAL_COMP_0: 3,
                   NADynamics.INITIAL_COMP_1: 5}
-        self.dynamics.setUp(params)
+        self.dynamics.configure(params)
 
         # Events set up
         rps = [0.1, 0.2]
@@ -76,6 +76,12 @@ class DynamicsTestCase(unittest.TestCase):
         self.assertEqual(event1._reaction_parameter, rps[0])
         event2 = next(e for e in self.dynamics._events if isinstance(e, NAEvent2))
         self.assertEqual(event2._reaction_parameter, rps[1])
+
+    def test_setUp(self):
+        params = {NAEvent1.__name__: 0.1, NAEvent2.__name__: 0.2, NADynamics.INITIAL_COMP_0: 3,
+                  NADynamics.INITIAL_COMP_1: 5}
+        self.dynamics.configure(params)
+        self.dynamics.setUp(params)
 
         # Populations updated
         for a in [1, 2, 3]:
@@ -87,8 +93,10 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Population updates feeds through to event rates
         for col in range(0, 3):
-            self.assertAlmostEqual(self.dynamics._rate_table[0][col], rps[0] * params[NADynamics.INITIAL_COMP_0])
-            self.assertAlmostEqual(self.dynamics._rate_table[1][col], rps[1] * 2 * params[NADynamics.INITIAL_COMP_1])
+            self.assertAlmostEqual(self.dynamics._rate_table[0][col], params[NAEvent1.__name__] *
+                                   params[NADynamics.INITIAL_COMP_0])
+            self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[NAEvent2.__name__] * 2 *
+                                   params[NADynamics.INITIAL_COMP_1])
 
 
 if __name__ == '__main__':

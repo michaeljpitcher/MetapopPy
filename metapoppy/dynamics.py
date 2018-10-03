@@ -90,6 +90,12 @@ class Dynamics(epyc.Experiment, object):
         """
         raise NotImplementedError
 
+    def configure(self, params):
+        epyc.Experiment.configure(self, params)
+
+        # Set the event reactions parameters using the initial conditions
+        self._seed_events(params)
+
     def setUp(self, params):
         """
         Configure the dynamics and the network ready for a simulation.
@@ -99,11 +105,8 @@ class Dynamics(epyc.Experiment, object):
         # Default setup
         epyc.Experiment.setUp(self, params)
 
-        # Make a copy of the network prototype
+        # Use a copy of the network prototype (must be done on every run in case network has changed)
         self._network = self.network_prototype.copy()
-
-        # Set the event reactions parameters using the initial conditions
-        self._seed_events(params)
 
         # Seed the network patches & edges
         self._seed_network(params)
@@ -112,12 +115,11 @@ class Dynamics(epyc.Experiment, object):
         if Dynamics.INITIAL_TIME in params:
             self._start_time = params[Dynamics.INITIAL_TIME]
 
-        # Set the maximum run time
-        if Dynamics.MAX_TIME in params:
-            self._max_time = params[Dynamics.MAX_TIME]
-
     def _seed_network(self, params):
         raise NotImplementedError
+
+    def set_maximum_time(self, maximum_time):
+        self._max_time = maximum_time
 
     def do(self, params):
         """
@@ -127,13 +129,12 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
-
         time = self._start_time
 
         number_patches = len(self._patch_columns)
 
         indexes = range(0, self._rate_table.size)
-        print "t=", time
+        # print "t=", time
 
         while not self._at_equilibrium(time):
 
@@ -158,13 +159,13 @@ class Dynamics(epyc.Experiment, object):
 
             # Move simulated time forward
             time += dt
-            print "t=", time
+            # print "t=", time
 
         # TODO - experimental results. Maybe need to track populations over time
         return self._get_results()
 
     def _get_results(self):
-        return dict([(n,d[Network.COMPARTMENTS]) for n,d in self._network.nodes(data=True)])
+        return dict([(n, d[Network.COMPARTMENTS]) for n, d in self._network.nodes(data=True)])
 
     def tearDown(self):
         """
