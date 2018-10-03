@@ -27,16 +27,18 @@ class Dynamics(epyc.Experiment, object):
 
         # Prepare the network
         self.network_prototype = network
-        self.network_prototype.prepare(lambda a, b, c, e: self._propagate_updates(a, b, c, e))
-
-        # Create the events
-        self._events = self._create_events()
-        assert self._events, "No events created"
         assert self.network_prototype.nodes(), "Empty network is invalid"
+
+        # Prepare network - pass through an update propagation function
+        self.network_prototype.prepare(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
 
         # Obtain the patches of the network (for lookup purposes)
         patch_ids = self.network_prototype.nodes()
         self._patch_columns = dict([(patch_ids[n], n) for n in range(len(patch_ids))])
+
+        # Create the events
+        self._events = self._create_events()
+        assert self._events, "No events created"
 
         # Create a rate table. Rows are events, columns are patches
         self._rate_table = numpy.array([[d, ] * len(patch_ids) for d in [0.0, ] * len(self._events)],
@@ -44,6 +46,8 @@ class Dynamics(epyc.Experiment, object):
 
         # Initial network is empty. Will be overwritten with a copy of the prototype network for each experiment.
         self._network = None
+
+        # Default start and end times
         self._start_time = self.DEFAULT_START_TIME
         self._max_time = self.DEFAULT_MAX_TIME
 
@@ -64,6 +68,10 @@ class Dynamics(epyc.Experiment, object):
         # TODO - only update events dependent on atts/comps changed
 
     def _create_events(self):
+        """
+        Create the events
+        :return:
+        """
         raise NotImplementedError
 
     def network(self):

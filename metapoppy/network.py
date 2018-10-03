@@ -128,9 +128,17 @@ class Network(networkx.Graph):
             self._handler(patch_id, compartment_changes.keys(), attribute_changes.keys(), {})
 
     def update_edge(self, u,v, attribute_changes):
+        """
+        Update the attributes of an edge
+        :param u: Patch 1
+        :param v: Patch 2
+        :param attribute_changes: dict of Key:attribute, Value: amount changed
+        :return:
+        """
         edge = self.edge[u][v]
         for attr, change in attribute_changes.iteritems():
             edge[attr] += change
+        # If a handler exists, propagate the updates
         if self._handler:
             self._handler(u, [], [], attribute_changes.keys())
             self._handler(v, [], [], attribute_changes.keys())
