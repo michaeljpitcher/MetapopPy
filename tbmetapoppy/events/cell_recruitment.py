@@ -3,9 +3,9 @@ from metapoppy.event import PatchTypeEvent
 
 
 class CellRecruitmentLung(PatchTypeEvent):
-    def __init__(self, cell_type):
+    def __init__(self, recruitment_rate_key, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH)
+        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, recruitment_rate_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # TODO - build in enhanced recruitment levels
@@ -16,9 +16,9 @@ class CellRecruitmentLung(PatchTypeEvent):
 
 
 class CellRecruitmentLymph(PatchTypeEvent):
-    def __init__(self, cell_type):
+    def __init__(self, recruitment_rate_key, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, PulmonaryNetwork.LYMPH_PATCH)
+        PatchTypeEvent.__init__(self, PulmonaryNetwork.LYMPH_PATCH, recruitment_rate_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # TODO - build in enhanced recruitment levels

@@ -201,11 +201,14 @@ class PulmonaryNetwork(TypedNetwork):
                                                            PulmonaryNetwork.DRAINAGE: d})
             self.update_edge(patch_id, PulmonaryNetwork.LYMPH_PATCH, {PulmonaryNetwork.PERFUSION: q})
 
-    def seed_alveolar_patches(self, recruitment_death_rates):
+    def seed_patches_by_rates(self, lung_recruitment_death_rates, lymph_recruitment_death_rates):
         """
-        Seed the lung patches with intial subpopulation values. Calculated to be the equilibrium values (i.e. perfusion
+        Seed the lung patches with initial subpopulation values. Calculated to be the equilibrium values (i.e. perfusion
         * recruitment rate / death rate)
-        :param recruitment_death_rates: dict of Cell_type:(recruit_rate, death_rate)
+        :param lung_recruitment_death_rates: Lung recruitment and death rates,
+               dict of Cell_type:(recruit_rate, death_rate)
+        :param lymph_recruitment_death_rates: Lymph recruitment and death rates,
+               dict of Cell_type:(recruit_rate, death_rate)
         :return:
         """
         # Calculate the values - perfusion * recruitment rate / death rate
@@ -213,20 +216,16 @@ class PulmonaryNetwork(TypedNetwork):
             perfusion = self.get_attribute_value(n, PulmonaryNetwork.PERFUSION)
             # Save all values in a dict and update all at once
             seed_amounts = {}
-            for cell, (recruit_rate, death_rate) in recruitment_death_rates.iteritems():
+            for cell, (recruit_rate, death_rate) in lung_recruitment_death_rates.iteritems():
                 seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
             self.update_patch(n, seed_amounts)
 
-    def seed_lymph_patches(self, recruitment_death_rates):
-        """
-        Seed the lymph patches with initial subpopulation values.
-        :param recruitment_death_rates: dict of Cell_type:(recruit_rate, death_rate)
-        :return:
-        """
+        # Lymph patches - recruitment / death rate
         for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
             seed_amounts = {}
-            for cell, (recruit_rate, death_rate) in recruitment_death_rates.iteritems():
+            for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
                 seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
             self.update_patch(n, seed_amounts)
+
 
 # TODO change in patch perfusion needs to feed through to edge

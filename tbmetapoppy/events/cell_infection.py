@@ -4,24 +4,20 @@ import numpy
 
 
 class CellInfection(Event):
-    def __init__(self, cell_type):
-        self._half_sat = 0
+    def __init__(self, infection_rate_key, cell_type, half_sat_key):
+        self._half_sat_key = half_sat_key
         self._cell_type = cell_type
         self._infected_cell_type = INFECTED_CELL[self._cell_type]
         self._internalised_bac_type = INTERNAL_BACTERIA_FOR_CELL[self._infected_cell_type]
-        Event.__init__(self)
-
-    def set_parameters(self, reaction_parameter, half_sat):
-        self.set_reaction_parameter(reaction_parameter)
-        self._half_sat = half_sat
+        Event.__init__(self, infection_rate_key, [half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         total_bac = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING) + \
                     network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
         if not total_bac:
             return 0
-        return network.get_compartment_value(patch_id, self._cell_type) * (float(total_bac) /
-                                                                           (total_bac + self._half_sat))
+        return network.get_compartment_value(patch_id, self._cell_type) * \
+               (float(total_bac) / (total_bac + self._parameters[self._half_sat_key]))
 
     def perform(self, network, patch_id):
         replicating = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING)

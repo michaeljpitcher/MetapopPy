@@ -1,15 +1,16 @@
 from metapoppy.event import Event
 from ..tbcompartments import *
+import numpy
 
 
 class CellDeath(Event):
-    def __init__(self, dying_compartment):
+    def __init__(self, death_rate_key, dying_compartment, additional_parameter_keys=None):
         self._dying_compartment = dying_compartment
         if dying_compartment in INTERNAL_BACTERIA_FOR_CELL:
             self._internal_compartment = INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
         else:
             self._internal_compartment = None
-        Event.__init__(self)
+        Event.__init__(self, death_rate_key, additional_parameter_keys)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._dying_compartment)
@@ -26,55 +27,56 @@ class CellDeath(Event):
 
 
 class MacrophageBursting(CellDeath):
-    def __init__(self):
-        self._sigmoid = 0
-        self._capacity = 0
-        CellDeath.__init__(self, MACROPHAGE_INFECTED)
-
-    def set_parameters(self, reaction_parameter, sigmoid, capacity):
-        self.set_reaction_parameter(reaction_parameter)
-        self._sigmoid = sigmoid
-        self._capacity = capacity
+    def __init__(self, death_rate_key, sigmoid_key, capacity_key):
+        self._sigmoid_key = sigmoid_key
+        self._capacity_key = capacity_key
+        CellDeath.__init__(self, death_rate_key, MACROPHAGE_INFECTED, [sigmoid_key, capacity_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, BACTERIUM_INTRACELLULAR_MACROPHAGE)
         if not bac:
             return 0
         mac = network.get_compartment_value(patch_id, self._dying_compartment)
-        return mac * ((float(bac) ** self._sigmoid) / (bac ** self._sigmoid +
-                ((self._capacity * mac) ** self._sigmoid)))
+        sig = self._parameters[self._sigmoid_key]
+        cap = self._parameters[self._capacity_key]
+        return mac * ((float(bac) ** sig) / (bac ** sig + ((cap * mac) ** sig)))
 
 
 class TCellDestroysMacrophage(CellDeath):
-    def __init__(self):
-        self._half_sat = 0
-        CellDeath.__init__(self, MACROPHAGE_INFECTED)
-
-    def set_parameters(self, reaction_parameter, half_sat):
-        self.set_reaction_parameter(reaction_parameter)
-        self._half_sat = half_sat
+    def __init__(self, death_rate_key, half_sat_key):
+        self._half_sat_key = half_sat_key
+        CellDeath.__init__(self, death_rate_key, MACROPHAGE_INFECTED, [half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         tcell = network.get_compartment_value(patch_id, T_CELL_ACTIVATED)
         if not tcell:
             return 0
         mac = network.get_compartment_value(patch_id, self._dying_compartment)
-        return mac * (float(tcell) / (tcell + self._half_sat))
+        return mac * (float(tcell) / (tcell + self._parameters[self._half_sat_key]))
 
 
-class MacrophageDestroysBacterium(CellDeath):
-    def __init__(self, macrophage_type, bacterium_type):
+class MacrophageDestroysBacterium(Event):
+    def __init__(self, death_rate_key, macrophage_type, half_sat_key):
         self._macrophage_type = macrophage_type
-        self._bacterium_type = bacterium_type
-        self._half_sat = 0
-        CellDeath.__init__(self, bacterium_type)
-
-    def set_parameters(self, reaction_parameter, half_sat):
-        self.set_reaction_parameter(reaction_parameter)
-        self._half_sat = half_sat
+        self._half_sat_key = half_sat_key
+        Event.__init__(self, death_rate_key, [half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         mac = network.get_compartment_value(patch_id, self._macrophage_type)
         if not mac:
             return 0
-        return network.get_compartment_value(patch_id, self._bacterium_type) * float(mac) / (mac + self._half_sat)
+        bac = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING) + \
+              network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
+        return mac * float(bac) / (bac + self._parameters[self._half_sat_key])
+
+    def perform(self, network, patch_id):
+        replicating = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING)
+        dormant = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
+        total_bacteria = replicating + dormant
+
+        prob = numpy.array([replicating, dormant], dtype=numpy.dtype('float')) / total_bacteria
+        bacteria_type_chosen = numpy.random.choice([BACTERIUM_EXTRACELLULAR_REPLICATING,
+                                                    BACTERIUM_EXTRACELLULAR_DORMANT],
+                                                   p=prob)
+
+        network.update_patch(patch_id, {bacteria_type_chosen: -1})

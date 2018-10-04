@@ -66,140 +66,110 @@ class TBDynamics(Dynamics):
         events = []
 
         # Bacteria replication
-        self._ber_replication = Replication(BACTERIUM_EXTRACELLULAR_REPLICATING)
-        self._bed_replication = Replication(BACTERIUM_EXTRACELLULAR_DORMANT)
-        self._bim_replication = IntracellularBacterialReplication()
-        events += [self._ber_replication, self._bed_replication, self._bim_replication]
+        ber_replication = Replication(TBDynamics.RP_REPLICATION_BER, BACTERIUM_EXTRACELLULAR_REPLICATING)
+        bed_replication = Replication(TBDynamics.RP_REPLICATION_BED, BACTERIUM_EXTRACELLULAR_DORMANT)
+        bim_replication = IntracellularBacterialReplication(TBDynamics.RP_REPLICATION_BIM,
+                                                                  TBDynamics.SIGMOID_BIM_REPLICATION,
+                                                                  TBDynamics.MACROPHAGE_CAPACITY)
+
+        events += [ber_replication, bed_replication, bim_replication]
 
         # Bacterial change
-        self._bed_to_ber = BacteriumBecomesReplicating()
-        self._ber_to_bed = BacteriumBecomesDormant()
-        events += [self._bed_to_ber, self._ber_to_bed]
+        bed_to_ber = BacteriumChangeStateThroughOxygen(False, TBDynamics.RP_CHANGE_TO_REPLICATING,
+                                                             TBDynamics.SIGMOID_CHANGE_TO_REPLICATING,
+                                                             TBDynamics.HALF_SAT_CHANGE_TO_REPLICATING)
+        ber_to_bed = BacteriumChangeStateThroughOxygen(True, TBDynamics.RP_CHANGE_TO_DORMANT,
+                                                             TBDynamics.SIGMOID_CHANGE_TO_DORMANT,
+                                                             TBDynamics.HALF_SAT_CHANGE_TO_DORMANT)
+        events += [bed_to_ber, ber_to_bed]
 
         # Bacterial destruction
-        self._mr_kills_ber = MacrophageDestroysBacterium(MACROPHAGE_RESTING, BACTERIUM_EXTRACELLULAR_REPLICATING)
-        self._mr_kills_bed = MacrophageDestroysBacterium(MACROPHAGE_RESTING, BACTERIUM_EXTRACELLULAR_DORMANT)
-        self._ma_kills_ber = MacrophageDestroysBacterium(MACROPHAGE_ACTIVATED, BACTERIUM_EXTRACELLULAR_REPLICATING)
-        self._ma_kills_bed = MacrophageDestroysBacterium(MACROPHAGE_ACTIVATED, BACTERIUM_EXTRACELLULAR_DORMANT)
-        events += [self._mr_kills_ber, self._mr_kills_bed, self._ma_kills_ber, self._ma_kills_bed]
+        mr_kills_bac = MacrophageDestroysBacterium(TBDynamics.RP_MR_DESTROY_BACTERIA, MACROPHAGE_RESTING,
+                                                   TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA)
+        ma_kills_bac = MacrophageDestroysBacterium(TBDynamics.RP_MA_DESTROY_BACTERIA, MACROPHAGE_ACTIVATED,
+                                                   TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA)
+        events += [mr_kills_bac, ma_kills_bac]
 
         # bacterial translocation
-        self._bed_translocation = CellTranslocationToLung(BACTERIUM_EXTRACELLULAR_DORMANT)
-        events.append(self._bed_translocation)
+        bed_translocation = CellTranslocationToLung(TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION,
+                                                    BACTERIUM_EXTRACELLULAR_DORMANT)
+        events.append(bed_translocation)
 
         # Dendritic cell recruitment
-        self._dc_recruit_lung = CellRecruitmentLung(DENDRITIC_CELL_IMMATURE)
-        events.append(self._dc_recruit_lung)
+        dc_recruit_lung = CellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, DENDRITIC_CELL_IMMATURE)
+        events.append(dc_recruit_lung)
 
         # Dendritic cell death
-        self._dci_death = CellDeath(DENDRITIC_CELL_IMMATURE)
-        self._dcm_death = CellDeath(DENDRITIC_CELL_MATURE)
-        events += [self._dci_death, self._dcm_death]
+        dci_death = CellDeath(TBDynamics.RP_DCI_DEATH, DENDRITIC_CELL_IMMATURE)
+        dcm_death = CellDeath(TBDynamics.RP_DCM_DEATH, DENDRITIC_CELL_MATURE)
+        events += [dci_death, dcm_death]
 
         # Dendritic Cell maturation
-        self._dc_maturation = CellInfection(DENDRITIC_CELL_IMMATURE)
-        events.append(self._dc_maturation)
+        dc_maturation = CellInfection(TBDynamics.RP_DCI_MATURATION, DENDRITIC_CELL_IMMATURE,
+                                      TBDynamics.HALF_SAT_DCI_MATURATION)
+        events.append(dc_maturation)
 
         # Dendritic cell translocation
-        self._dc_translocation = CellTranslocationToLymph(DENDRITIC_CELL_MATURE)
-        events.append(self._dc_translocation)
+        dc_translocation = CellTranslocationToLymph(TBDynamics.RP_DCM_TRANSLOCATION, DENDRITIC_CELL_MATURE)
+        events.append(dc_translocation)
 
         # Macrophage recruitment
-        self._mr_recruit_lung = CellRecruitmentLung(MACROPHAGE_RESTING)
-        self._mr_recruit_lymph = CellRecruitmentLymph(MACROPHAGE_RESTING)
-        events += [self._mr_recruit_lung, self._mr_recruit_lymph]
-
-        # Macrophage death
-        self._mr_death = CellDeath(MACROPHAGE_RESTING)
-        self._ma_death = CellDeath(MACROPHAGE_ACTIVATED)
-        self._mi_death = CellDeath(MACROPHAGE_INFECTED)
-        self._mi_burst = MacrophageBursting()
-        self._ta_kills_mi = TCellDestroysMacrophage()
-        events += [self._mr_death, self._ma_death, self._mi_death, self._mi_burst, self._ta_kills_mi]
-
-        # Macrophage infection
-        self._mac_infection = CellInfection(MACROPHAGE_RESTING)
-        events.append(self._mac_infection)
-
-        # Macrophage translocation
-        self._mi_translocation = CellTranslocationToLymph(MACROPHAGE_INFECTED)
-        events.append(self._mi_translocation)
+        mr_recruit_lung = CellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, MACROPHAGE_RESTING)
+        mr_recruit_lymph = CellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, MACROPHAGE_RESTING)
+        events += [mr_recruit_lung, mr_recruit_lymph]
 
         # Macrophage activation
-        self._mr_activation_bac = CellActivation(MACROPHAGE_RESTING, EXTRACELLULAR_BACTERIA)
-        self._mr_activation_ta = CellActivation(MACROPHAGE_RESTING, [T_CELL_ACTIVATED])
-        events += [self._mr_activation_bac, self._mr_activation_ta]
+        mr_activation_bac = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA,
+                                           TBDynamics.HALF_SAT_MR_ACTIVATION_BY_BACTERIA, MACROPHAGE_RESTING,
+                                           EXTRACELLULAR_BACTERIA)
+        mr_activation_ta = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_TCELL,
+                                          TBDynamics.HALF_SAT_MR_ACTIVATION_BY_TCELL,
+                                          MACROPHAGE_RESTING, [T_CELL_ACTIVATED])
+        events += [mr_activation_bac, mr_activation_ta]
+
+        # Macrophage death
+        mr_death = CellDeath(TBDynamics.RP_MR_DEATH, MACROPHAGE_RESTING)
+        ma_death = CellDeath(TBDynamics.RP_MA_DEATH, MACROPHAGE_ACTIVATED)
+        mi_death = CellDeath(TBDynamics.RP_MI_DEATH, MACROPHAGE_INFECTED)
+        mi_burst = MacrophageBursting(TBDynamics.RP_MI_BURSTING, TBDynamics.SIGMOID_BIM_REPLICATION,
+                                      TBDynamics.MACROPHAGE_CAPACITY)
+
+        ta_kills_mi = TCellDestroysMacrophage(TBDynamics.RP_TA_KILL_MI, TBDynamics.HALF_SAT_TA_KILL_MI)
+        events += [mr_death, ma_death, mi_death, mi_burst, ta_kills_mi]
+
+        # Macrophage infection
+        mac_infection = CellInfection(TBDynamics.RP_MR_INFECTION, MACROPHAGE_RESTING, TBDynamics.HALF_SAT_MR_INFECTION)
+        events.append(mac_infection)
+
+        # Macrophage translocation
+        mi_translocation = CellTranslocationToLymph(TBDynamics.RP_MI_TRANSLOCATION, MACROPHAGE_INFECTED)
+        events.append(mi_translocation)
 
         # T-cell recruitment
-        self._tn_recruit = CellRecruitmentLymph(T_CELL_NAIVE)
-        events.append(self._tn_recruit)
+        tn_recruit = CellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, T_CELL_NAIVE)
+        events.append(tn_recruit)
 
         # T-cell activation
-        self._tn_activation = CellActivation(T_CELL_NAIVE, [DENDRITIC_CELL_MATURE, MACROPHAGE_INFECTED])
-        events.append(self._tn_activation)
+        tn_activation = CellActivation(TBDynamics.RP_TCELL_ACTIVATION, TBDynamics.HALF_SAT_TCELL_ACTIVATION,
+                                       T_CELL_NAIVE, [DENDRITIC_CELL_MATURE, MACROPHAGE_INFECTED])
+        events.append(tn_activation)
 
         # T-cell translocation
-        self._ta_translocation = TCellTranslocationToLungByInfection()
-        events.append(self._ta_translocation)
+        ta_translocation = TCellTranslocationToLungByInfection(TBDynamics.RP_TA_TRANSLOCATION)
+        events.append(ta_translocation)
 
         # T-cell death
-        self._tn_death = CellDeath(T_CELL_NAIVE)
-        self._ta_death = CellDeath(T_CELL_ACTIVATED)
-        events += [self._tn_death, self._ta_death]
+        tn_death = CellDeath(TBDynamics.RP_TN_DEATH, T_CELL_NAIVE)
+        ta_death = CellDeath(TBDynamics.RP_TA_DEATH, T_CELL_ACTIVATED)
+        events += [tn_death, ta_death]
 
         return events
 
-    def _seed_events(self, params):
-        self._ber_replication.set_reaction_parameter(params[TBDynamics.RP_REPLICATION_BER])
-        self._bed_replication.set_reaction_parameter(params[TBDynamics.RP_REPLICATION_BED])
-        self._bim_replication.set_parameters(params[TBDynamics.RP_REPLICATION_BIM],
-                                             params[TBDynamics.SIGMOID_BIM_REPLICATION],
-                                             params[TBDynamics.MACROPHAGE_CAPACITY])
-        self._bed_to_ber.set_parameters(params[TBDynamics.RP_CHANGE_TO_REPLICATING],
-                                        params[TBDynamics.SIGMOID_CHANGE_TO_REPLICATING],
-                                        params[TBDynamics.HALF_SAT_CHANGE_TO_REPLICATING])
-        self._ber_to_bed.set_parameters(params[TBDynamics.RP_CHANGE_TO_DORMANT],
-                                        params[TBDynamics.SIGMOID_CHANGE_TO_DORMANT],
-                                        params[TBDynamics.HALF_SAT_CHANGE_TO_DORMANT])
-        for e in [self._mr_kills_bed, self._mr_kills_ber]:
-            e.set_parameters(params[TBDynamics.RP_MR_DESTROY_BACTERIA], params[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA])
-        for e in [self._ma_kills_bed, self._ma_kills_ber]:
-            e.set_parameters(params[TBDynamics.RP_MA_DESTROY_BACTERIA], params[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA])
-        self._bed_translocation.set_reaction_parameter(params[TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION])
-
-        self._dc_recruit_lung.set_reaction_parameter(params[TBDynamics.RP_DCI_RECRUITMENT])
-        self._dci_death.set_reaction_parameter(params[TBDynamics.RP_DCI_DEATH])
-        self._dcm_death.set_reaction_parameter(params[TBDynamics.RP_DCM_DEATH])
-        self._dc_maturation.set_parameters(params[TBDynamics.RP_DCI_MATURATION],
-                                           params[TBDynamics.HALF_SAT_DCI_MATURATION])
-        self._dc_translocation.set_reaction_parameter(params[TBDynamics.RP_DCM_TRANSLOCATION])
-
-        self._mr_recruit_lung.set_reaction_parameter(params[TBDynamics.RP_MR_RECRUIT_LUNG])
-        self._mr_recruit_lymph.set_reaction_parameter(params[TBDynamics.RP_MR_RECRUIT_LYMPH])
-        self._mr_activation_ta.set_parameters(params[TBDynamics.RP_MR_ACTIVATION_BY_TCELL],
-                                              params[TBDynamics.HALF_SAT_MR_ACTIVATION_BY_TCELL])
-        self._mr_activation_bac.set_parameters(params[TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA],
-                                               params[TBDynamics.HALF_SAT_MR_ACTIVATION_BY_BACTERIA])
-        self._mr_death.set_reaction_parameter(params[TBDynamics.RP_MR_DEATH])
-        self._ma_death.set_reaction_parameter(params[TBDynamics.RP_MA_DEATH])
-        self._mi_death.set_reaction_parameter(params[TBDynamics.RP_MI_DEATH])
-        self._mi_burst.set_parameters(params[TBDynamics.RP_MI_BURSTING],
-                                      params[TBDynamics.SIGMOID_BIM_REPLICATION],
-                                      params[TBDynamics.MACROPHAGE_CAPACITY])
-        self._ta_kills_mi.set_parameters(params[TBDynamics.RP_TA_KILL_MI], params[TBDynamics.HALF_SAT_TA_KILL_MI])
-        self._mac_infection.set_parameters(params[TBDynamics.RP_MR_INFECTION], params[TBDynamics.HALF_SAT_MR_INFECTION])
-        self._mi_translocation.set_reaction_parameter(params[TBDynamics.RP_MI_TRANSLOCATION])
-
-        self._tn_recruit.set_reaction_parameter(params[TBDynamics.RP_TN_RECRUIT])
-        self._tn_activation.set_parameters(params[TBDynamics.RP_TCELL_ACTIVATION],
-                                           params[TBDynamics.HALF_SAT_TCELL_ACTIVATION])
-        self._ta_translocation.set_reaction_parameter(params[TBDynamics.RP_TA_TRANSLOCATION])
-        self._tn_death.set_reaction_parameter(params[TBDynamics.RP_TN_DEATH])
-        self._ta_death.set_reaction_parameter(params[TBDynamics.RP_TA_DEATH])
-
     def _seed_network(self, params):
         # Seed attributes
-        self._network.seed_pulmonary_attributes(params)
+        self._network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
+                                                params[PulmonaryNetwork.PERFUSION_SKEW],
+                                                params[PulmonaryNetwork.DRAINAGE_SKEW])
         # Seed initial compartments
         mac_recruit_lung = params[TBDynamics.RP_MR_RECRUIT_LUNG]
         mac_recruit_lymph = params[TBDynamics.RP_MR_RECRUIT_LYMPH]
@@ -208,10 +178,10 @@ class TBDynamics(Dynamics):
         dc_death = params[TBDynamics.RP_DCI_DEATH]
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
-        self._network.seed_alveolar_patches({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
-                                             DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)})
-        self._network.seed_lymph_patches({MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
-                                          T_CELL_NAIVE: (tn_recruit, tn_death)})
+        self._network.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
+                                             DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
+                                            {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
+                                             T_CELL_NAIVE: (tn_recruit, tn_death)})
 
         # TODO - where to place bacteria (perfusion or fixed)?
 
