@@ -75,9 +75,11 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Events set up
         event1 = next(e for e in self.dynamics._events if isinstance(e, NAEvent1))
-        self.assertEqual(event1._parameters[RP_1_KEY], params[RP_1_KEY])
+        self.assertEqual(event1._reaction_parameter_key, RP_1_KEY)
+        self.assertEqual(event1._reaction_parameter, params[RP_1_KEY])
         event2 = next(e for e in self.dynamics._events if isinstance(e, NAEvent2))
-        self.assertEqual(event2._parameters[RP_2_KEY], params[RP_2_KEY])
+        self.assertEqual(event2._reaction_parameter_key, RP_2_KEY)
+        self.assertEqual(event2._reaction_parameter, params[RP_2_KEY])
 
     def test_setUp(self):
         params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
