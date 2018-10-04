@@ -90,19 +90,12 @@ class Dynamics(epyc.Experiment, object):
         """
         return t >= self._max_time
 
-    def _seed_events(self, params):
-        """
-        Set the event reaction parameters
-        :param params:
-        :return:
-        """
-        raise NotImplementedError
-
     def configure(self, params):
         epyc.Experiment.configure(self, params)
 
-        # Set the event reactions parameters using the initial conditions
-        self._seed_events(params)
+        # Set the event reaction parameters using the initial conditions
+        for e in self._events:
+            e.set_parameters(params)
 
     def setUp(self, params):
         """
@@ -142,7 +135,7 @@ class Dynamics(epyc.Experiment, object):
         number_patches = len(self._patch_columns)
 
         indexes = range(0, self._rate_table.size)
-        # print "t=", time
+        print "t=", time
 
         while not self._at_equilibrium(time):
 
@@ -167,7 +160,7 @@ class Dynamics(epyc.Experiment, object):
 
             # Move simulated time forward
             time += dt
-            # print "t=", time
+            print "t=", time
 
         # TODO - experimental results. Maybe need to track populations over time
         return self._get_results()

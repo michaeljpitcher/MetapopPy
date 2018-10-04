@@ -5,10 +5,13 @@ compartments = ['a','b','c']
 patch_attributes = ['d','e','f']
 edge_attributes = ['g','h','i']
 
+RP_1_KEY = 'rp1'
+RP_2_KEY = 'rp2'
+
 
 class NAEvent1(Event):
-    def __init__(self):
-        Event.__init__(self)
+    def __init__(self, rp_key):
+        Event.__init__(self, rp_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, compartments[0])
@@ -18,14 +21,15 @@ class NAEvent1(Event):
 
 
 class NAEvent2(Event):
-    def __init__(self):
-        Event.__init__(self)
+    def __init__(self, rp_key):
+        Event.__init__(self, rp_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, compartments[1]) * 2
 
     def perform(self, network, patch_id):
         network.update_patch(patch_id, {compartments[2]: 2})
+
 
 class NADynamics(Dynamics):
 
@@ -37,7 +41,7 @@ class NADynamics(Dynamics):
         Dynamics.__init__(self, network)
 
     def _create_events(self):
-        events = [NAEvent1(), NAEvent2()]
+        events = [NAEvent1(RP_1_KEY), NAEvent2(RP_2_KEY)]
         return events
 
     def _seed_network(self, params):
@@ -48,9 +52,9 @@ class NADynamics(Dynamics):
 
     def _seed_events(self, params):
         event1 = next(e for e in self._events if isinstance(e, NAEvent1))
-        event1.set_reaction_parameter(params[NAEvent1.__name__])
+        event1.set_parameters(params)
         event2 = next(e for e in self._events if isinstance(e, NAEvent2))
-        event2.set_reaction_parameter(params[NAEvent2.__name__])
+        event2.set_parameters(params)
 
     def _get_results(self):
         pass
@@ -66,19 +70,17 @@ class DynamicsTestCase(unittest.TestCase):
         self.dynamics = NADynamics(self.network)
 
     def test_configure(self):
-        params = {NAEvent1.__name__: 0.1, NAEvent2.__name__: 0.2, NADynamics.INITIAL_COMP_0: 3,
-                  NADynamics.INITIAL_COMP_1: 5}
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5}
         self.dynamics.configure(params)
 
         # Events set up
-        rps = [0.1, 0.2]
         event1 = next(e for e in self.dynamics._events if isinstance(e, NAEvent1))
-        self.assertEqual(event1._reaction_parameter, rps[0])
+        self.assertEqual(event1._parameters[RP_1_KEY], params[RP_1_KEY])
         event2 = next(e for e in self.dynamics._events if isinstance(e, NAEvent2))
-        self.assertEqual(event2._reaction_parameter, rps[1])
+        self.assertEqual(event2._parameters[RP_2_KEY], params[RP_2_KEY])
 
     def test_setUp(self):
-        params = {NAEvent1.__name__: 0.1, NAEvent2.__name__: 0.2, NADynamics.INITIAL_COMP_0: 3,
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
                   NADynamics.INITIAL_COMP_1: 5}
         self.dynamics.configure(params)
         self.dynamics.setUp(params)
@@ -93,9 +95,9 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Population updates feeds through to event rates
         for col in range(0, 3):
-            self.assertAlmostEqual(self.dynamics._rate_table[0][col], params[NAEvent1.__name__] *
+            self.assertAlmostEqual(self.dynamics._rate_table[0][col], params[RP_1_KEY] *
                                    params[NADynamics.INITIAL_COMP_0])
-            self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[NAEvent2.__name__] * 2 *
+            self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[RP_2_KEY] * 2 *
                                    params[NADynamics.INITIAL_COMP_1])
 
 
