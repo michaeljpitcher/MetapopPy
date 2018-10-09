@@ -165,9 +165,9 @@ class TBDynamics(Dynamics):
 
         return events
 
-    def _seed_network(self, params):
+    def _seed_prototype_network(self, params):
         # Seed attributes
-        self._network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
+        self._network_prototype.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
                                                 params[PulmonaryNetwork.PERFUSION_SKEW],
                                                 params[PulmonaryNetwork.DRAINAGE_SKEW])
         # Seed initial compartments
@@ -178,7 +178,7 @@ class TBDynamics(Dynamics):
         dc_death = params[TBDynamics.RP_DCI_DEATH]
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
-        self._network.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
+        self._network_prototype.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
                                              DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
                                             {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
                                              T_CELL_NAIVE: (tn_recruit, tn_death)})
