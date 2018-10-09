@@ -63,10 +63,10 @@ class MacrophageDestroysBacterium(Event):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         mac = network.get_compartment_value(patch_id, self._macrophage_type)
-        if not mac:
-            return 0
         bac = network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_REPLICATING) + \
-              network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
+               network.get_compartment_value(patch_id, BACTERIUM_EXTRACELLULAR_DORMANT)
+        if not mac or not bac:
+            return 0
         return mac * float(bac) / (bac + self._parameters[self._half_sat_key])
 
     def perform(self, network, patch_id):
