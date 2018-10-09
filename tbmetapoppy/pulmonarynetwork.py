@@ -37,6 +37,8 @@ class PulmonaryNetwork(TypedNetwork):
             self._build_single_patch_network()
         elif network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
+        else:
+            raise Exception, "Invalid topology: {0}".format(network_config[PulmonaryNetwork.TOPOLOGY])
 
     def _build_single_patch_network(self):
         # Create lymph patch
