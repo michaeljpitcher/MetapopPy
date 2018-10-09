@@ -30,7 +30,7 @@ class TBDynamics(Dynamics):
     RP_DCI_MATURATION = 'dendritic_cell_maturation_rate'
     HALF_SAT_DCI_MATURATION = 'dendritic_cell_maturation_halfsat'
     RP_DCI_RECRUITMENT = 'dendritic_cell_recruitment_rate'
-    RP_DCM_TRANSLOCATION = 'dendrtic_cell_translocation_rate'
+    RP_DCM_TRANSLOCATION = 'dendritic_cell_translocation_rate'
 
     RP_MR_ACTIVATION_BY_TCELL = 'macrophage_activation_by_tcell_rate'
     HALF_SAT_MR_ACTIVATION_BY_TCELL = 'macrophage_activation_by_tcell_half_sat'
@@ -194,7 +194,3 @@ class TBDynamics(Dynamics):
                                                        T_CELL_NAIVE: (tn_recruit, tn_death)})
 
         # TODO - where to place bacteria (perfusion or fixed)?
-
-    def _get_results(self):
-        # TODO
-        pass
