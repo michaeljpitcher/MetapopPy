@@ -4,3 +4,4 @@
 *.pyc
 sandbox.py
 experiments/*
+.ipynb_checkpoints/*

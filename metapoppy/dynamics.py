@@ -46,21 +46,21 @@ class Dynamics(epyc.Experiment, object):
         :param edge_changes:
         :return:
         """
+        col = self._column_for_patch[patch_id]
         for row in range(len(self._events)):
-            col = self._column_for_patch[patch_id]
             event = self._events[row]
             self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
         # TODO - only update events dependent on atts/comps changed
 
-    def set_network_prototype(self, network):
+    def set_network_prototype(self, prototype):
         """
         Set the network prototype and configure rate tables
-        :param network:
+        :param prototype:
         :return:
         """
         # Prepare the network
-        self._network_prototype = network
-        assert isinstance(network, Network), "Graph must be instance of MetapopPy Network class"
+        self._network_prototype = prototype
+        assert isinstance(prototype, Network), "Graph must be instance of MetapopPy Network class"
         assert self._network_prototype.nodes(), "Empty network is invalid"
 
         # Obtain the patches of the network (for lookup purposes)
@@ -162,7 +162,6 @@ class Dynamics(epyc.Experiment, object):
         number_patches = len(self._patch_for_column)
 
         indexes = range(0, self._rate_table.size)
-        print "t=", time
 
         while not self._at_equilibrium(time):
 
@@ -187,7 +186,6 @@ class Dynamics(epyc.Experiment, object):
 
             # Move simulated time forward
             time += dt
-            print "t=", time
 
         # TODO - experimental results. Maybe need to track populations over time
         return self._get_results()
