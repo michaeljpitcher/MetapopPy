@@ -63,6 +63,10 @@ class TBDynamics(Dynamics):
         Dynamics.__init__(self, pulmonary_network)
 
     def _create_events(self):
+        """
+        Create all TB related events, and assign relevant parameters to them
+        :return:
+        """
         events = []
 
         # Bacteria replication
@@ -166,10 +170,16 @@ class TBDynamics(Dynamics):
         return events
 
     def _seed_prototype_network(self, params):
+        """
+        Seed the prototype network with values based on the recruitment levels, perfusion values and death rates of
+        cells
+        :param params:
+        :return:
+        """
         # Seed attributes
         self._network_prototype.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
-                                                params[PulmonaryNetwork.PERFUSION_SKEW],
-                                                params[PulmonaryNetwork.DRAINAGE_SKEW])
+                                                          params[PulmonaryNetwork.PERFUSION_SKEW],
+                                                          params[PulmonaryNetwork.DRAINAGE_SKEW])
         # Seed initial compartments
         mac_recruit_lung = params[TBDynamics.RP_MR_RECRUIT_LUNG]
         mac_recruit_lymph = params[TBDynamics.RP_MR_RECRUIT_LYMPH]
@@ -179,9 +189,9 @@ class TBDynamics(Dynamics):
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
         self._network_prototype.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
-                                             DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
-                                            {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
-                                             T_CELL_NAIVE: (tn_recruit, tn_death)})
+                                                       DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
+                                                      {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
+                                                       T_CELL_NAIVE: (tn_recruit, tn_death)})
 
         # TODO - where to place bacteria (perfusion or fixed)?
 
