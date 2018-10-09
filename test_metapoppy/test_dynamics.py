@@ -44,11 +44,11 @@ class NADynamics(Dynamics):
         events = [NAEvent1(RP_1_KEY), NAEvent2(RP_2_KEY)]
         return events
 
-    def _seed_network(self, params):
+    def _seed_prototype_network(self, params):
         value_comp_0 = params[NADynamics.INITIAL_COMP_0]
         value_comp_1 = params[NADynamics.INITIAL_COMP_1]
-        for p in self._network.nodes():
-            self._network.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1})
+        for p in self._network_prototype.nodes():
+            self._network_prototype.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1})
 
     def _seed_events(self, params):
         event1 = next(e for e in self._events if isinstance(e, NAEvent1))
@@ -64,8 +64,8 @@ class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
         self.network = Network(compartments, patch_attributes, edge_attributes)
-        self.network.add_nodes_from([1,2,3])
-        self.network.add_edges_from([(1,2),(2,3)])
+        self.network.add_nodes_from(['a','b','c'])
+        self.network.add_edges_from([('a','b'),('b','c')])
 
         self.dynamics = NADynamics(self.network)
 
@@ -88,7 +88,7 @@ class DynamicsTestCase(unittest.TestCase):
         self.dynamics.setUp(params)
 
         # Populations updated
-        for a in [1, 2, 3]:
+        for a in ['a','b','c']:
             self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[0]],
                              params[NADynamics.INITIAL_COMP_0])
             self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[1]],
@@ -101,6 +101,12 @@ class DynamicsTestCase(unittest.TestCase):
                                    params[NADynamics.INITIAL_COMP_0])
             self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[RP_2_KEY] * 2 *
                                    params[NADynamics.INITIAL_COMP_1])
+
+    def test_run(self):
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
+                  NADynamics.INITIAL_COMP_1: 5}
+        self.dynamics.configure(params)
+        self.dynamics.setUp(params)
 
 
 if __name__ == '__main__':

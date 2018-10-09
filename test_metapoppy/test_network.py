@@ -53,8 +53,10 @@ class NetworkTestCase(unittest.TestCase):
         def handler(a,b,c,d):
             self.check_value = [a,b,c,d]
 
+        self.network.set_handler(lambda a,b,c,d: handler(a,b,c,d))
+
         self.network.add_node(1)
-        self.network.prepare(lambda a,b,c,d: handler(a,b,c,d))
+        self.network.prepare()
 
         self.network.update_patch(1, {self.compartments[0]: 1, self.compartments[1]: 2},
                                   {self.patch_attributes[0]: 3, self.patch_attributes[1]: 4})
@@ -82,7 +84,8 @@ class NetworkTestCase(unittest.TestCase):
         self.network.add_node(1)
         self.network.add_node(2)
         self.network.add_edge(1, 2)
-        self.network.prepare(lambda a, b, c, d: handler(a, b, c, d))
+        self.network.prepare()
+        self.network.set_handler(lambda a, b, c, d: handler(a, b, c, d))
 
         self.network.update_edge(1, 2, {self.edge_attributes[0]: 1, self.edge_attributes[1]: 2})
 
