@@ -48,16 +48,18 @@ class Network(networkx.Graph):
         """
         return self._edge_attributes
 
-    def prepare(self, handler=None):
+    def set_handler(self, handler):
+        self._handler = handler
+
+    def prepare(self):
         """
         Prepare the network. Adds data to the node dictionary for subpopulation, environmental attributes and events
-        and rates. All set to zero, will be seeded with a value once simulation runs.
+        and rates. All set to zero, will be changed by the dynamics.
         :return:
         """
         self._prepare_compartments()
         self._prepare_attributes()
         self._prepare_edges()
-        self._handler = handler
 
     def _prepare_compartments(self):
         """
@@ -179,7 +181,7 @@ class TypedNetwork(Network):
         else:
             return self._patch_types[patch_type]
 
-    def prepare(self, handler=None):
+    def prepare(self):
         # Ensure every patch has been given a type
         for patch_id, patch_data in self.nodes(data=True):
             assert TypedNetwork.PATCH_TYPE in patch_data, "Node {0} must be assigned a patch type".format(patch_id)
@@ -188,7 +190,7 @@ class TypedNetwork(Network):
                 self._patch_types[patch_data[TypedNetwork.PATCH_TYPE]] = []
             # Add to the list
             self._patch_types[patch_data[TypedNetwork.PATCH_TYPE]].append(patch_id)
-        Network.prepare(self, handler)
+        Network.prepare(self)
 
     def _prepare_attributes(self):
         # Prepare the network attributes
