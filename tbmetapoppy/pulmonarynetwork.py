@@ -53,10 +53,11 @@ class PulmonaryNetwork(TypedNetwork):
         self.add_edge(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.ALVEOLAR_PATCH)
 
     def _build_2d_space_filling_tree(self, network_config):
-
         boundary = network_config[PulmonaryNetwork.BOUNDARY]
-        length_divisor = network_config[PulmonaryNetwork.LENGTH_DIVISOR]
-        minimum_area = network_config[PulmonaryNetwork.MINIMUM_AREA]
+        if isinstance(boundary, str):
+            boundary = [[float(a) for a in n[1:-1].split(",")] for n in boundary.split(":")]
+        length_divisor = float(network_config[PulmonaryNetwork.LENGTH_DIVISOR])
+        minimum_area = float(network_config[PulmonaryNetwork.MINIMUM_AREA])
 
         # apex = max([b[1] for b in boundary])
         # base = min([b[1] for b in boundary])
@@ -228,6 +229,5 @@ class PulmonaryNetwork(TypedNetwork):
             for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
                 seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
             self.update_patch(n, seed_amounts)
-
 
 # TODO change in patch perfusion needs to feed through to edge
