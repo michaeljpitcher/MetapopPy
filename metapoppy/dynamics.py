@@ -176,7 +176,9 @@ class Dynamics(epyc.Experiment, object):
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
             # Choose an event and patch based on the values in the rate table
-            index_choice = numpy.random.choice(indexes, p=self._rate_table.flatten() / total_network_rate)
+            # TODO - numpy multinomial is faster than choice (in 2, maybe not in 3?)
+            # index_choice = numpy.random.choice(indexes, p=self._rate_table.flatten() / total_network_rate)
+            index_choice = numpy.random.multinomial(1, self._rate_table.flatten() / total_network_rate).argmax()
             # Given the index, find the event and patch this refers to
             event = self._events[index_choice / number_patches]
             patch_id = self._patch_for_column[index_choice % number_patches]
