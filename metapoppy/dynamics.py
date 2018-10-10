@@ -1,6 +1,7 @@
 import epyc
 import math
 from network import *
+import copy
 
 
 class Dynamics(epyc.Experiment, object):
@@ -184,7 +185,7 @@ class Dynamics(epyc.Experiment, object):
         def record_results(results, record_time):
             results["t=" + str(record_time)] = {}
             for p, data in self.network().nodes(data=True):
-                results["t=" + str(record_time)][p] = data
+                results["t=" + str(record_time)][p] = copy.deepcopy(data)
             return results
 
         number_patches = len(self._patch_for_column)
@@ -223,12 +224,7 @@ class Dynamics(epyc.Experiment, object):
                 record_results(results, next_record_interval)
                 next_record_interval += self._record_interval
 
-        # TODO - experimental results. Maybe need to track populations over time
-        # return self._get_results()
         return results
-
-    def _get_results(self):
-        return dict([(n, d[Network.COMPARTMENTS]) for n, d in self._network.nodes(data=True)])
 
     def tearDown(self):
         """
