@@ -10,8 +10,9 @@ class Dynamics(epyc.Experiment, object):
     EVENTS = 'events'
 
     # the default maximum simulation time
-    DEFAULT_MAX_TIME = 100  #: Default maximum simulation time.
-    DEFAULT_START_TIME = 0
+    DEFAULT_MAX_TIME = 100.0  #: Default maximum simulation time.
+    DEFAULT_START_TIME = 0.0
+    DEFAULT_RESULT_INTERVAL = 1.0
 
     def __init__(self, network=None):
         """
@@ -35,6 +36,32 @@ class Dynamics(epyc.Experiment, object):
         # Default start and end times
         self._start_time = self.DEFAULT_START_TIME
         self._max_time = self.DEFAULT_MAX_TIME
+
+        self._record_interval = self.DEFAULT_RESULT_INTERVAL
+
+    def set_start_time(self, start_time):
+        """
+        Set the initial time of simulations
+        :param start_time:
+        :return:
+        """
+        self._start_time = start_time
+
+    def set_maximum_time(self, maximum_time):
+        """
+        Set the maximum simulated run-time
+        :param maximum_time:
+        :return:
+        """
+        self._max_time = maximum_time
+
+    def set_record_interval(self, record_interval):
+        """
+        Set the interval to record results
+        :param record_interval:
+        :return:
+        """
+        self._record_interval = record_interval
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
@@ -141,14 +168,6 @@ class Dynamics(epyc.Experiment, object):
         """
         raise NotImplementedError
 
-    def set_maximum_time(self, maximum_time):
-        """
-        Set the maximum simulated run-time
-        :param maximum_time:
-        :return:
-        """
-        self._max_time = maximum_time
-
     def do(self, params):
         """
         Run a MetapopPy simulation. Uses Gillespie simulation - all combinations of events and patches are given a rate
@@ -157,11 +176,22 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
+
+        results = {}
+
         time = self._start_time
 
-        number_patches = len(self._patch_for_column)
+        def record_results(results, record_time):
+            results["t=" + str(record_time)] = {}
+            for p, data in self.network().nodes(data=True):
+                results["t=" + str(record_time)][p] = data
+            return results
 
-        indexes = range(0, self._rate_table.size)
+        number_patches = len(self._patch_for_column)
+        # indices = range(0, self._rate_table.size)
+
+        results = record_results(results, time)
+        next_record_interval = time + self._record_interval
 
         while not self._at_equilibrium(time):
 
@@ -176,8 +206,8 @@ class Dynamics(epyc.Experiment, object):
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
             # Choose an event and patch based on the values in the rate table
-            # TODO - numpy multinomial is faster than choice (in 2, maybe not in 3?)
-            # index_choice = numpy.random.choice(indexes, p=self._rate_table.flatten() / total_network_rate)
+            # TODO - numpy multinomial is faster than numpy choice (in python 2, maybe not in 3?)
+            # index_choice = numpy.random.choice(indices, p=self._rate_table.flatten() / total_network_rate)
             index_choice = numpy.random.multinomial(1, self._rate_table.flatten() / total_network_rate).argmax()
             # Given the index, find the event and patch this refers to
             event = self._events[index_choice / number_patches]
@@ -185,12 +215,17 @@ class Dynamics(epyc.Experiment, object):
 
             # Perform the event. Handler will propagate the effects of any network updates
             event.perform(self._network, patch_id)
-
             # Move simulated time forward
             time += dt
 
+            # Record results if interval(s) exceeded
+            while time >= next_record_interval and next_record_interval <= self._max_time:
+                record_results(results, next_record_interval)
+                next_record_interval += self._record_interval
+
         # TODO - experimental results. Maybe need to track populations over time
-        return self._get_results()
+        # return self._get_results()
+        return results
 
     def _get_results(self):
         return dict([(n, d[Network.COMPARTMENTS]) for n, d in self._network.nodes(data=True)])
