@@ -1,7 +1,7 @@
-
 *.xml
 .idea/*.*
 *.pyc
 sandbox.py
 experiments/*
 .ipynb_checkpoints/*
+*.ipynb
