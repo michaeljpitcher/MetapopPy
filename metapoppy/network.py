@@ -88,12 +88,16 @@ class Network(networkx.Graph):
 
     def get_compartment_value(self, patch_id, compartment):
         """
-        Get function for finding a compartment value at a patch
+        Get function for finding a compartment value (or values) at a patch
         :param patch_id:
         :param compartment:
         :return:
         """
-        return self.node[patch_id][Network.COMPARTMENTS][compartment]
+        if isinstance(compartment, list):
+            data = self.node[patch_id][Network.COMPARTMENTS]
+            return sum([data[c] for c in compartment])
+        else:
+            return self.node[patch_id][Network.COMPARTMENTS][compartment]
 
     def get_attribute_value(self, patch_id, attribute):
         """
@@ -102,7 +106,11 @@ class Network(networkx.Graph):
         :param attribute:
         :return:
         """
-        return self.node[patch_id][Network.ATTRIBUTES][attribute]
+        if isinstance(attribute, list):
+            data = self.node[patch_id][Network.ATTRIBUTES]
+            return sum([data[c] for c in attribute])
+        else:
+            return self.node[patch_id][Network.ATTRIBUTES][attribute]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         """

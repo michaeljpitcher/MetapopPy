@@ -37,13 +37,21 @@ class NetworkTestCase(unittest.TestCase):
         self.network.add_node(1)
         self.network.prepare()
         self.network.node[1][Network.COMPARTMENTS][self.compartments[0]] = 99
+        self.network.node[1][Network.COMPARTMENTS][self.compartments[1]] = 2
         self.assertEqual(self.network.get_compartment_value(1, self.compartments[0]), 99)
+
+        # Multiple compartments
+        self.assertEqual(self.network.get_compartment_value(1, self.compartments[0:2]), 101)
 
     def test_get_attribute_value(self):
         self.network.add_node(1)
         self.network.prepare()
         self.network.node[1][Network.ATTRIBUTES][self.patch_attributes[0]] = 99
+        self.network.node[1][Network.ATTRIBUTES][self.patch_attributes[1]] = 2
         self.assertEqual(self.network.get_attribute_value(1, self.patch_attributes[0]), 99)
+
+        # Multiple attributes
+        self.assertEqual(self.network.get_attribute_value(1, self.patch_attributes[0:2]), 101)
 
     def test_update_patch(self):
         # With handler
