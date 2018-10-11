@@ -15,9 +15,9 @@ class TBDynamicsTestCase(unittest.TestCase):
     def test_initialise(self):
         # Check event creation
         # Rows = number of events, cols = number of nodes
-        self.assertEqual(self.dynamics._rate_table.shape, (29, 17))
+        self.assertEqual(self.dynamics._rate_table.shape, (34, 17))
 
-        self.assertEqual(len(self.dynamics._events), 29)
+        self.assertEqual(len(self.dynamics._events), 34)
 
         # Bacterial replication
         ber_rep = [e for e in self.dynamics._events if isinstance(e, Replication) and
@@ -49,9 +49,13 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(bed_transl), 1)
 
         # DC recruitment
-        dc_rec_lung = [e for e in self.dynamics._events if isinstance(e, CellRecruitmentLung) and
-                        e._cell_type == DENDRITIC_CELL_IMMATURE]
+        dc_rec_lung = [e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLung) and
+                       e._cell_type == DENDRITIC_CELL_IMMATURE]
         self.assertEqual(len(dc_rec_lung), 1)
+        dc_rec_lung = [e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
+                       e._cell_type == DENDRITIC_CELL_IMMATURE and e._enhancers is not None]
+        self.assertEqual(len(dc_rec_lung), 1)
+        self.assertItemsEqual(dc_rec_lung[0]._enhancers, EXTRACELLULAR_BACTERIA)
 
         # DC infection
         dc_infect = [e for e in self.dynamics._events if isinstance(e, CellInfection) and
@@ -68,11 +72,11 @@ class TBDynamicsTestCase(unittest.TestCase):
             self.assertEqual(len(q), 1)
 
         # Macrophage recruitment
-        mac_rec_lung = [e for e in self.dynamics._events if isinstance(e, CellRecruitmentLung) and
+        mac_rec_lung = [e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLung) and
                         e._cell_type == MACROPHAGE_RESTING]
         self.assertEqual(len(mac_rec_lung), 1)
-        mac_rec_lymph = [e for e in self.dynamics._events if isinstance(e, CellRecruitmentLymph) and
-                        e._cell_type == MACROPHAGE_RESTING]
+        mac_rec_lymph = [e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLymph) and
+                         e._cell_type == MACROPHAGE_RESTING]
         self.assertEqual(len(mac_rec_lymph), 1)
 
         # Macrophage activation
@@ -109,7 +113,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(mac_transl), 1)
 
         #  T-cell recruitment
-        tc_recruit = [e for e in self.dynamics._events if isinstance(e, CellRecruitmentLymph) and
+        tc_recruit = [e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLymph) and
                       e._cell_type == T_CELL_NAIVE]
         self.assertEqual(len(tc_recruit), 1)
 
@@ -179,6 +183,13 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA] = 0.40
         params[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA] = 0.41
 
+        params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI] = 0.42
+        params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI] = 0.43
+        params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA] = 0.44
+        params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA] = 0.45
+        params[TBDynamics.RP_DCI_RECRUITMENT_ENHANCE_BAC] = 0.46
+        params[TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC] = 0.47
+
         params[PulmonaryNetwork.VENTILATION_SKEW] = 1.1
         params[PulmonaryNetwork.PERFUSION_SKEW] = 2.2
         params[PulmonaryNetwork.DRAINAGE_SKEW] = 3.3
@@ -237,8 +248,8 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(bed_transl._reaction_parameter, params[TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION])
 
         # DC recruitment
-        dc_rec_lung = next(e for e in self.dynamics._events if isinstance(e, CellRecruitmentLung) and
-                       e._cell_type == DENDRITIC_CELL_IMMATURE)
+        dc_rec_lung = next(e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLung) and
+                           e._cell_type == DENDRITIC_CELL_IMMATURE)
         self.assertEqual(dc_rec_lung._reaction_parameter, params[TBDynamics.RP_DCI_RECRUITMENT])
 
         # DC infection
@@ -262,12 +273,36 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(dcm_death._reaction_parameter, params[TBDynamics.RP_DCM_DEATH])
 
         # Macrophage recruitment
-        mac_rec_lung = next(e for e in self.dynamics._events if isinstance(e, CellRecruitmentLung) and
-                        e._cell_type == MACROPHAGE_RESTING)
+        mac_rec_lung = next(e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLung) and
+                            e._cell_type == MACROPHAGE_RESTING)
         self.assertEqual(mac_rec_lung._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_LUNG])
-        mac_rec_lymph = next(e for e in self.dynamics._events if isinstance(e, CellRecruitmentLymph) and
-                         e._cell_type == MACROPHAGE_RESTING)
+        mac_rec_lymph = next(e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLymph) and
+                             e._cell_type == MACROPHAGE_RESTING)
         self.assertEqual(mac_rec_lymph._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_LYMPH])
+
+        mac_rec_lung_enh_mi = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
+                                   e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_INFECTED)
+        self.assertEqual(mac_rec_lung_enh_mi._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI])
+        self.assertEqual(mac_rec_lung_enh_mi._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI])
+
+        mac_rec_lung_enh_ma = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
+                                   e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_ACTIVATED)
+        self.assertEqual(mac_rec_lung_enh_ma._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA])
+        self.assertEqual(mac_rec_lung_enh_ma._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA])
+
+        mac_rec_lym_enh_mi = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLymph) and
+                                  e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_INFECTED)
+        self.assertEqual(mac_rec_lym_enh_mi._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI])
+        self.assertEqual(mac_rec_lym_enh_mi._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI])
+
+        mac_rec_lym_enh_ma = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLymph) and
+                                  e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_ACTIVATED)
+        self.assertEqual(mac_rec_lym_enh_ma._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA])
+        self.assertEqual(mac_rec_lym_enh_ma._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA])
 
         # Macrophage activation
         mac_act_tc = next(e for e in self.dynamics._events if isinstance(e, CellActivation) and
@@ -319,8 +354,8 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(mac_transl._reaction_parameter, params[TBDynamics.RP_MI_TRANSLOCATION])
 
         #  T-cell recruitment
-        tc_recruit = next(e for e in self.dynamics._events if isinstance(e, CellRecruitmentLymph) and
-                      e._cell_type == T_CELL_NAIVE)
+        tc_recruit = next(e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLymph) and
+                          e._cell_type == T_CELL_NAIVE)
         self.assertEqual(tc_recruit._reaction_parameter, params[TBDynamics.RP_TN_RECRUIT])
 
         # T-cell activation

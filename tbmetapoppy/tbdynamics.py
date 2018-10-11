@@ -30,6 +30,8 @@ class TBDynamics(Dynamics):
     RP_DCI_MATURATION = 'dendritic_cell_maturation_rate'
     HALF_SAT_DCI_MATURATION = 'dendritic_cell_maturation_halfsat'
     RP_DCI_RECRUITMENT = 'dendritic_cell_recruitment_rate'
+    RP_DCI_RECRUITMENT_ENHANCE_BAC = 'dendritic_cell_bacteria_enhanced_recruitment_rate'
+    HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC = 'dendritic_cell_bacteria_enhanced_recruitment_half_sat'
     RP_DCM_TRANSLOCATION = 'dendritic_cell_translocation_rate'
 
     RP_MR_ACTIVATION_BY_TCELL = 'macrophage_activation_by_tcell_rate'
@@ -45,6 +47,10 @@ class TBDynamics(Dynamics):
     RP_TA_KILL_MI = 't_cell_destroys_macrophage_rate'
     HALF_SAT_TA_KILL_MI = 't_cell_destroys_macrophage_half_sat'
     RP_MR_RECRUIT_LUNG = 'macrophage_lung_recruitment_rate'
+    RP_MR_RECRUIT_ENHANCE_MI = 'macrophage_recruitment_enhanced_m_i_rate'
+    HALF_SAT_MR_RECRUIT_ENHANCE_MI = 'macrophage_recruitment_enhanced_m_i_half_sat'
+    RP_MR_RECRUIT_ENHANCE_MA = 'macrophage_recruitment_enhanced_m_a_rate'
+    HALF_SAT_MR_RECRUIT_ENHANCE_MA = 'macrophage_recruitment_enhanced_m_a_half_sat'
     RP_MR_RECRUIT_LYMPH = 'macrophage_lymph_recruitment_rate'
     RP_MI_TRANSLOCATION = 'macrophage_translocation_rate'
 
@@ -100,8 +106,11 @@ class TBDynamics(Dynamics):
         events.append(bed_translocation)
 
         # Dendritic cell recruitment
-        dc_recruit_lung = CellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, DENDRITIC_CELL_IMMATURE)
-        events.append(dc_recruit_lung)
+        dc_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, DENDRITIC_CELL_IMMATURE)
+        dc_recruit_lung_enh = EnhancedCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT_ENHANCE_BAC,
+                                                          DENDRITIC_CELL_IMMATURE, EXTRACELLULAR_BACTERIA,
+                                                          TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC)
+        events += [dc_recruit_lung, dc_recruit_lung_enh]
 
         # Dendritic cell death
         dci_death = CellDeath(TBDynamics.RP_DCI_DEATH, DENDRITIC_CELL_IMMATURE)
@@ -118,9 +127,23 @@ class TBDynamics(Dynamics):
         events.append(dc_translocation)
 
         # Macrophage recruitment
-        mr_recruit_lung = CellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, MACROPHAGE_RESTING)
-        mr_recruit_lymph = CellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, MACROPHAGE_RESTING)
-        events += [mr_recruit_lung, mr_recruit_lymph]
+        mr_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, MACROPHAGE_RESTING)
+        mr_recruit_lymph = StandardCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, MACROPHAGE_RESTING)
+        mr_recruit_lung_enhanced_mi = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE_MI,
+                                                                  MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
+                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI)
+        mr_recruit_lung_enhanced_ma = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
+                                                                  MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
+                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
+        mr_recruit_lymph_enhanced_mi = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MI,
+                                                                  MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
+                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI)
+        mr_recruit_lymph_enhanced_ma = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
+                                                                  MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
+                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
+
+        events += [mr_recruit_lung, mr_recruit_lymph, mr_recruit_lung_enhanced_mi, mr_recruit_lung_enhanced_ma,
+                   mr_recruit_lymph_enhanced_mi, mr_recruit_lymph_enhanced_ma]
 
         # Macrophage activation
         mr_activation_bac = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA,
@@ -150,7 +173,7 @@ class TBDynamics(Dynamics):
         events.append(mi_translocation)
 
         # T-cell recruitment
-        tn_recruit = CellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, T_CELL_NAIVE)
+        tn_recruit = StandardCellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, T_CELL_NAIVE)
         events.append(tn_recruit)
 
         # T-cell activation
