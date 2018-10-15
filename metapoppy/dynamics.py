@@ -23,7 +23,7 @@ class Dynamics(epyc.Experiment, object):
         epyc.Experiment.__init__(self)
         # Initialise variables
         self._network_prototype = self._rate_table = self._patch_for_column = self._column_for_patch = \
-            self._network = None
+            self._patch_active = self._network = None
 
         # Create the events
         self._events = self._create_events()
@@ -60,7 +60,10 @@ class Dynamics(epyc.Experiment, object):
 
         # Obtain the patches of the network (for lookup purposes)
         self._patch_for_column = self._network_prototype.nodes()[:]
-        self._column_for_patch = dict([(self._patch_for_column[k], k) for k in range(len(self._patch_for_column))])
+        self._column_for_patch = dict([(self._patch_for_column[k], k) for k in
+                                       range(len(self._patch_for_column))])
+        self._patch_active = dict([(self._patch_for_column[k], False) for k in
+                                    range(len(self._patch_for_column))])
 
         # Create a rate table. Rows are events, columns are patches
         self._rate_table = numpy.zeros([len(self._events), len(self._patch_for_column)], dtype=numpy.float)
@@ -137,12 +140,28 @@ class Dynamics(epyc.Experiment, object):
         # Attach the update handler
         self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
 
+        # Check which patches should be active
+        for patch_id, data in self._network.nodes(data=True):
+            self._patch_active[patch_id] = self._patch_is_active(patch_id)
+
+        assert next(n for n in self._patch_active.values()), "No patches are active"
+
         # Set initial rate values for all event/patch combinations
         for col in range(len(self._patch_for_column)):
-            for row in range(len(self._events)):
-                patch_id = self._patch_for_column[col]
-                event = self._events[row]
-                self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+            patch_id = self._patch_for_column[col]
+            if self._patch_active[patch_id]:
+                for row in range(len(self._events)):
+                    event = self._events[row]
+                    self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+
+    def _patch_is_active(self, patch_id):
+        """
+        Determine if the given patch is active (from the network). Default is patches are always active, can be
+        overridden to only process patches based on a given condition.
+        :param patch_id:
+        :return:
+        """
+        return True
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
@@ -154,11 +173,20 @@ class Dynamics(epyc.Experiment, object):
         :param edge_changes:
         :return:
         """
+
         col = self._column_for_patch[patch_id]
-        for row in range(len(self._events)):
-            event = self._events[row]
-            self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
-        # TODO - only update events dependent on atts/comps changed
+        active = self._patch_active[patch_id]
+
+        # If patch is not active, check if it should become active
+        if not active and self._patch_is_active(patch_id):
+            self._patch_active[patch_id] = active = True
+
+        # Only process event rates on patches that are active
+        if active:
+            for row in range(len(self._events)):
+                event = self._events[row]
+                self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+            # TODO - only update events dependent on atts/comps changed
 
     def do(self, params):
         """

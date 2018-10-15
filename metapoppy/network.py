@@ -1,5 +1,4 @@
 import networkx
-import numpy
 
 
 class Network(networkx.Graph):
@@ -125,7 +124,8 @@ class Network(networkx.Graph):
         if compartment_changes:
             for comp, change in compartment_changes.iteritems():
                 patch_data[Network.COMPARTMENTS][comp] += change
-                assert patch_data[Network.COMPARTMENTS][comp] >= 0, "Compartment {0} cannot drop below zero".format(comp)
+                assert patch_data[Network.COMPARTMENTS][comp] >= 0, \
+                    "Compartment {0} cannot drop below zero".format(comp)
         if attribute_changes:
             for attr, change in attribute_changes.iteritems():
                 patch_data[Network.ATTRIBUTES][attr] += change
@@ -137,7 +137,7 @@ class Network(networkx.Graph):
                 attribute_changes = {}
             self._handler(patch_id, compartment_changes.keys(), attribute_changes.keys(), {})
 
-    def update_edge(self, u,v, attribute_changes):
+    def update_edge(self, u, v, attribute_changes):
         """
         Update the attributes of an edge
         :param u: Patch 1

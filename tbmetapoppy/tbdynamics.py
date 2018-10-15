@@ -217,3 +217,14 @@ class TBDynamics(Dynamics):
                                                        T_CELL_NAIVE: (tn_recruit, tn_death)})
 
         # TODO - where to place bacteria (perfusion or fixed)?
+
+    def _patch_is_active(self, patch_id):
+        """
+        Determine if the given patch is active (from the network). Patches only become active when they contain
+        bacteria.
+        :param patch_id:
+        :return:
+        """
+        # TODO - switch patch activity
+        # return sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0
+        return True
