@@ -2,6 +2,7 @@ import epyc
 import math
 from network import *
 import copy
+import numpy
 
 
 class Dynamics(epyc.Experiment, object):
