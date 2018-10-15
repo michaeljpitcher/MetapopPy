@@ -40,6 +40,31 @@ class Dynamics(epyc.Experiment, object):
 
         self._record_interval = self.DEFAULT_RESULT_INTERVAL
 
+    def _create_events(self):
+        """
+        Create the events
+        :return:
+        """
+        raise NotImplementedError
+
+    def set_network_prototype(self, prototype):
+        """
+        Set the network prototype and configure rate tables
+        :param prototype:
+        :return:
+        """
+        # Prepare the network
+        self._network_prototype = prototype
+        assert isinstance(prototype, Network), "Graph must be instance of MetapopPy Network class"
+        assert self._network_prototype.nodes(), "Empty network is invalid"
+
+        # Obtain the patches of the network (for lookup purposes)
+        self._patch_for_column = self._network_prototype.nodes()[:]
+        self._column_for_patch = dict([(self._patch_for_column[k], k) for k in range(len(self._patch_for_column))])
+
+        # Create a rate table. Rows are events, columns are patches
+        self._rate_table = numpy.zeros([len(self._events), len(self._patch_for_column)], dtype=numpy.float)
+
     def set_start_time(self, start_time):
         """
         Set the initial time of simulations
@@ -64,6 +89,61 @@ class Dynamics(epyc.Experiment, object):
         """
         self._record_interval = record_interval
 
+    def network(self):
+        """
+        The current state of the network this set of dynamics is running upon
+        :return:
+        """
+        return self._network
+
+    def configure(self, params):
+        epyc.Experiment.configure(self, params)
+
+        # Set the event reaction parameters using the initial conditions
+        for e in self._events:
+            e.set_parameters(params)
+
+        # Allow for designated start time (used for time/age specific events)
+        if Dynamics.INITIAL_TIME in params:
+            self._start_time = params[Dynamics.INITIAL_TIME]
+
+        # Prepare network - reset all values to zero
+        assert self._network_prototype, "Network has not been configured"
+        self._network_prototype.prepare()
+
+        # Seed the prototype network
+        self._seed_prototype_network(params)
+
+    def _seed_prototype_network(self, params):
+        """
+        Seed the network in some manner based on the parameters.
+        :param params:
+        :return:
+        """
+        raise NotImplementedError
+
+    def setUp(self, params):
+        """
+        Configure the dynamics and the network ready for a simulation.
+        :param params: Initial parameters - initial conditions of network and event reaction parameters.
+        :return:
+        """
+        # Default setup
+        epyc.Experiment.setUp(self, params)
+
+        # Use a copy of the network prototype (must be done on every run in case network has changed)
+        self._network = self._network_prototype.copy()
+
+        # Attach the update handler
+        self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
+
+        # Set initial rate values for all event/patch combinations
+        for col in range(len(self._patch_for_column)):
+            for row in range(len(self._events)):
+                patch_id = self._patch_for_column[col]
+                event = self._events[row]
+                self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
         When a patch ID is changed, update the relevant entries in the rate table. This function is passed as a lambda
@@ -79,95 +159,6 @@ class Dynamics(epyc.Experiment, object):
             event = self._events[row]
             self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
         # TODO - only update events dependent on atts/comps changed
-
-    def set_network_prototype(self, prototype):
-        """
-        Set the network prototype and configure rate tables
-        :param prototype:
-        :return:
-        """
-        # Prepare the network
-        self._network_prototype = prototype
-        assert isinstance(prototype, Network), "Graph must be instance of MetapopPy Network class"
-        assert self._network_prototype.nodes(), "Empty network is invalid"
-
-        # Obtain the patches of the network (for lookup purposes)
-        self._patch_for_column = self._network_prototype.nodes()[:]
-        self._column_for_patch = dict([(self._patch_for_column[k], k) for k in range(len(self._patch_for_column))])
-
-        # Create a rate table. Rows are events, columns are patches
-        self._rate_table = numpy.zeros([len(self._events), len(self._patch_for_column)], dtype=numpy.float)
-
-    def _create_events(self):
-        """
-        Create the events
-        :return:
-        """
-        raise NotImplementedError
-
-    def network(self):
-        """
-        The current state of the network this set of dynamics is running upon
-        :return:
-        """
-        return self._network
-
-    def _at_equilibrium(self, t):
-        """
-        Function to end simulation. Default is when max time is exceeded, can be overriden to end on a certain
-        condition.
-        :param t: Current simulated time
-        :return: True to finish simulation
-        """
-        return t >= self._max_time
-
-    def configure(self, params):
-        epyc.Experiment.configure(self, params)
-
-        # Set the event reaction parameters using the initial conditions
-        for e in self._events:
-            e.set_parameters(params)
-
-        # Allow for designated start time (used for time/age specific events)
-        if Dynamics.INITIAL_TIME in params:
-            self._start_time = params[Dynamics.INITIAL_TIME]
-
-        # Prepare network - reset all values to zero
-        self._network_prototype.prepare()
-
-        # Seed the prototype network
-        self._seed_prototype_network(params)
-
-    def setUp(self, params):
-        """
-        Configure the dynamics and the network ready for a simulation.
-        :param params: Initial parameters - initial conditions of network and event reaction parameters.
-        :return:
-        """
-        # Default setup
-        epyc.Experiment.setUp(self, params)
-
-        # Use a copy of the network prototype (must be done on every run in case network has changed)
-        assert self._network_prototype, "Network has not been configured"
-        self._network = self._network_prototype.copy()
-
-        # Attach the update handler
-        self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
-
-        # Set initial rate values for all event/patch combinations
-        for col in range(len(self._patch_for_column)):
-            for row in range(len(self._events)):
-                patch_id = self._patch_for_column[col]
-                event = self._events[row]
-                self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
-
-    def _seed_prototype_network(self, params):
-        """
-        Seed the network in some manner based on the parameters.
-        :param params:
-        :return:
-        """
-        raise NotImplementedError
 
     def do(self, params):
         """
@@ -225,6 +216,15 @@ class Dynamics(epyc.Experiment, object):
                 next_record_interval += self._record_interval
 
         return results
+
+    def _at_equilibrium(self, t):
+        """
+        Function to end simulation. Default is when max time is exceeded, can be overriden to end on a certain
+        condition.
+        :param t: Current simulated time
+        :return: True to finish simulation
+        """
+        return t >= self._max_time
 
     def tearDown(self):
         """
