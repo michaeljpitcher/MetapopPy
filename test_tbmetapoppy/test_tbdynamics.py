@@ -136,7 +136,7 @@ class TBDynamicsTestCase(unittest.TestCase):
                     e._dying_compartment == T_CELL_ACTIVATED]
         self.assertEqual(len(ta_death), 1)
 
-    def test_configure_setUp(self):
+    def test_configure_setUp_run(self):
         params = {}
         params[TBDynamics.RP_REPLICATION_BER] = 0.01
         params[TBDynamics.RP_REPLICATION_BED] = 0.02
@@ -193,6 +193,9 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[PulmonaryNetwork.VENTILATION_SKEW] = 1.1
         params[PulmonaryNetwork.PERFUSION_SKEW] = 2.2
         params[PulmonaryNetwork.DRAINAGE_SKEW] = 3.3
+
+        params[TBDynamics.IC_BER_LOAD] = 1
+        params[TBDynamics.IC_BED_LOAD] = 2
 
         self.dynamics.configure(params)
         # TODO = Check values stored correctly
@@ -377,6 +380,8 @@ class TBDynamicsTestCase(unittest.TestCase):
         ta_death = next(e for e in self.dynamics._events if isinstance(e, CellDeath) and
                         e._dying_compartment == T_CELL_ACTIVATED)
         self.assertEqual(ta_death._reaction_parameter, params[TBDynamics.RP_TA_DEATH])
+
+        self.dynamics.do(params)
 
 
 if __name__ == '__main__':

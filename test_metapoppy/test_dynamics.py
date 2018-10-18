@@ -125,15 +125,13 @@ class DynamicsTestCase(unittest.TestCase):
         params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
                   NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
                   NADynamics.INITIAL_EDGE_1: 17}
-        self.dynamics.configure(params)
-        self.dynamics.setUp(params)
+        self.dynamics.set(params)
 
         max_time = 69
         interval = 0.1
-
         self.dynamics.set_maximum_time(max_time)
         self.dynamics.set_record_interval(interval)
-        #TODO
+
         r = self.dynamics.run()
         self.assertItemsEqual(r.keys(), ['results', 'metadata', 'parameters'])
         self.assertItemsEqual(r['parameters'].keys(), params.keys())
@@ -147,6 +145,15 @@ class DynamicsTestCase(unittest.TestCase):
                 self.assertItemsEqual(q.keys(), [Network.ATTRIBUTES, Network.COMPARTMENTS])
                 self.assertItemsEqual(q[Network.COMPARTMENTS], compartments)
                 self.assertItemsEqual(q[Network.ATTRIBUTES], patch_attributes)
+
+    def test_do(self):
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
+                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
+                  NADynamics.INITIAL_EDGE_1: 17}
+        self.dynamics.configure(params)
+        self.dynamics.setUp(params)
+        self.dynamics.do(params)
+
 
 if __name__ == '__main__':
     unittest.main()
