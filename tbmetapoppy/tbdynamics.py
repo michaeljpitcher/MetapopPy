@@ -61,7 +61,8 @@ class TBDynamics(Dynamics):
     RP_TA_DEATH = 't_cell_activated_death_rate'
     RP_TA_TRANSLOCATION = 't_cell_translocation_rate'
 
-    IC_BACTERIA_LOADS = 'initial_bacterial_loads'
+    IC_BER_LOAD = 'initial_bacterial_load_replicating'
+    IC_BED_LOAD = 'initial_bacterial_load_dormant'
 
     def __init__(self, network_config):
         # Build network
@@ -192,7 +193,7 @@ class TBDynamics(Dynamics):
 
         return events
 
-    def _seed_prototype_network(self, params):
+    def _seed_network(self, params):
         """
         Seed the prototype network with values based on the recruitment levels, perfusion values and death rates of
         cells
@@ -200,9 +201,9 @@ class TBDynamics(Dynamics):
         :return:
         """
         # Seed attributes
-        self._network_prototype.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
-                                                          params[PulmonaryNetwork.PERFUSION_SKEW],
-                                                          params[PulmonaryNetwork.DRAINAGE_SKEW])
+        self._network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
+                                                params[PulmonaryNetwork.PERFUSION_SKEW],
+                                                params[PulmonaryNetwork.DRAINAGE_SKEW])
         # Seed initial compartments
         mac_recruit_lung = params[TBDynamics.RP_MR_RECRUIT_LUNG]
         mac_recruit_lymph = params[TBDynamics.RP_MR_RECRUIT_LYMPH]
@@ -211,12 +212,22 @@ class TBDynamics(Dynamics):
         dc_death = params[TBDynamics.RP_DCI_DEATH]
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
-        self._network_prototype.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
-                                                       DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
-                                                      {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
-                                                       T_CELL_NAIVE: (tn_recruit, tn_death)})
+
+        self._network.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
+                                             DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
+                                            {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
+                                             T_CELL_NAIVE: (tn_recruit, tn_death)})
 
         # TODO - where to place bacteria (perfusion or fixed)?
+        # Perfusion based - assumes sum of perfusion values = 1.0
+        r = numpy.random.random()
+        count = 0
+        for p in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
+            count += self._network.get_attribute_value(p, PulmonaryNetwork.PERFUSION)
+            if count >= r:
+                self._network.update_patch(p, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
+                                               BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
+                break
 
     def _patch_is_active(self, patch_id):
         """
@@ -226,5 +237,5 @@ class TBDynamics(Dynamics):
         :return:
         """
         # TODO - switch patch activity
-        # return sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0
-        return True
+        return sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0
+        # return True
