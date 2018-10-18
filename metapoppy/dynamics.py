@@ -115,17 +115,6 @@ class Dynamics(epyc.Experiment, object):
         assert self._network_prototype, "Network has not been configured"
         self._network_prototype.prepare()
 
-        # Seed the prototype network
-        self._seed_prototype_network(params)
-
-    def _seed_prototype_network(self, params):
-        """
-        Seed the network in some manner based on the parameters.
-        :param params:
-        :return:
-        """
-        raise NotImplementedError
-
     def setUp(self, params):
         """
         Configure the dynamics and the network ready for a simulation.
@@ -138,6 +127,9 @@ class Dynamics(epyc.Experiment, object):
         # Use a copy of the network prototype (must be done on every run in case network has changed)
         self._network = self._network_prototype.copy()
 
+        # Seed the prototype network
+        self._seed_network(params)
+
         # Attach the update handler
         self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
 
@@ -145,7 +137,7 @@ class Dynamics(epyc.Experiment, object):
         for patch_id, data in self._network.nodes(data=True):
             self._patch_active[patch_id] = self._patch_is_active(patch_id)
 
-        assert next(n for n in self._patch_active.values()), "No patches are active"
+        assert next(n for n in self._patch_active.values() if n), "No patches are active"
 
         # Set initial rate values for all event/patch combinations
         for col in range(len(self._patch_for_column)):
@@ -154,6 +146,14 @@ class Dynamics(epyc.Experiment, object):
                 for row in range(len(self._events)):
                     event = self._events[row]
                     self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+
+    def _seed_network(self, params):
+        """
+        Seed the network in some manner based on the parameters.
+        :param params:
+        :return:
+        """
+        raise NotImplementedError
 
     def _patch_is_active(self, patch_id):
         """
@@ -203,6 +203,7 @@ class Dynamics(epyc.Experiment, object):
         time = self._start_time
 
         def record_results(results, record_time):
+            # TODO - we don't record edges
             results["t=" + str(record_time)] = {}
             for p, data in self.network().nodes(data=True):
                 results["t=" + str(record_time)][p] = copy.deepcopy(data)
@@ -214,14 +215,10 @@ class Dynamics(epyc.Experiment, object):
         results = record_results(results, time)
         next_record_interval = time + self._record_interval
 
+        total_network_rate = numpy.sum(self._rate_table)
+        assert total_network_rate, "No events possible at start of simulation"
+
         while not self._at_equilibrium(time):
-
-            # Get the total rate by summing rates of all events at all patches
-            total_network_rate = numpy.sum(self._rate_table)
-
-            # If no events can occur, then end
-            if total_network_rate == 0:
-                break
 
             # Calculate the timestep delta
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
@@ -243,6 +240,13 @@ class Dynamics(epyc.Experiment, object):
             while time >= next_record_interval and next_record_interval <= self._max_time:
                 record_results(results, next_record_interval)
                 next_record_interval += self._record_interval
+
+            # Get the total rate by summing rates of all events at all patches
+            total_network_rate = numpy.sum(self._rate_table)
+
+            # If no events can occur, then end
+            if total_network_rate == 0:
+                break
 
         return results
 
