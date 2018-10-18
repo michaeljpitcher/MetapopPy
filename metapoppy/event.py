@@ -12,6 +12,7 @@ class Event(object):
                 self._parameters[p] = 0.0
 
     def set_parameters(self, parameter_values):
+        assert parameter_values[self._reaction_parameter_key] >= 0.0, "Reaction parameter cannot be negative"
         self._reaction_parameter = parameter_values[self._reaction_parameter_key]
         for p in self._parameters:
             self._parameters[p] = parameter_values[p]
