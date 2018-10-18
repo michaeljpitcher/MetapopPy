@@ -121,6 +121,7 @@ class Dynamics(epyc.Experiment, object):
         :param params: Initial parameters - initial conditions of network and event reaction parameters.
         :return:
         """
+
         # Default setup
         epyc.Experiment.setUp(self, params)
 
@@ -137,7 +138,8 @@ class Dynamics(epyc.Experiment, object):
         for patch_id, data in self._network.nodes(data=True):
             self._patch_active[patch_id] = self._patch_is_active(patch_id)
 
-        assert next(n for n in self._patch_active.values() if n), "No patches are active"
+        # Check that at least one patch is active
+        assert any(n for n in self._patch_active.values() if n), "No patches are active"
 
         # Set initial rate values for all event/patch combinations
         for col in range(len(self._patch_for_column)):
@@ -146,6 +148,7 @@ class Dynamics(epyc.Experiment, object):
                 for row in range(len(self._events)):
                     event = self._events[row]
                     self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+
 
     def _seed_network(self, params):
         """
@@ -197,7 +200,6 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
-
         results = {}
 
         time = self._start_time
