@@ -35,37 +35,41 @@ class NADynamics(Dynamics):
 
     INITIAL_COMP_0 = 'initial_comp_0'
     INITIAL_COMP_1 = 'initial_comp_1'
+    INITIAL_ATT_0 = 'initial_att_0'
+    INITIAL_ATT_1 = 'initial_att_1'
     INITIAL_EDGE_0 = 'initial_edge_0'
+    INITIAL_EDGE_1 = 'initial_edge_1'
 
     def __init__(self, network):
         Dynamics.__init__(self, network)
 
     def _create_events(self):
-        events = [NAEvent1(RP_1_KEY), NAEvent2(RP_2_KEY)]
-        return events
+        self.event1 = NAEvent1(RP_1_KEY)
+        self.event2 = NAEvent2(RP_2_KEY)
+        return [self.event1, self.event2]
 
-    def _seed_prototype_network(self, params):
+    def _seed_network(self, params):
         value_comp_0 = params[NADynamics.INITIAL_COMP_0]
         value_comp_1 = params[NADynamics.INITIAL_COMP_1]
-        for p in self._network_prototype.nodes():
-            self._network_prototype.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1})
+        value_att_0 = params[NADynamics.INITIAL_ATT_0]
+        value_att_1 = params[NADynamics.INITIAL_ATT_1]
 
-    def _seed_events(self, params):
-        event1 = next(e for e in self._events if isinstance(e, NAEvent1))
-        event1.set_parameters(params)
-        event2 = next(e for e in self._events if isinstance(e, NAEvent2))
-        event2.set_parameters(params)
+        for p in self._network.nodes():
+            self._network.update_patch(p, {compartments[0]: value_comp_0, compartments[1]: value_comp_1},
+                                       {patch_attributes[0]: value_att_0, patch_attributes[1]: value_att_1})
 
-    def _get_results(self):
-        pass
+        for e in self._network.edges():
+            self._network.update_edge(e[0],e[1],{edge_attributes[0]: params[NADynamics.INITIAL_EDGE_0],
+                                                 edge_attributes[1]: params[NADynamics.INITIAL_EDGE_1]})
 
 
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
         self.network = Network(compartments, patch_attributes, edge_attributes)
-        self.network.add_nodes_from(['a','b','c'])
-        self.network.add_edges_from([('a','b'),('b','c')])
+        self.nodes = ['a1','b1','c1']
+        self.network.add_nodes_from(self.nodes)
+        self.network.add_edges_from([('a1','b1'),('b1','c1')])
 
         self.dynamics = NADynamics(self.network)
 
@@ -82,13 +86,14 @@ class DynamicsTestCase(unittest.TestCase):
         self.assertEqual(event2._reaction_parameter, params[RP_2_KEY])
 
     def test_setUp(self):
-        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
-                  NADynamics.INITIAL_COMP_1: 5}
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
+                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
+                  NADynamics.INITIAL_EDGE_1: 17}
         self.dynamics.configure(params)
         self.dynamics.setUp(params)
 
         # Populations updated
-        for a in ['a','b','c']:
+        for a in ['a1','b1','c1']:
             self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[0]],
                              params[NADynamics.INITIAL_COMP_0])
             self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[1]],
@@ -102,12 +107,46 @@ class DynamicsTestCase(unittest.TestCase):
             self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[RP_2_KEY] * 2 *
                                    params[NADynamics.INITIAL_COMP_1])
 
+        # Attribute updates
+        for a in ['a1','b1','c1']:
+            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[0]],
+                             params[NADynamics.INITIAL_ATT_0])
+            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[1]],
+                             params[NADynamics.INITIAL_ATT_1])
+            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[2]], 0)
+
+        # Edge updates
+        for _, _, d in self.dynamics._network.edges(data=True):
+            self.assertEqual(d[edge_attributes[0]], params[NADynamics.INITIAL_EDGE_0])
+            self.assertEqual(d[edge_attributes[1]], params[NADynamics.INITIAL_EDGE_1])
+            self.assertFalse(d[edge_attributes[2]])
+
     def test_run(self):
-        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
-                  NADynamics.INITIAL_COMP_1: 5}
+        params = {RP_1_KEY: 0.1, RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
+                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
+                  NADynamics.INITIAL_EDGE_1: 17}
         self.dynamics.configure(params)
         self.dynamics.setUp(params)
 
+        max_time = 69
+        interval = 0.1
+
+        self.dynamics.set_maximum_time(max_time)
+        self.dynamics.set_record_interval(interval)
+        #TODO
+        r = self.dynamics.run()
+        self.assertItemsEqual(r.keys(), ['results', 'metadata', 'parameters'])
+        self.assertItemsEqual(r['parameters'].keys(), params.keys())
+        for k,v in r['parameters'].iteritems():
+            self.assertEqual(v, params[k])
+        self.assertEqual(len(r['results']), max_time/interval)
+        for t,v in r['results'].iteritems():
+            self.assertEqual(t[0:2], 't=')
+            self.assertItemsEqual(v.keys(), self.nodes)
+            for n,q in v.iteritems():
+                self.assertItemsEqual(q.keys(), [Network.ATTRIBUTES, Network.COMPARTMENTS])
+                self.assertItemsEqual(q[Network.COMPARTMENTS], compartments)
+                self.assertItemsEqual(q[Network.ATTRIBUTES], patch_attributes)
 
 if __name__ == '__main__':
     unittest.main()
