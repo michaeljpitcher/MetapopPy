@@ -218,14 +218,22 @@ class PulmonaryNetwork(TypedNetwork):
             # Save all values in a dict and update all at once
             seed_amounts = {}
             for cell, (recruit_rate, death_rate) in lung_recruitment_death_rates.iteritems():
-                seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
+                if recruit_rate > 0.0:
+                    assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
+                    seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
+                else:
+                    seed_amounts[cell] = 0
             self.update_patch(n, seed_amounts)
 
         # Lymph patches - recruitment / death rate
         for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
             seed_amounts = {}
             for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
-                seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
+                if recruit_rate > 0.0:
+                    assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
+                    seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
+                else:
+                    seed_amounts[cell] = 0
             self.update_patch(n, seed_amounts)
 
 # TODO change in patch perfusion needs to feed through to edge
