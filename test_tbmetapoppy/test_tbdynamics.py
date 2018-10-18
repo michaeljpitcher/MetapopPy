@@ -30,9 +30,11 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(bim_rep), 1)
 
         # Bacterial state change
-        bed_to_ber = [e for e in self.dynamics._events if isinstance(e, BacteriumChangeStateThroughOxygen) and e._compartment_from == BACTERIUM_EXTRACELLULAR_DORMANT]
+        bed_to_ber = [e for e in self.dynamics._events if isinstance(e, BacteriumChangeStateThroughOxygen) and
+                      e._compartment_from == BACTERIUM_EXTRACELLULAR_DORMANT]
         self.assertEqual(len(bed_to_ber), 1)
-        ber_to_bed = [e for e in self.dynamics._events if isinstance(e, BacteriumChangeStateThroughOxygen) and e._compartment_from == BACTERIUM_EXTRACELLULAR_DORMANT]
+        ber_to_bed = [e for e in self.dynamics._events if isinstance(e, BacteriumChangeStateThroughOxygen) and
+                      e._compartment_from == BACTERIUM_EXTRACELLULAR_DORMANT]
         self.assertEqual(len(ber_to_bed), 1)
 
         # Bacterial destruction
@@ -152,14 +154,14 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_MR_DESTROY_BACTERIA] = 0.10
         params[TBDynamics.RP_MA_DESTROY_BACTERIA] = 0.11
         params[TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION] = 0.12
-        params[TBDynamics.RP_DCI_RECRUITMENT] = 0.13
+        params[TBDynamics.RP_DCI_RECRUITMENT] = 130.0
         params[TBDynamics.RP_DCI_DEATH] = 0.14
         params[TBDynamics.RP_DCM_DEATH] = 0.15
         params[TBDynamics.RP_DCI_MATURATION] = 0.16
         params[TBDynamics.HALF_SAT_DCI_MATURATION] = 0.17
         params[TBDynamics.RP_DCM_TRANSLOCATION] = 0.18
-        params[TBDynamics.RP_MR_RECRUIT_LUNG] = 0.19
-        params[TBDynamics.RP_MR_RECRUIT_LYMPH] = 0.20
+        params[TBDynamics.RP_MR_RECRUIT_LUNG] = 190.0
+        params[TBDynamics.RP_MR_RECRUIT_LYMPH] = 200.0
         params[TBDynamics.RP_MR_ACTIVATION_BY_TCELL] = 0.21
         params[TBDynamics.HALF_SAT_MR_ACTIVATION_BY_TCELL] = 0.22
         params[TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA] = 0.23
@@ -173,7 +175,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_MR_INFECTION] = 0.31
         params[TBDynamics.HALF_SAT_MR_INFECTION] = 0.32
         params[TBDynamics.RP_MI_TRANSLOCATION] = 0.33
-        params[TBDynamics.RP_TN_RECRUIT] = 0.34
+        params[TBDynamics.RP_TN_RECRUIT] = 340.0
         params[TBDynamics.RP_TCELL_ACTIVATION] = 0.35
         params[TBDynamics.HALF_SAT_TCELL_ACTIVATION] = 0.36
         params[TBDynamics.RP_TA_TRANSLOCATION] = 0.37
@@ -381,6 +383,28 @@ class TBDynamicsTestCase(unittest.TestCase):
                         e._dying_compartment == T_CELL_ACTIVATED)
         self.assertEqual(ta_death._reaction_parameter, params[TBDynamics.RP_TA_DEATH])
 
+        # Set Up
+        self.dynamics.setUp(params)
+
+        for p,v in self.dynamics.network().nodes(data=True):
+            if v[TypedNetwork.PATCH_TYPE] == PulmonaryNetwork.ALVEOLAR_PATCH:
+                # TODO test pul atts
+                pass
+                # Test comp seed
+                self.assertEqual(v[PulmonaryNetwork.COMPARTMENTS][MACROPHAGE_RESTING],
+                                 int(round(v[PulmonaryNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
+                                           (params[TBDynamics.RP_MR_RECRUIT_LUNG]) / params[TBDynamics.RP_MR_DEATH])))
+                self.assertEqual(v[PulmonaryNetwork.COMPARTMENTS][DENDRITIC_CELL_IMMATURE],
+                                 int(round(v[PulmonaryNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
+                                           (params[TBDynamics.RP_DCI_RECRUITMENT]) / params[TBDynamics.RP_DCI_DEATH])))
+            elif v[TypedNetwork.PATCH_TYPE] == PulmonaryNetwork.LYMPH_PATCH:
+                self.assertEqual(v[PulmonaryNetwork.COMPARTMENTS][T_CELL_NAIVE],
+                                 int(round(params[TBDynamics.RP_TN_RECRUIT] / params[TBDynamics.RP_TN_DEATH])))
+            else:
+                raise Exception
+
+        # Do
+        self.dynamics.set_maximum_time(10)
         self.dynamics.do(params)
 
 
