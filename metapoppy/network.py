@@ -48,6 +48,12 @@ class Network(networkx.Graph):
         return self._edge_attributes
 
     def set_handler(self, handler):
+        """
+        Given a lambda function as an update handler, assign it to the network. Function will be called when an update
+        is performed
+        :param handler:
+        :return:
+        """
         self._handler = handler
 
     def prepare(self):
@@ -156,7 +162,7 @@ class Network(networkx.Graph):
 
 class TypedNetwork(Network):
     """
-    A MetapopPy network where patches are assigned a "type", which can restrict which dynamics occurs there.
+    A MetapopPy network where patches are assigned a "type", which can be used to restrict which dynamics occurs there.
     """
 
     PATCH_TYPE = 'patch_type'
@@ -179,9 +185,21 @@ class TypedNetwork(Network):
         self._patch_types = {}
 
     def set_patch_type(self, patch_id, patch_type):
+        """
+        Assign the patch type to the patch
+        :param patch_id:
+        :param patch_type:
+        :return:
+        """
         self.nodes[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
 
     def get_patches_by_type(self, patch_type, data=False):
+        """
+        Return a list of patch IDs of the given type
+        :param patch_type:
+        :param data: If true, also returns the patch data
+        :return:
+        """
         if patch_type not in self._patch_types:
             return []
         elif data:
@@ -190,8 +208,13 @@ class TypedNetwork(Network):
             return self._patch_types[patch_type]
 
     def prepare(self):
-        # Ensure every patch has been given a type
+        """
+        Prepare the network for experiment repetition. Ensures every patch has been given a type and builds lookup
+        lists.
+        :return:
+        """
         for patch_id, patch_data in self.nodes.data():
+            # Ensure every patch has been given a type
             assert TypedNetwork.PATCH_TYPE in patch_data, "Node {0} must be assigned a patch type".format(patch_id)
             # Create the shortcut list for this patch type if we haven't seen it yet
             if patch_data[TypedNetwork.PATCH_TYPE] not in self._patch_types:
@@ -201,6 +224,10 @@ class TypedNetwork(Network):
         Network.prepare(self)
 
     def _prepare_attributes(self):
+        """
+        When preparing attributes, only assign patch attributes that correspond to the given patch type
+        :return:
+        """
         # Prepare the network attributes
         for _, patch_data in self.nodes.data():
             p_type = patch_data[TypedNetwork.PATCH_TYPE]
