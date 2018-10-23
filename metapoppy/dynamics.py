@@ -93,9 +93,15 @@ class Dynamics(epyc.Experiment, object):
         return self._network
 
     def configure(self, params):
+        """
+        Configure the experiment for the given parameters. Sets the parameters for events (by passing all parameters to
+        events)m
+        :param params:
+        :return:
+        """
         epyc.Experiment.configure(self, params)
 
-        # Set the event reaction parameters using the initial conditions
+        # Set the event reaction parameters
         for e in self._events:
             e.set_parameters(params)
 
@@ -103,13 +109,14 @@ class Dynamics(epyc.Experiment, object):
         if Dynamics.INITIAL_TIME in params:
             self._start_time = params[Dynamics.INITIAL_TIME]
 
-        # Prepare network - reset all values to zero
+        # Ensure a network prototype is in place
         assert self._network_prototype, "Network has not been configured"
-
 
     def setUp(self, params):
         """
-        Configure the dynamics and the network ready for a simulation.
+        Configure the dynamics and the network ready for a repetition of an experiment.
+        Copies the prototype network into the main network to be updated. Seeds this network with attribute and
+        compartment values.
         :param params: Initial parameters - initial conditions of network and event reaction parameters.
         :return:
         """
@@ -117,9 +124,11 @@ class Dynamics(epyc.Experiment, object):
         # Default setup
         epyc.Experiment.setUp(self, params)
 
-        # Use a copy of the network prototype (must be done on every run in case network has changed)
+        # Use a copy of the network prototype (must be done on every run in case network has changed in order to start
+        # with a fresh network)
         # TODO - inefficient to deepcopy?
         self._network = copy.deepcopy(self._network_prototype)
+        # Set up compartment and attribute values as 0
         self._network.prepare()
 
         # Seed the prototype network
@@ -128,28 +137,13 @@ class Dynamics(epyc.Experiment, object):
         # Attach the update handler
         self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
 
-        # Check which patches should be active
-        for patch_id, data in self._network.nodes(data=True):
+        # Check which patches should be active based on seeding
+        for patch_id, data in self._network.nodes.data():
             if self._patch_is_active(patch_id):
                 self._activate_patch(patch_id)
 
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
-
-    def _activate_patch(self, patch_id):
-        self._row_for_patch[patch_id] = len(self._active_patches)
-        self._active_patches.append(patch_id)
-
-        rates = []
-        for event in self._events:
-            rates.append(event.calculate_rate_at_patch(self._network, patch_id))
-        rates = numpy.array(rates).reshape(1, len(rates))
-        if self._rate_table is None:
-            # This row becomes the rate table if it's currently empty
-            self._rate_table = rates
-        else:
-            # Add the rates for this patch as a new row (build a new table by concatenation)
-            self._rate_table = numpy.concatenate((self._rate_table, rates), 0)
 
     def _seed_network(self, params):
         """
@@ -158,15 +152,6 @@ class Dynamics(epyc.Experiment, object):
         :return:
         """
         raise NotImplementedError
-
-    def _patch_is_active(self, patch_id):
-        """
-        Determine if the given patch is active (from the network). Default is patches are always active, can be
-        overridden to only process patches based on a given condition.
-        :param patch_id:
-        :return:
-        """
-        return True
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
@@ -178,15 +163,49 @@ class Dynamics(epyc.Experiment, object):
         :param edge_changes:
         :return:
         """
-
+        # TODO only update events which depend on changed compartments/attributes
+        # Check if patch is active
+        # TODO - more efficient way of checking if patch is active
         active = patch_id in self._active_patches
+        # If patch is already active
         if active:
             row = self._row_for_patch[patch_id]
             for col in range(len(self._events)):
                 event = self._events[col]
                 self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+        # Patch is not previously active but should become active from this update
         elif self._patch_is_active(patch_id):
             self._activate_patch(patch_id)
+
+    def _patch_is_active(self, patch_id):
+        """
+        Determine if the given patch is active (from the network). Default is that patches are always active, can be
+        overridden to only process patches based on a given condition.
+        :param patch_id:
+        :return:
+        """
+        return True
+
+    def _activate_patch(self, patch_id):
+        """
+        A patch has become active, so create a new row in the rate table for it and determine rates of events there.
+        :param patch_id:
+        :return:
+        """
+        # Calculate the row number
+        self._row_for_patch[patch_id] = len(self._active_patches)
+        # Add to active patch list
+        self._active_patches.append(patch_id)
+
+        # Create a row of rates - value in each column is rate of an event at this patch
+        rates = numpy.array([e.calculate_rate_at_patch(self._network, patch_id) for e in self._events]).reshape(1, len(
+            self._events))
+        if self._rate_table is None:
+            # This row becomes the rate table if it's currently empty
+            self._rate_table = rates
+        else:
+            # Add the rates for this patch as a new row (build a new table by concatenation)
+            self._rate_table = numpy.concatenate((self._rate_table, rates), 0)
 
     def do(self, params):
         """
@@ -261,7 +280,7 @@ class Dynamics(epyc.Experiment, object):
 
     def tearDown(self):
         """
-        After a simulation ends, remove the used graph.
+        After a repetition ends, remove the used graph and rate table.
         :return:
         """
         # Perform the default tear-down
