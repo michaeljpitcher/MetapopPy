@@ -38,6 +38,9 @@ class PulmonaryNetwork(TypedNetwork):
         elif network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
 
+    def copy(self, as_view=False):
+        return self.__class__(self._compartments, self._patch_attributes, self._edge_attributes, self)
+
     def _build_single_patch_network(self):
         # Create lymph patch
         self.add_node(PulmonaryNetwork.LYMPH_PATCH)

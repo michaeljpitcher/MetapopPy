@@ -15,8 +15,6 @@ class TBDynamicsTestCase(unittest.TestCase):
     def test_initialise(self):
         # Check event creation
         # Rows = number of events, cols = number of nodes
-        self.assertEqual(self.dynamics._rate_table.shape, (34, 17))
-
         self.assertEqual(len(self.dynamics._events), 34)
 
         # Bacterial replication
@@ -61,12 +59,12 @@ class TBDynamicsTestCase(unittest.TestCase):
 
         # DC infection
         dc_infect = [e for e in self.dynamics._events if isinstance(e, CellInfection) and
-                      e._cell_type == DENDRITIC_CELL_IMMATURE]
+                     e._cell_type == DENDRITIC_CELL_IMMATURE]
         self.assertEqual(len(dc_infect), 1)
 
         # DC translocation
         dc_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
-                      e._cell_type == DENDRITIC_CELL_MATURE]
+                     e._cell_type == DENDRITIC_CELL_MATURE]
         self.assertEqual(len(dc_transl), 1)
 
         for d in DENDRITIC_CELLS:
@@ -121,13 +119,13 @@ class TBDynamicsTestCase(unittest.TestCase):
 
         # T-cell activation
         tc_act = [e for e in self.dynamics._events if isinstance(e, CellActivation) and
-                      e._resting_cell == T_CELL_NAIVE]
+                  e._resting_cell == T_CELL_NAIVE]
         self.assertEqual(len(tc_act), 1)
         self.assertItemsEqual(tc_act[0]._triggers, [DENDRITIC_CELL_MATURE, MACROPHAGE_INFECTED])
 
         # T-cell translocation
         tc_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
-                      e._cell_type == T_CELL_ACTIVATED]
+                     e._cell_type == T_CELL_ACTIVATED]
         self.assertEqual(len(tc_transl), 1)
 
         # T-cell death

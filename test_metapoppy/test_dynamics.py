@@ -102,9 +102,9 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Population updates feeds through to event rates
         for col in range(0, 3):
-            self.assertAlmostEqual(self.dynamics._rate_table[0][col], params[RP_1_KEY] *
+            self.assertAlmostEqual(self.dynamics._rate_table[col][0], params[RP_1_KEY] *
                                    params[NADynamics.INITIAL_COMP_0])
-            self.assertAlmostEqual(self.dynamics._rate_table[1][col], params[RP_2_KEY] * 2 *
+            self.assertAlmostEqual(self.dynamics._rate_table[col][1], params[RP_2_KEY] * 2 *
                                    params[NADynamics.INITIAL_COMP_1])
 
         # Attribute updates

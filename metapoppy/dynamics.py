@@ -23,8 +23,10 @@ class Dynamics(epyc.Experiment, object):
         """
         epyc.Experiment.__init__(self)
         # Initialise variables
-        self._network_prototype = self._rate_table = self._patch_for_column = self._column_for_patch = \
-            self._patch_active = self._network = None
+        self._network_prototype = self._rate_table = self._network = None
+
+        self._row_for_patch = {}
+        self._active_patches = []
 
         # Create the events
         self._events = self._create_events()
@@ -58,16 +60,6 @@ class Dynamics(epyc.Experiment, object):
         self._network_prototype = prototype
         assert isinstance(prototype, Network), "Graph must be instance of MetapopPy Network class"
         assert self._network_prototype.nodes(), "Empty network is invalid"
-
-        # Obtain the patches of the network (for lookup purposes)
-        self._patch_for_column = self._network_prototype.nodes()[:]
-        self._column_for_patch = dict([(self._patch_for_column[k], k) for k in
-                                       range(len(self._patch_for_column))])
-        self._patch_active = dict([(self._patch_for_column[k], False) for k in
-                                    range(len(self._patch_for_column))])
-
-        # Create a rate table. Rows are events, columns are patches
-        self._rate_table = numpy.zeros([len(self._events), len(self._patch_for_column)], dtype=numpy.float)
 
     def set_start_time(self, start_time):
         """
@@ -113,7 +105,7 @@ class Dynamics(epyc.Experiment, object):
 
         # Prepare network - reset all values to zero
         assert self._network_prototype, "Network has not been configured"
-        self._network_prototype.prepare()
+
 
     def setUp(self, params):
         """
@@ -126,7 +118,9 @@ class Dynamics(epyc.Experiment, object):
         epyc.Experiment.setUp(self, params)
 
         # Use a copy of the network prototype (must be done on every run in case network has changed)
-        self._network = self._network_prototype.copy()
+        # TODO - inefficient to deepcopy?
+        self._network = copy.deepcopy(self._network_prototype)
+        self._network.prepare()
 
         # Seed the prototype network
         self._seed_network(params)
@@ -136,19 +130,26 @@ class Dynamics(epyc.Experiment, object):
 
         # Check which patches should be active
         for patch_id, data in self._network.nodes(data=True):
-            self._patch_active[patch_id] = self._patch_is_active(patch_id)
+            if self._patch_is_active(patch_id):
+                self._activate_patch(patch_id)
 
         # Check that at least one patch is active
-        assert any(n for n in self._patch_active.values() if n), "No patches are active"
+        assert any(self._active_patches), "No patches are active"
 
-        # Set initial rate values for all event/patch combinations
-        for col in range(len(self._patch_for_column)):
-            patch_id = self._patch_for_column[col]
-            if self._patch_active[patch_id]:
-                for row in range(len(self._events)):
-                    event = self._events[row]
-                    self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+    def _activate_patch(self, patch_id):
+        self._row_for_patch[patch_id] = len(self._active_patches)
+        self._active_patches.append(patch_id)
 
+        rates = []
+        for event in self._events:
+            rates.append(event.calculate_rate_at_patch(self._network, patch_id))
+        rates = numpy.array(rates).reshape(1, len(rates))
+        if self._rate_table is None:
+            # This row becomes the rate table if it's currently empty
+            self._rate_table = rates
+        else:
+            # Add the rates for this patch as a new row (build a new table by concatenation)
+            self._rate_table = numpy.concatenate((self._rate_table, rates), 0)
 
     def _seed_network(self, params):
         """
@@ -178,19 +179,14 @@ class Dynamics(epyc.Experiment, object):
         :return:
         """
 
-        col = self._column_for_patch[patch_id]
-        active = self._patch_active[patch_id]
-
-        # If patch is not active, check if it should become active
-        if not active and self._patch_is_active(patch_id):
-            self._patch_active[patch_id] = active = True
-
-        # Only process event rates on patches that are active
+        active = patch_id in self._active_patches
         if active:
-            for row in range(len(self._events)):
-                event = self._events[row]
+            row = self._row_for_patch[patch_id]
+            for col in range(len(self._events)):
+                event = self._events[col]
                 self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
-            # TODO - only update events dependent on atts/comps changed
+        elif self._patch_is_active(patch_id):
+            self._activate_patch(patch_id)
 
     def do(self, params):
         """
@@ -211,7 +207,6 @@ class Dynamics(epyc.Experiment, object):
                 results["t=" + str(record_time)][p] = copy.deepcopy(data)
             return results
 
-        number_patches = len(self._patch_for_column)
         # indices = range(0, self._rate_table.size)
 
         results = record_results(results, time)
@@ -219,6 +214,8 @@ class Dynamics(epyc.Experiment, object):
 
         total_network_rate = numpy.sum(self._rate_table)
         assert total_network_rate, "No events possible at start of simulation"
+
+        num_events = len(self._events)
 
         while not self._at_equilibrium(time):
 
@@ -229,12 +226,13 @@ class Dynamics(epyc.Experiment, object):
             # TODO - numpy multinomial is faster than numpy choice (in python 2, maybe not in 3?)
             # index_choice = numpy.random.choice(indices, p=self._rate_table.flatten() / total_network_rate)
             index_choice = numpy.random.multinomial(1, self._rate_table.flatten() / total_network_rate).argmax()
-            # Given the index, find the event and patch this refers to
-            event = self._events[index_choice / number_patches]
-            patch_id = self._patch_for_column[index_choice % number_patches]
+            # Given the index, find the patch (row) and event (column) this refers to
+            patch_id = self._active_patches[index_choice / num_events]
+            event = self._events[index_choice % num_events]
 
             # Perform the event. Handler will propagate the effects of any network updates
             event.perform(self._network, patch_id)
+
             # Move simulated time forward
             time += dt
 
@@ -272,5 +270,7 @@ class Dynamics(epyc.Experiment, object):
         # Remove the worked-on model
         self._network = None
 
-        # Reset rate table
-        self._rate_table.fill(0.0)
+        # Reset rate table and lookups
+        self._rate_table = None
+        self._active_patches = []
+        self._row_for_patch = {}

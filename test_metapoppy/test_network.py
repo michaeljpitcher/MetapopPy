@@ -28,7 +28,7 @@ class NetworkTestCase(unittest.TestCase):
                 self.assertEqual(self.network.node[n][Network.ATTRIBUTES][a], 0.0)
 
         for (u, v) in edges:
-            data = self.network.edge[u][v]
+            data = self.network.get_edge_data(u, v)
             self.assertItemsEqual(data.keys(), self.edge_attributes)
             for a in self.edge_attributes:
                 self.assertEqual(data[a], 0.0)
