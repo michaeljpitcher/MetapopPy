@@ -23,6 +23,8 @@ class CellDeath(Event):
                                        network.get_compartment_value(patch_id, self._dying_compartment)))
             changes[self._internal_compartment] = bac_to_release * -1
             changes[BACTERIUM_EXTRACELLULAR_DORMANT] = bac_to_release
+            if self._dying_compartment == MACROPHAGE_INFECTED:
+                changes[CASEUM] = 1
         network.update_patch(patch_id, changes)
 
 

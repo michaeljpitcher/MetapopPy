@@ -49,6 +49,7 @@ class CellDeathTestCase(unittest.TestCase):
         self.assertEqual(self.network.get_compartment_value(1, MACROPHAGE_INFECTED), 0)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_INTRACELLULAR_MACROPHAGE), 0)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_EXTRACELLULAR_DORMANT), 10)
+        self.assertEqual(self.network.get_compartment_value(1, CASEUM), 1)
 
         # Round down - 10/3
         self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_DORMANT: -10,
@@ -58,6 +59,7 @@ class CellDeathTestCase(unittest.TestCase):
         self.assertEqual(self.network.get_compartment_value(1, MACROPHAGE_INFECTED), 2)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_INTRACELLULAR_MACROPHAGE), 7)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_EXTRACELLULAR_DORMANT), 3)
+        self.assertEqual(self.network.get_compartment_value(1, CASEUM), 2)
 
         # Round up - 10/4
         self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_DORMANT: -3,
@@ -67,6 +69,7 @@ class CellDeathTestCase(unittest.TestCase):
         self.assertEqual(self.network.get_compartment_value(1, MACROPHAGE_INFECTED), 3)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_INTRACELLULAR_MACROPHAGE), 7)
         self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_EXTRACELLULAR_DORMANT), 3)
+        self.assertEqual(self.network.get_compartment_value(1, CASEUM), 3)
 
         self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_DORMANT: -3,
                                       MACROPHAGE_INFECTED: -3,
