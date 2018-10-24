@@ -178,17 +178,26 @@ class PulmonaryNetwork(TypedNetwork):
 
         total_v = 0
         total_q = 0
-        total_d = 0
+
+        # For ventilation and perfusion, value at apex will be 1, at base will be equal to skew. These are normalised
+        # later to bring sum of all values for whole lung == 1
+        # For drainage, value in middle of lung will equal 1, values for base and apex are derived from this and the
+        # skew, and used to calculate values in between
+
+        mins = {PulmonaryNetwork.VENTILATION: 1, PulmonaryNetwork.PERFUSION: 1,
+                PulmonaryNetwork.DRAINAGE: 1.0 / (1 + (drainage_skew-1)/2.0)}
+        maxs = {PulmonaryNetwork.VENTILATION: ventilation_skew, PulmonaryNetwork.PERFUSION: perfusion_skew,
+                PulmonaryNetwork.DRAINAGE: mins[PulmonaryNetwork.DRAINAGE] * drainage_skew}
+        diffs = dict([(k, maxs[k] - mins[k]) for k in mins.keys()])
 
         # Calculate values - 1 + (y_max - y) * (skew - 1)/(ymax - ymin)
-        for index, pos in self._alveolar_positions.iteritems():
+        for index, (_,pos) in self._alveolar_positions.iteritems():
             seeding[index] = {}
-            vent_value = (1 + (y_max - pos[1])*((ventilation_skew-1)/y_diff))
-            perf_value = (1 + (y_max - pos[1])*((perfusion_skew-1)/y_diff))
-            drain_value = (1 + (y_max - pos[1])*((drainage_skew-1)/y_diff))
+            vent_value = mins[PulmonaryNetwork.VENTILATION] + (y_max - pos)*(diffs[PulmonaryNetwork.VENTILATION]/y_diff)
+            perf_value = mins[PulmonaryNetwork.PERFUSION] + (y_max - pos)*(diffs[PulmonaryNetwork.PERFUSION]/y_diff)
+            drain_value = mins[PulmonaryNetwork.DRAINAGE] + (y_max - pos)*(diffs[PulmonaryNetwork.DRAINAGE]/y_diff)
             total_v += vent_value
             total_q += perf_value
-            total_d += drain_value
             seeding[index] = {PulmonaryNetwork.VENTILATION: vent_value,
                               PulmonaryNetwork.PERFUSION: perf_value,
                               PulmonaryNetwork.DRAINAGE: drain_value}
@@ -198,11 +207,11 @@ class PulmonaryNetwork(TypedNetwork):
             v = values[PulmonaryNetwork.VENTILATION] / total_v
             q = values[PulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
-            d = values[PulmonaryNetwork.DRAINAGE] / total_d
             self.update_patch(patch_id, attribute_changes={PulmonaryNetwork.VENTILATION: v,
                                                            PulmonaryNetwork.PERFUSION: q,
                                                            PulmonaryNetwork.OXYGEN_TENSION: o2,
-                                                           PulmonaryNetwork.DRAINAGE: d})
+                                                           PulmonaryNetwork.DRAINAGE:
+                                                               values[PulmonaryNetwork.DRAINAGE]})
             self.update_edge(patch_id, PulmonaryNetwork.LYMPH_PATCH, {PulmonaryNetwork.PERFUSION: q})
 
     def seed_patches_by_rates(self, lung_recruitment_death_rates, lymph_recruitment_death_rates):

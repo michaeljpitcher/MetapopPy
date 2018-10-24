@@ -25,24 +25,44 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
             for w in positions:
                 e.append((q,w))
         self.assertItemsEqual(e, self.tree_network._alveolar_positions.values())
-        self.assertEqual(len(self.tree_network.edges()), 16)
-        self.assertEqual(len(self.tree_network.edges([PulmonaryNetwork.LYMPH_PATCH])), 16)
+        self.assertEqual(len(self.tree_network.edges), 16)
+        self.assertEqual(len(self.tree_network[PulmonaryNetwork.LYMPH_PATCH]), 16)
 
     def test_pulmonary_attribute_seeding(self):
-        params = {PulmonaryNetwork.VENTILATION_SKEW: 3, PulmonaryNetwork.PERFUSION_SKEW: 2,
-                  PulmonaryNetwork.DRAINAGE_SKEW: 1}
+        params = {PulmonaryNetwork.VENTILATION_SKEW: 3.5, PulmonaryNetwork.PERFUSION_SKEW: 3,
+                  PulmonaryNetwork.DRAINAGE_SKEW: 2}
         self.tree_network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
                                                     params[PulmonaryNetwork.PERFUSION_SKEW],
                                                     params[PulmonaryNetwork.DRAINAGE_SKEW])
 
         alv_patch_ids = self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH)
 
-        for att in [PulmonaryNetwork.VENTILATION, PulmonaryNetwork.PERFUSION, PulmonaryNetwork.DRAINAGE]:
+        for att in [PulmonaryNetwork.VENTILATION, PulmonaryNetwork.PERFUSION]:
             self.assertEqual(sum(self.tree_network.get_attribute_value(a, att) for a in alv_patch_ids), 1)
 
-        # Check all drainage values are the same (since we've set the skew to 1)
-        self.assertEqual(len(set([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE) for a in
-                                  alv_patch_ids])), 1)
+        maxv = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION)
+                             for a in alv_patch_ids])
+        minv = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION)
+                             for a in alv_patch_ids])
+
+        self.assertAlmostEqual(maxv / minv, params[PulmonaryNetwork.VENTILATION_SKEW])
+
+        maxq = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION)
+                    for a in alv_patch_ids])
+        minq = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION)
+                    for a in alv_patch_ids])
+
+        self.assertAlmostEqual(maxq / minq, params[PulmonaryNetwork.PERFUSION_SKEW])
+
+        maxd = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE)
+                    for a in alv_patch_ids])
+        mind = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE)
+                    for a in alv_patch_ids])
+
+        self.assertEqual(mind, 2.0 / 3.0)
+        self.assertEqual(maxd, 4.0 / 3.0)
+
+        self.assertAlmostEqual(maxd / mind, params[PulmonaryNetwork.DRAINAGE_SKEW])
 
         for a in alv_patch_ids:
             self.assertEqual(self.tree_network.get_attribute_value(a, PulmonaryNetwork.OXYGEN_TENSION),
