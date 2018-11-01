@@ -57,9 +57,8 @@ class TCellTranslocationToLungByInfection(CellTranslocationToLung):
     def perform(self, network, patch_id):
         edges = network.edges([patch_id],data=True)
 
-        infections = [d[PulmonaryNetwork.PERFUSION] *
-                      (network.get_compartment_value(n, BACTERIUM_EXTRACELLULAR_DORMANT) +
-                       network.get_compartment_value(n, BACTERIUM_EXTRACELLULAR_REPLICATING)) for _, n, d in edges]
+        infections = [d[PulmonaryNetwork.PERFUSION] * network.get_compartment_value(n, EXTRACELLULAR_BACTERIA)
+                      for _, n, d in edges]
 
         total_infection = sum(infections)
 
