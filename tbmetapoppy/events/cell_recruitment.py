@@ -1,5 +1,6 @@
 from tbmetapoppy.pulmonarynetwork import PulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
+from ..tbcompartments import *
 
 
 class CellRecruitment(PatchTypeEvent):
@@ -23,18 +24,21 @@ class StandardCellRecruitmentLung(CellRecruitment):
 
 
 class EnhancedCellRecruitmentLung(CellRecruitment):
-    def __init__(self, recruitment_rate_key, cell_type, enhancer, half_sat_key):
+    def __init__(self, recruitment_rate_key, cell_recruited, half_sat_key, weight_key):
         self._half_sat_key = half_sat_key
-        self._enhancers = enhancer
-        CellRecruitment.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, recruitment_rate_key, cell_type, [half_sat_key])
+        self._weight_key = weight_key
+        CellRecruitment.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, recruitment_rate_key, cell_recruited,
+                                 [half_sat_key, weight_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
-        enhancer_count = network.get_compartment_value(patch_id, self._enhancers)
-        if not enhancer_count:
+        mi = network.get_compartment_value(patch_id, MACROPHAGE_INFECTED)
+        ma = network.get_compartment_value(patch_id, MACROPHAGE_ACTIVATED)
+        if not (mi + ma):
             return 0
-        return network.get_attribute_value(patch_id, PulmonaryNetwork.PERFUSION) * (float(enhancer_count) /
-                (enhancer_count + self._parameters[self._half_sat_key]))
+        ma_and_mi = ma + self._parameters[self._weight_key] * mi
+        return network.get_attribute_value(patch_id, PulmonaryNetwork.PERFUSION) * \
+               (float(ma_and_mi) / (ma_and_mi + self._parameters[self._half_sat_key]))
 
 
 class StandardCellRecruitmentLymph(CellRecruitment):

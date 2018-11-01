@@ -30,8 +30,8 @@ class TBDynamics(Dynamics):
     RP_DCI_MATURATION = 'dendritic_cell_maturation_rate'
     HALF_SAT_DCI_MATURATION = 'dendritic_cell_maturation_halfsat'
     RP_DCI_RECRUITMENT = 'dendritic_cell_recruitment_rate'
-    RP_DCI_RECRUITMENT_ENHANCE_BAC = 'dendritic_cell_bacteria_enhanced_recruitment_rate'
-    HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC = 'dendritic_cell_bacteria_enhanced_recruitment_half_sat'
+    RP_DCI_RECRUITMENT_ENHANCED = 'dendritic_cell_enhanced_recruitment_rate'
+    HALF_SAT_DCI_RECRUITMENT_ENHANCED = 'dendritic_cell_enhanced_recruitment_half_sat'
     RP_DCM_TRANSLOCATION = 'dendritic_cell_translocation_rate'
 
     RP_MR_ACTIVATION_BY_TCELL = 'macrophage_activation_by_tcell_rate'
@@ -47,10 +47,11 @@ class TBDynamics(Dynamics):
     RP_TA_KILL_MI = 't_cell_destroys_macrophage_rate'
     HALF_SAT_TA_KILL_MI = 't_cell_destroys_macrophage_half_sat'
     RP_MR_RECRUIT_LUNG = 'macrophage_lung_recruitment_rate'
-    RP_MR_RECRUIT_ENHANCE_MI = 'macrophage_recruitment_enhanced_m_i_rate'
-    HALF_SAT_MR_RECRUIT_ENHANCE_MI = 'macrophage_recruitment_enhanced_m_i_half_sat'
-    RP_MR_RECRUIT_ENHANCE_MA = 'macrophage_recruitment_enhanced_m_a_rate'
-    HALF_SAT_MR_RECRUIT_ENHANCE_MA = 'macrophage_recruitment_enhanced_m_a_half_sat'
+    RP_MR_RECRUIT_ENHANCE = 'macrophage_recruitment_enhanced_rate'
+    HALF_SAT_MR_RECRUIT_ENHANCE = 'macrophage_recruitment_enhanced_half_sat'
+
+    MI_TO_MA_CHEMOKINE_WEIGHT = 'macrophage_infected_to_activated_chemokine_weight'
+
     RP_MR_RECRUIT_LYMPH = 'macrophage_lymph_recruitment_rate'
     RP_MI_TRANSLOCATION = 'macrophage_translocation_rate'
 
@@ -108,9 +109,10 @@ class TBDynamics(Dynamics):
 
         # Dendritic cell recruitment
         dc_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, DENDRITIC_CELL_IMMATURE)
-        dc_recruit_lung_enh = EnhancedCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT_ENHANCE_BAC,
-                                                          DENDRITIC_CELL_IMMATURE, EXTRACELLULAR_BACTERIA,
-                                                          TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC)
+        dc_recruit_lung_enh = EnhancedCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT_ENHANCED,
+                                                                     DENDRITIC_CELL_IMMATURE,
+                                                                     TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCED,
+                                                                     TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
         events += [dc_recruit_lung, dc_recruit_lung_enh]
 
         # Dendritic cell death
@@ -130,21 +132,18 @@ class TBDynamics(Dynamics):
         # Macrophage recruitment
         mr_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, MACROPHAGE_RESTING)
         mr_recruit_lymph = StandardCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, MACROPHAGE_RESTING)
-        mr_recruit_lung_enhanced_mi = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE_MI,
-                                                                  MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
-                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI)
-        mr_recruit_lung_enhanced_ma = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
-                                                                  MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
-                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
-        mr_recruit_lymph_enhanced_mi = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MI,
-                                                                  MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
-                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI)
-        mr_recruit_lymph_enhanced_ma = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
-                                                                  MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
-                                                                  TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
+        mr_recruit_lung_enhanced = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE,
+                                                               MACROPHAGE_RESTING,
+                                                               TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE,
+                                                               TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
+        # mr_recruit_lymph_enhanced_mi = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE,
+        #                                                           MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
+        #                                                           TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE)
+        # mr_recruit_lymph_enhanced_ma = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
+        #                                                           MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
+        #                                                           TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
 
-        events += [mr_recruit_lung, mr_recruit_lymph, mr_recruit_lung_enhanced_mi, mr_recruit_lung_enhanced_ma,
-                   mr_recruit_lymph_enhanced_mi, mr_recruit_lymph_enhanced_ma]
+        events += [mr_recruit_lung, mr_recruit_lymph, mr_recruit_lung_enhanced]
 
         # Macrophage activation
         mr_activation_bac = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA,
@@ -218,16 +217,18 @@ class TBDynamics(Dynamics):
                                             {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
                                              T_CELL_NAIVE: (tn_recruit, tn_death)})
 
-        # TODO - where to place bacteria (perfusion or fixed)?
         # Perfusion based - assumes sum of perfusion values = 1.0
-        r = numpy.random.random()
-        count = 0
-        for p in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
-            count += self._network.get_attribute_value(p, PulmonaryNetwork.PERFUSION)
-            if count >= r:
-                self._network.update_patch(p, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
-                                               BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
-                break
+        # r = numpy.random.random()
+        # count = 0
+        # for p in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
+        #     count += self._network.get_attribute_value(p, PulmonaryNetwork.PERFUSION)
+        #     if count >= r:
+        #         self._network.update_patch(p, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
+        #                                        BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
+        #         break
+        # TODO - debug code
+        self._network.update_patch(9, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
+                                       BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
 
     def _patch_is_active(self, patch_id):
         """
