@@ -99,10 +99,10 @@ class Network(networkx.Graph):
         :return:
         """
         if isinstance(compartment, list):
-            data = self.nodes[patch_id][Network.COMPARTMENTS]
+            data = self._node[patch_id][Network.COMPARTMENTS]
             return sum([data[c] for c in compartment])
         else:
-            return self.nodes[patch_id][Network.COMPARTMENTS][compartment]
+            return self._node[patch_id][Network.COMPARTMENTS][compartment]
 
     def get_attribute_value(self, patch_id, attribute):
         """
@@ -112,10 +112,10 @@ class Network(networkx.Graph):
         :return:
         """
         if isinstance(attribute, list):
-            data = self.nodes[patch_id][Network.ATTRIBUTES]
+            data = self._node[patch_id][Network.ATTRIBUTES]
             return sum([data[c] for c in attribute])
         else:
-            return self.nodes[patch_id][Network.ATTRIBUTES][attribute]
+            return self._node[patch_id][Network.ATTRIBUTES][attribute]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         """
