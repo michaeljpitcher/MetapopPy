@@ -11,7 +11,7 @@ class CellActivation(Event):
         Event.__init__(self, activation_rate_key, [half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        trigger_count = sum([network.get_compartment_value(patch_id, n) for n in self._triggers])
+        trigger_count = network.get_compartment_value(patch_id, self._triggers)
         if not trigger_count:
             return 0
         return network.get_compartment_value(patch_id, self._resting_cell) * \
