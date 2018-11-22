@@ -15,7 +15,7 @@ class TBDynamicsTestCase(unittest.TestCase):
     def test_initialise(self):
         # Check event creation
         # Rows = number of events, cols = number of nodes
-        self.assertEqual(len(self.dynamics._events), 34)
+        self.assertEqual(len(self.dynamics._events), 32)
 
         # Bacterial replication
         ber_rep = [e for e in self.dynamics._events if isinstance(e, Replication) and
@@ -53,9 +53,8 @@ class TBDynamicsTestCase(unittest.TestCase):
                        e._cell_type == DENDRITIC_CELL_IMMATURE]
         self.assertEqual(len(dc_rec_lung), 1)
         dc_rec_lung = [e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
-                       e._cell_type == DENDRITIC_CELL_IMMATURE and e._enhancers is not None]
+                       e._cell_type == DENDRITIC_CELL_IMMATURE]
         self.assertEqual(len(dc_rec_lung), 1)
-        self.assertItemsEqual(dc_rec_lung[0]._enhancers, EXTRACELLULAR_BACTERIA)
 
         # DC infection
         dc_infect = [e for e in self.dynamics._events if isinstance(e, CellInfection) and
@@ -183,12 +182,12 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA] = 0.40
         params[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA] = 0.41
 
-        params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI] = 0.42
-        params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI] = 0.43
-        params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA] = 0.44
-        params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA] = 0.45
-        params[TBDynamics.RP_DCI_RECRUITMENT_ENHANCE_BAC] = 0.46
-        params[TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCE_BAC] = 0.47
+        params[TBDynamics.RP_MR_RECRUIT_ENHANCE] = 0.42
+        params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE] = 0.43
+        params[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT] = 0.5
+
+        params[TBDynamics.RP_DCI_RECRUITMENT_ENHANCED] = 0.44
+        params[TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCED] = 0.43
 
         params[PulmonaryNetwork.VENTILATION_SKEW] = 1.1
         params[PulmonaryNetwork.PERFUSION_SKEW] = 2.2
@@ -283,29 +282,22 @@ class TBDynamicsTestCase(unittest.TestCase):
                              e._cell_type == MACROPHAGE_RESTING)
         self.assertEqual(mac_rec_lymph._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_LYMPH])
 
-        mac_rec_lung_enh_mi = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
-                                   e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_INFECTED)
-        self.assertEqual(mac_rec_lung_enh_mi._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI])
-        self.assertEqual(mac_rec_lung_enh_mi._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI],
-                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI])
+        mac_rec_lung_enh = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
+                                   e._cell_type == MACROPHAGE_RESTING)
+        self.assertEqual(mac_rec_lung_enh._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE])
+        self.assertEqual(mac_rec_lung_enh._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE])
+        self.assertEqual(mac_rec_lung_enh._parameters[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT],
+                         params[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT])
 
-        mac_rec_lung_enh_ma = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLung) and
-                                   e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_ACTIVATED)
-        self.assertEqual(mac_rec_lung_enh_ma._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA])
-        self.assertEqual(mac_rec_lung_enh_ma._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA],
-                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA])
 
-        mac_rec_lym_enh_mi = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLymph) and
-                                  e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_INFECTED)
-        self.assertEqual(mac_rec_lym_enh_mi._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MI])
-        self.assertEqual(mac_rec_lym_enh_mi._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI],
-                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MI])
-
-        mac_rec_lym_enh_ma = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLymph) and
-                                  e._cell_type == MACROPHAGE_RESTING and e._enhancers == MACROPHAGE_ACTIVATED)
-        self.assertEqual(mac_rec_lym_enh_ma._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE_MA])
-        self.assertEqual(mac_rec_lym_enh_ma._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA],
-                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA])
+        mac_rec_lym_enh = next(e for e in self.dynamics._events if isinstance(e, EnhancedCellRecruitmentLymph) and
+                                  e._cell_type == MACROPHAGE_RESTING)
+        self.assertEqual(mac_rec_lym_enh._reaction_parameter, params[TBDynamics.RP_MR_RECRUIT_ENHANCE])
+        self.assertEqual(mac_rec_lym_enh._parameters[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE],
+                         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE])
+        self.assertEqual(mac_rec_lym_enh._parameters[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT],
+                         params[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT])
 
         # Macrophage activation
         mac_act_tc = next(e for e in self.dynamics._events if isinstance(e, CellActivation) and
