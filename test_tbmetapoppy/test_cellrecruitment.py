@@ -3,6 +3,8 @@ from tbmetapoppy import *
 
 TEST_RECRUITMENT_RATE = 'test_recruitment_rate'
 TEST_HALF_SAT = 'test_half_sat'
+TEST_WEIGHT = 'test_weight'
+
 
 class CellRecruitmentTestCase(unittest.TestCase):
 
@@ -45,8 +47,8 @@ class EnhancedCellRecruitmentLungTestCase(unittest.TestCase):
 
     def setUp(self):
         self.event = EnhancedCellRecruitmentLung(TEST_RECRUITMENT_RATE, MACROPHAGE_RESTING,
-                                                 BACTERIUM_EXTRACELLULAR_REPLICATING, TEST_HALF_SAT)
-        self.params = {TEST_RECRUITMENT_RATE: 0.1, TEST_HALF_SAT: 10}
+                                                 TEST_HALF_SAT, TEST_WEIGHT)
+        self.params = {TEST_RECRUITMENT_RATE: 0.1, TEST_HALF_SAT: 10, TEST_WEIGHT: 0.2}
         self.event.set_parameters(self.params)
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
@@ -57,9 +59,9 @@ class EnhancedCellRecruitmentLungTestCase(unittest.TestCase):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, attribute_changes={PulmonaryNetwork.PERFUSION: 0.7})
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_REPLICATING: 2})
-        self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), self.params[TEST_RECRUITMENT_RATE] *
-                         0.7 * (2.0 / (2 + self.params[TEST_HALF_SAT])))
+        self.network.update_patch(1, {MACROPHAGE_INFECTED: 2, MACROPHAGE_ACTIVATED: 3})
+        self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, 1),
+                               0.1 * 0.7 * (3.0 + (0.2 * 2)) / (3.0 + (0.2 * 2) + 10))
 
 
 class StandardCellRecruitmentLymphTestCase(unittest.TestCase):
@@ -81,8 +83,8 @@ class EnhancedCellRecruitmentLymphTestCase(unittest.TestCase):
 
     def setUp(self):
         self.event = EnhancedCellRecruitmentLymph(TEST_RECRUITMENT_RATE, MACROPHAGE_RESTING,
-                                                  BACTERIUM_EXTRACELLULAR_REPLICATING, TEST_HALF_SAT)
-        self.params = {TEST_RECRUITMENT_RATE: 0.1, TEST_HALF_SAT: 10}
+                                                  TEST_HALF_SAT, TEST_WEIGHT)
+        self.params = {TEST_RECRUITMENT_RATE: 0.1, TEST_HALF_SAT: 10, TEST_WEIGHT: 0.3}
         self.event.set_parameters(self.params)
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
@@ -91,9 +93,9 @@ class EnhancedCellRecruitmentLymphTestCase(unittest.TestCase):
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_REPLICATING: 2})
+        self.network.update_patch(1, {MACROPHAGE_ACTIVATED: 2, MACROPHAGE_INFECTED:3})
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), self.params[TEST_RECRUITMENT_RATE] *
-                         (2.0 / (2 + self.params[TEST_HALF_SAT])))
+                         ((2.0 + 0.3*3) / (2 + 0.3*3 + self.params[TEST_HALF_SAT])))
 
 
 if __name__ == '__main__':
