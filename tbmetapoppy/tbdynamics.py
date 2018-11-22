@@ -136,14 +136,12 @@ class TBDynamics(Dynamics):
                                                                MACROPHAGE_RESTING,
                                                                TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE,
                                                                TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
-        # mr_recruit_lymph_enhanced_mi = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE,
-        #                                                           MACROPHAGE_RESTING, MACROPHAGE_INFECTED,
-        #                                                           TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE)
-        # mr_recruit_lymph_enhanced_ma = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE_MA,
-        #                                                           MACROPHAGE_RESTING, MACROPHAGE_ACTIVATED,
-        #                                                           TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE_MA)
-
-        events += [mr_recruit_lung, mr_recruit_lymph, mr_recruit_lung_enhanced]
+        mr_recruit_lymph_enhanced = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE,
+                                                               MACROPHAGE_RESTING,
+                                                               TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE,
+                                                               TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
+        
+        events += [mr_recruit_lung, mr_recruit_lymph, mr_recruit_lung_enhanced, mr_recruit_lymph_enhanced]
 
         # Macrophage activation
         mr_activation_bac = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA,
