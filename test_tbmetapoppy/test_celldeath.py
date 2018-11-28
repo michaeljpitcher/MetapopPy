@@ -27,7 +27,7 @@ class CellDeathTestCase(unittest.TestCase):
 
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -89,7 +89,7 @@ class MacrophageBurstingTestCase(unittest.TestCase):
         self.event.set_parameters(self.params)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -109,7 +109,7 @@ class TCellDestroysMacrophageTestCase(unittest.TestCase):
         self.event.set_parameters(self.params)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -127,7 +127,7 @@ class MacrophageDestroysBacteriumTestCase(unittest.TestCase):
         self.event.set_parameters(self.params)
         self.network = Network(TB_COMPARTMENTS, [], [])
         self.network.add_node(1)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))

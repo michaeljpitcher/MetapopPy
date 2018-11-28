@@ -27,7 +27,7 @@ class CellActivationTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event_mr_t.calculate_rate_at_patch(self.network, 1))

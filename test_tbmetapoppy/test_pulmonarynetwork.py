@@ -12,7 +12,7 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
                                PulmonaryNetwork.MINIMUM_AREA: 6}
         self.compartments = ['a', 'b', 'c']
         self.tree_network = PulmonaryNetwork(self.network_config, self.compartments)
-        self.tree_network.prepare()
+        self.tree_network.reset()
 
     def test_2d_space_filling_tree_initialise(self):
         self.assertEqual(len(self.tree_network.nodes()), 17)
@@ -29,68 +29,39 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
         self.assertEqual(len(self.tree_network[PulmonaryNetwork.LYMPH_PATCH]), 16)
 
     def test_pulmonary_attribute_seeding(self):
-        params = {PulmonaryNetwork.VENTILATION_SKEW: 3.5, PulmonaryNetwork.PERFUSION_SKEW: 3,
-                  PulmonaryNetwork.DRAINAGE_SKEW: 2}
-        self.tree_network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
-                                                    params[PulmonaryNetwork.PERFUSION_SKEW],
-                                                    params[PulmonaryNetwork.DRAINAGE_SKEW])
+        params = {TBDynamics.VENTILATION_SKEW: 3.5, TBDynamics.PERFUSION_SKEW: 3,
+                  TBDynamics.DRAINAGE_SKEW: 2}
+        seeding = self.tree_network.get_pulmonary_att_seeding(params[TBDynamics.VENTILATION_SKEW],
+                                                              params[TBDynamics.PERFUSION_SKEW],
+                                                              params[TBDynamics.DRAINAGE_SKEW])
 
         alv_patch_ids = self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH)
 
         for att in [PulmonaryNetwork.VENTILATION, PulmonaryNetwork.PERFUSION]:
-            self.assertEqual(sum(self.tree_network.get_attribute_value(a, att) for a in alv_patch_ids), 1)
+            self.assertEqual(1, sum(seeding[a][TypedNetwork.ATTRIBUTES][att] for a in alv_patch_ids))
 
-        maxv = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION)
-                             for a in alv_patch_ids])
-        minv = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION)
-                             for a in alv_patch_ids])
+        maxv = max([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.VENTILATION] for a in alv_patch_ids])
+        minv = min([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.VENTILATION] for a in alv_patch_ids])
 
-        self.assertAlmostEqual(maxv / minv, params[PulmonaryNetwork.VENTILATION_SKEW])
+        self.assertAlmostEqual(maxv / minv, params[TBDynamics.VENTILATION_SKEW])
 
-        maxq = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION)
-                    for a in alv_patch_ids])
-        minq = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION)
-                    for a in alv_patch_ids])
+        maxq = max([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] for a in alv_patch_ids])
+        minq = min([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] for a in alv_patch_ids])
 
-        self.assertAlmostEqual(maxq / minq, params[PulmonaryNetwork.PERFUSION_SKEW])
+        self.assertAlmostEqual(maxq / minq, params[TBDynamics.PERFUSION_SKEW])
 
-        maxd = max([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE)
-                    for a in alv_patch_ids])
-        mind = min([self.tree_network.get_attribute_value(a, PulmonaryNetwork.DRAINAGE)
-                    for a in alv_patch_ids])
+        maxd = max([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.DRAINAGE] for a in alv_patch_ids])
+        mind = min([seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.DRAINAGE] for a in alv_patch_ids])
 
         self.assertEqual(mind, 2.0 / 3.0)
         self.assertEqual(maxd, 4.0 / 3.0)
 
-        self.assertAlmostEqual(maxd / mind, params[PulmonaryNetwork.DRAINAGE_SKEW])
+        self.assertAlmostEqual(maxd / mind, params[TBDynamics.DRAINAGE_SKEW])
 
         for a in alv_patch_ids:
-            self.assertEqual(self.tree_network.get_attribute_value(a, PulmonaryNetwork.OXYGEN_TENSION),
-                             self.tree_network.get_attribute_value(a, PulmonaryNetwork.VENTILATION) /
-                             self.tree_network.get_attribute_value(a, PulmonaryNetwork.PERFUSION),)
-
-    def test_seed_patches_by_rates(self):
-        vent_skew = drain_skew = 1 # Dummy values - not interested in these
-        perf_skew = 2
-
-        self.tree_network.seed_pulmonary_attributes(vent_skew, perf_skew, drain_skew)
-
-        lung_rates = {self.compartments[0]: (50, 0.2), self.compartments[1]: (100, 1.1)}
-        lymph_rates = {self.compartments[1]: (100, 1.1), self.compartments[2]: (69, 0.5)}
-
-        self.tree_network.seed_patches_by_rates(lung_rates, lymph_rates)
-
-        for _, d in self.tree_network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH, data=True):
-            self.assertEqual(d[TypedNetwork.COMPARTMENTS][self.compartments[0]],
-                            int(round(float(d[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
-                            lung_rates[self.compartments[0]][0]) / lung_rates[self.compartments[0]][1])))
-            self.assertEqual(d[TypedNetwork.COMPARTMENTS][self.compartments[1]],
-                            int(round(float(d[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION] *
-                                        lung_rates[self.compartments[1]][0]) / lung_rates[self.compartments[1]][1])))
-            self.assertFalse(d[TypedNetwork.COMPARTMENTS][self.compartments[2]])
-
-        self.assertEqual(self.tree_network.get_compartment_value(PulmonaryNetwork.LYMPH_PATCH, self.compartments[1]),
-                         int(round(float(lymph_rates[self.compartments[1]][0]) / lymph_rates[self.compartments[1]][1])))
+            self.assertEqual(seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.OXYGEN_TENSION],
+                             seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.VENTILATION] /
+                             seeding[a][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION])
 
 
 if __name__ == '__main__':

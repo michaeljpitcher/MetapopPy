@@ -25,7 +25,7 @@ class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.network.update_patch(1,attribute_changes={PulmonaryNetwork.OXYGEN_TENSION: 1.4})

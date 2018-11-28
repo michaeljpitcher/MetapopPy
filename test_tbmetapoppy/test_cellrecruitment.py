@@ -15,7 +15,7 @@ class CellRecruitmentTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_perform(self):
         self.assertEqual(self.network.get_compartment_value(1, MACROPHAGE_RESTING), 0)
@@ -32,7 +32,7 @@ class StandardCellRecruitmentLungTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -53,7 +53,7 @@ class EnhancedCellRecruitmentLungTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -73,7 +73,7 @@ class StandardCellRecruitmentLymphTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.LYMPH_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), self.params[TEST_RECRUITMENT_RATE])
@@ -89,7 +89,7 @@ class EnhancedCellRecruitmentLymphTestCase(unittest.TestCase):
         self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
         self.network.add_node(1)
         self.network.set_patch_type(1, PulmonaryNetwork.LYMPH_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))

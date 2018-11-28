@@ -18,7 +18,7 @@ class CellTranslocationToLymphTestCase(unittest.TestCase):
         self.network.add_edge(1, PulmonaryNetwork.LYMPH_PATCH)
         self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
         self.network.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event_mi.calculate_rate_at_patch(self.network, 1))
@@ -80,7 +80,7 @@ class CellTranslocationToLungTestCase(unittest.TestCase):
             self.network.add_edge(a, PulmonaryNetwork.LYMPH_PATCH)
             self.network.set_patch_type(a, PulmonaryNetwork.ALVEOLAR_PATCH)
         self.network.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
-        self.network.prepare()
+        self.network.reset()
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, PulmonaryNetwork.LYMPH_PATCH))
