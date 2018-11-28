@@ -10,7 +10,7 @@ class CellDeath(Event):
             self._internal_compartment = INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
         else:
             self._internal_compartment = None
-        Event.__init__(self, death_rate_key, additional_parameter_keys)
+        Event.__init__(self, [self._dying_compartment], [], death_rate_key, additional_parameter_keys)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._dying_compartment)
@@ -20,7 +20,7 @@ class CellDeath(Event):
         if self._internal_compartment:
             bac_to_release = int(round(float(
                 network.get_compartment_value(patch_id, self._internal_compartment)) /
-                                       network.get_compartment_value(patch_id, self._dying_compartment)))
+                network.get_compartment_value(patch_id, self._dying_compartment)))
             changes[self._internal_compartment] = bac_to_release * -1
             changes[BACTERIUM_EXTRACELLULAR_DORMANT] = bac_to_release
             if self._dying_compartment == MACROPHAGE_INFECTED:
@@ -33,6 +33,7 @@ class MacrophageBursting(CellDeath):
         self._sigmoid_key = sigmoid_key
         self._capacity_key = capacity_key
         CellDeath.__init__(self, death_rate_key, MACROPHAGE_INFECTED, [sigmoid_key, capacity_key])
+        self.dependent_compartments += [BACTERIUM_INTRACELLULAR_MACROPHAGE]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, BACTERIUM_INTRACELLULAR_MACROPHAGE)
@@ -48,6 +49,7 @@ class TCellDestroysMacrophage(CellDeath):
     def __init__(self, death_rate_key, half_sat_key):
         self._half_sat_key = half_sat_key
         CellDeath.__init__(self, death_rate_key, MACROPHAGE_INFECTED, [half_sat_key])
+        self.dependent_compartments += [T_CELL_ACTIVATED]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         tcell = network.get_compartment_value(patch_id, T_CELL_ACTIVATED)
@@ -61,7 +63,8 @@ class MacrophageDestroysBacterium(Event):
     def __init__(self, death_rate_key, macrophage_type, half_sat_key):
         self._macrophage_type = macrophage_type
         self._half_sat_key = half_sat_key
-        Event.__init__(self, death_rate_key, [half_sat_key])
+        Event.__init__(self, [BACTERIUM_EXTRACELLULAR_REPLICATING, BACTERIUM_EXTRACELLULAR_DORMANT,
+                              self._macrophage_type], [], death_rate_key, [half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         mac = network.get_compartment_value(patch_id, self._macrophage_type)

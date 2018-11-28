@@ -11,7 +11,8 @@ class CellTranslocationToLymph(PatchTypeEvent):
             self._internal_compartment = INTERNAL_BACTERIA_FOR_CELL[cell_type]
         else:
             self._internal_compartment = None
-        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, translocation_rate_key)
+        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, [cell_type], [PulmonaryNetwork.DRAINAGE],
+                                translocation_rate_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._cell_type) * \
@@ -35,7 +36,7 @@ class CellTranslocationToLymph(PatchTypeEvent):
 class CellTranslocationToLung(PatchTypeEvent):
     def __init__(self, translocation_rate_key, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, PulmonaryNetwork.LYMPH_PATCH, translocation_rate_key)
+        PatchTypeEvent.__init__(self, PulmonaryNetwork.LYMPH_PATCH, [cell_type], [], translocation_rate_key)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._cell_type)

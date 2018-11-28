@@ -16,7 +16,9 @@ class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
             self._compartment_to = BACTERIUM_EXTRACELLULAR_REPLICATING
         self._sigmoid_key = sigmoid_key
         self._half_sat_key = half_sat_key
-        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, change_rate_key, [sigmoid_key, half_sat_key])
+        PatchTypeEvent.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, [self._compartment_from],
+                                [PulmonaryNetwork.OXYGEN_TENSION], change_rate_key,
+                                [sigmoid_key, half_sat_key])
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, self._compartment_from)

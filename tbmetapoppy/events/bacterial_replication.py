@@ -5,7 +5,7 @@ from ..tbcompartments import *
 class Replication(Event):
     def __init__(self, replication_rate_key, cell_type, additional_parameter_keys=None):
         self._cell_type = cell_type
-        Event.__init__(self, replication_rate_key, additional_parameter_keys)
+        Event.__init__(self, [self._cell_type], [], replication_rate_key, additional_parameter_keys)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._cell_type)
@@ -20,6 +20,7 @@ class IntracellularBacterialReplication(Replication):
         self._carrying_capacity_key = capacity_key
         Replication.__init__(self, replication_rate_key, BACTERIUM_INTRACELLULAR_MACROPHAGE,
                              [sigmoid_key, capacity_key])
+        self.dependent_compartments += [BACTERIUM_INTRACELLULAR_MACROPHAGE, MACROPHAGE_INFECTED]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, BACTERIUM_INTRACELLULAR_MACROPHAGE)

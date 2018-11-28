@@ -6,7 +6,7 @@ from ..tbcompartments import *
 class CellRecruitment(PatchTypeEvent):
     def __init__(self, patch_type, recruitment_rate_key, cell_type, additional_parameters=None):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, patch_type, recruitment_rate_key, additional_parameters)
+        PatchTypeEvent.__init__(self, patch_type, [cell_type], [], recruitment_rate_key, additional_parameters)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         raise NotImplementedError
@@ -18,6 +18,7 @@ class CellRecruitment(PatchTypeEvent):
 class StandardCellRecruitmentLung(CellRecruitment):
     def __init__(self, recruitment_rate_key, cell_type):
         CellRecruitment.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, recruitment_rate_key, cell_type)
+        self.dependent_attributes += [PulmonaryNetwork.PERFUSION]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_attribute_value(patch_id, PulmonaryNetwork.PERFUSION)
@@ -29,6 +30,7 @@ class EnhancedCellRecruitmentLung(CellRecruitment):
         self._weight_key = weight_key
         CellRecruitment.__init__(self, PulmonaryNetwork.ALVEOLAR_PATCH, recruitment_rate_key, cell_recruited,
                                  [half_sat_key, weight_key])
+        self.dependent_compartments += [MACROPHAGE_INFECTED, MACROPHAGE_ACTIVATED]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
@@ -55,6 +57,7 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
         self._weight_key = weight_key
         CellRecruitment.__init__(self, PulmonaryNetwork.LYMPH_PATCH, recruitment_rate_key, cell_type,
                                  [half_sat_key, weight_key])
+        self.dependent_compartments += [MACROPHAGE_INFECTED, MACROPHAGE_ACTIVATED]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
