@@ -5,7 +5,10 @@ from tbcompartments import *
 
 
 class TBDynamics(Dynamics):
-    # TODO - enhanced recruitment rates
+    # Attribute seeding params
+    VENTILATION_SKEW = 'ventilation_skew'
+    PERFUSION_SKEW = 'perfusion_skew'
+    DRAINAGE_SKEW = 'drainage_skew'
 
     # Event Parameter keys
     MACROPHAGE_CAPACITY = 'macrophage_capacity'
@@ -13,10 +16,6 @@ class TBDynamics(Dynamics):
     RP_REPLICATION_BER = 'replicating_extracellular_bacteria_replication_rate'
     RP_REPLICATION_BED = 'dormant_extracellular_bacteria_replication_rate'
     RP_REPLICATION_BIM = 'intracellular_bacteria_replication_rate'
-    RP_MR_DESTROY_BACTERIA = 'regular_macrophage_bacterial_destruction_rate'
-    HALF_SAT_MR_DESTROY_BACTERIA = 'regular_macrophage_bacterial_destruction_half_sat'
-    RP_MA_DESTROY_BACTERIA = 'activated_macrophage_bacterial_destruction_rate'
-    HALF_SAT_MA_DESTROY_BACTERIA = 'activated_macrophage_bacterial_destruction_half_sat'
     RP_CHANGE_TO_DORMANT = 'change_to_dormancy_rate'
     SIGMOID_CHANGE_TO_DORMANT = 'change_to_dormancy_sigmoid'
     HALF_SAT_CHANGE_TO_DORMANT = 'change_to_dormancy_halfsat'
@@ -27,8 +26,9 @@ class TBDynamics(Dynamics):
 
     RP_DCI_DEATH = 'immature_dendritic_cell_death_rate'
     RP_DCM_DEATH = 'mature_dendritic_cell_death_rate'
-    RP_DCI_MATURATION = 'dendritic_cell_maturation_rate'
-    HALF_SAT_DCI_MATURATION = 'dendritic_cell_maturation_halfsat'
+    RP_DCI_INGEST_BACTERIUM = 'dendritic_cell_ingest_bacterium_rate'
+    HALF_SAT_DCI_INGEST_BACTERIUM = 'dendritic_cell_ingest_bacterium_halfsat'
+    PROB_DC_INFECTION = 'dendritic_cell_infection_probability'
     RP_DCI_RECRUITMENT = 'dendritic_cell_recruitment_rate'
     RP_DCI_RECRUITMENT_ENHANCED = 'dendritic_cell_enhanced_recruitment_rate'
     HALF_SAT_DCI_RECRUITMENT_ENHANCED = 'dendritic_cell_enhanced_recruitment_half_sat'
@@ -38,8 +38,13 @@ class TBDynamics(Dynamics):
     HALF_SAT_MR_ACTIVATION_BY_TCELL = 'macrophage_activation_by_tcell_half_sat'
     RP_MR_ACTIVATION_BY_BACTERIA = 'macrophage_activation_by_bacteria_rate'
     HALF_SAT_MR_ACTIVATION_BY_BACTERIA = 'macrophage_activation_by_bacteria_half_sat'
-    RP_MR_INFECTION = 'macrophage_infection_rate'
-    HALF_SAT_MR_INFECTION = 'macrophage_infection_half_sat'
+    RP_MR_INGEST_BAC = 'resting_macrophage_ingest_bacterium_rate'
+    HALF_SAT_MR_INGEST_BAC = 'resting_macrophage_ingest_bacterium_half_sat'
+    PROB_MR_INFECTION = 'resting_macrophage_infection_probability'
+    RP_MA_INGEST_BAC = 'activated_macrophage_ingest_bacterium_rate'
+    HALF_SAT_MA_INGEST_BAC = 'activated_macrophage_ingest_bacterium_half_sat'
+    PROB_MA_INFECTION = 'activated_macrophage_infection_probability'
+
     RP_MR_DEATH = 'resting_macrophage_death_rate'
     RP_MI_DEATH = 'infected_macrophage_death_rate'
     RP_MA_DEATH = 'activated_macrophage_death_rate'
@@ -70,6 +75,8 @@ class TBDynamics(Dynamics):
         pulmonary_network = PulmonaryNetwork(network_config, TB_COMPARTMENTS)
         Dynamics.__init__(self, pulmonary_network)
 
+        self._perf_seed = {}
+
     def _create_events(self):
         """
         Create all TB related events, and assign relevant parameters to them
@@ -95,13 +102,6 @@ class TBDynamics(Dynamics):
                                                              TBDynamics.HALF_SAT_CHANGE_TO_DORMANT)
         events += [bed_to_ber, ber_to_bed]
 
-        # Bacterial destruction
-        mr_kills_bac = MacrophageDestroysBacterium(TBDynamics.RP_MR_DESTROY_BACTERIA, MACROPHAGE_RESTING,
-                                                   TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA)
-        ma_kills_bac = MacrophageDestroysBacterium(TBDynamics.RP_MA_DESTROY_BACTERIA, MACROPHAGE_ACTIVATED,
-                                                   TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA)
-        events += [mr_kills_bac, ma_kills_bac]
-
         # bacterial translocation
         bed_translocation = CellTranslocationToLung(TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION,
                                                     BACTERIUM_EXTRACELLULAR_DORMANT)
@@ -121,8 +121,8 @@ class TBDynamics(Dynamics):
         events += [dci_death, dcm_death]
 
         # Dendritic Cell maturation
-        dc_maturation = CellInfection(TBDynamics.RP_DCI_MATURATION, DENDRITIC_CELL_IMMATURE,
-                                      TBDynamics.HALF_SAT_DCI_MATURATION)
+        dc_maturation = CellIngestBacterium(TBDynamics.RP_DCI_INGEST_BACTERIUM, DENDRITIC_CELL_IMMATURE,
+                                            TBDynamics.HALF_SAT_DCI_INGEST_BACTERIUM, TBDynamics.PROB_DC_INFECTION)
         events.append(dc_maturation)
 
         # Dendritic cell translocation
@@ -162,9 +162,14 @@ class TBDynamics(Dynamics):
         ta_kills_mi = TCellDestroysMacrophage(TBDynamics.RP_TA_KILL_MI, TBDynamics.HALF_SAT_TA_KILL_MI)
         events += [mr_death, ma_death, mi_death, mi_burst, ta_kills_mi]
 
-        # Macrophage infection
-        mac_infection = CellInfection(TBDynamics.RP_MR_INFECTION, MACROPHAGE_RESTING, TBDynamics.HALF_SAT_MR_INFECTION)
-        events.append(mac_infection)
+        # Macrophage ingest bacterium
+        mr_ingest_bac = CellIngestBacterium(TBDynamics.RP_MR_INGEST_BAC, MACROPHAGE_RESTING,
+                                            TBDynamics.HALF_SAT_MR_INGEST_BAC,
+                                            TBDynamics.PROB_MR_INFECTION)
+        ma_ingest_bac = CellIngestBacterium(TBDynamics.RP_MA_INGEST_BAC, MACROPHAGE_ACTIVATED,
+                                            TBDynamics.HALF_SAT_MA_INGEST_BAC,
+                                            TBDynamics.PROB_MA_INFECTION)
+        events += [mr_ingest_bac, ma_ingest_bac]
 
         # Macrophage translocation
         mi_translocation = CellTranslocationToLymph(TBDynamics.RP_MI_TRANSLOCATION, MACROPHAGE_INFECTED)
@@ -190,18 +195,13 @@ class TBDynamics(Dynamics):
 
         return events
 
-    def _seed_network(self, params):
-        """
-        Seed the prototype network with values based on the recruitment levels, perfusion values and death rates of
-        cells
-        :param params:
-        :return:
-        """
-        # Seed attributes
-        self._network.seed_pulmonary_attributes(params[PulmonaryNetwork.VENTILATION_SKEW],
-                                                params[PulmonaryNetwork.PERFUSION_SKEW],
-                                                params[PulmonaryNetwork.DRAINAGE_SKEW])
-        # Seed initial compartments
+    def _get_patch_seeding(self, params):
+        # Get patch attributes
+        patch_seeding = self._network.get_pulmonary_att_seeding(params[TBDynamics.VENTILATION_SKEW],
+                                                                    params[TBDynamics.PERFUSION_SKEW],
+                                                                    params[TBDynamics.DRAINAGE_SKEW])
+
+        # Compartment seeding
         mac_recruit_lung = params[TBDynamics.RP_MR_RECRUIT_LUNG]
         mac_recruit_lymph = params[TBDynamics.RP_MR_RECRUIT_LYMPH]
         mac_death = params[TBDynamics.RP_MR_DEATH]
@@ -209,32 +209,47 @@ class TBDynamics(Dynamics):
         dc_death = params[TBDynamics.RP_DCI_DEATH]
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
+        for n, v in patch_seeding.iteritems():
+            self._perf_seed[n] = v[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION]
+            v[TypedNetwork.COMPARTMENTS] = {MACROPHAGE_RESTING: int(round(self._perf_seed[n] *
+                                                                          (mac_recruit_lung / mac_death))),
+                                            DENDRITIC_CELL_IMMATURE: int(round(self._perf_seed[n] *
+                                                                               (dc_recruit / dc_death)))}
+        lymph_seed = {MACROPHAGE_RESTING: int(round(mac_recruit_lymph / mac_death)),
+                      T_CELL_NAIVE: int(round(tn_recruit / tn_death))}
+        patch_seeding[PulmonaryNetwork.LYMPH_PATCH] = {TypedNetwork.COMPARTMENTS: lymph_seed}
 
-        self._network.seed_patches_by_rates({MACROPHAGE_RESTING: (mac_recruit_lung, mac_death),
-                                             DENDRITIC_CELL_IMMATURE: (dc_recruit, dc_death)},
-                                            {MACROPHAGE_RESTING: (mac_recruit_lymph, mac_death),
-                                             T_CELL_NAIVE: (tn_recruit, tn_death)})
-
-        # Perfusion based - assumes sum of perfusion values = 1.0
+        # Bacteria
+        # Ventilation based - assumes sum of ventilation values = 1.0
         # r = numpy.random.random()
         # count = 0
         # for p in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
-        #     count += self._network.get_attribute_value(p, PulmonaryNetwork.PERFUSION)
+        #     count += patch_seeding[p][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.VENTILATION]
         #     if count >= r:
-        #         self._network.update_patch(p, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
-        #                                        BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
+        #         patch_seeding[p][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_REPLICATING] = \
+        #             params[TBDynamics.IC_BER_LOAD]
+        #         patch_seeding[p][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_DORMANT] = \
+        #             params[TBDynamics.IC_BED_LOAD]
         #         break
         # TODO - debug code
-        self._network.update_patch(9, {BACTERIUM_EXTRACELLULAR_REPLICATING: params[TBDynamics.IC_BER_LOAD],
-                                       BACTERIUM_EXTRACELLULAR_DORMANT: params[TBDynamics.IC_BED_LOAD]})
+        patch_seeding[9][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_REPLICATING] = \
+            params[TBDynamics.IC_BER_LOAD]
+        patch_seeding[9][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_DORMANT] = \
+            params[TBDynamics.IC_BED_LOAD]
+        return patch_seeding
+
+    def _get_edge_seeding(self, params):
+        seeding = {}
+        for n, v in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH, data=True):
+            seeding[(n, PulmonaryNetwork.LYMPH_PATCH)] = {PulmonaryNetwork.PERFUSION: self._perf_seed[n]}
+        return seeding
 
     def _patch_is_active(self, patch_id):
         """
-        Determine if the given patch is active (from the network). Patches only become active when they contain
+        Determine if the given patch is active (from the network). Alveolar patches only become active when they contain
         bacteria.
         :param patch_id:
         :return:
         """
-        # TODO - switch patch activity
-        return sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0
-        # return True
+        return patch_id == PulmonaryNetwork.LYMPH_PATCH or \
+               sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0

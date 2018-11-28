@@ -14,8 +14,6 @@ class TBDynamicsTestCase(unittest.TestCase):
 
     def test_initialise(self):
         # Check event creation
-        # Rows = number of events, cols = number of nodes
-        self.assertEqual(len(self.dynamics._events), 32)
 
         # Bacterial replication
         ber_rep = [e for e in self.dynamics._events if isinstance(e, Replication) and
@@ -35,14 +33,6 @@ class TBDynamicsTestCase(unittest.TestCase):
                       e._compartment_from == BACTERIUM_EXTRACELLULAR_DORMANT]
         self.assertEqual(len(ber_to_bed), 1)
 
-        # Bacterial destruction
-        mr_kills_bac = [e for e in self.dynamics._events if isinstance(e, MacrophageDestroysBacterium) and
-                        e._macrophage_type == MACROPHAGE_RESTING]
-        ma_kills_bac = [e for e in self.dynamics._events if isinstance(e, MacrophageDestroysBacterium) and
-                        e._macrophage_type == MACROPHAGE_ACTIVATED]
-        for e in [mr_kills_bac, ma_kills_bac]:
-            self.assertEqual(len(e), 1)
-
         # Bacterial translocation
         bed_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
                       e._cell_type == BACTERIUM_EXTRACELLULAR_DORMANT]
@@ -57,7 +47,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(dc_rec_lung), 1)
 
         # DC infection
-        dc_infect = [e for e in self.dynamics._events if isinstance(e, CellInfection) and
+        dc_infect = [e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
                      e._cell_type == DENDRITIC_CELL_IMMATURE]
         self.assertEqual(len(dc_infect), 1)
 
@@ -101,10 +91,13 @@ class TBDynamicsTestCase(unittest.TestCase):
         mi_death_tcell = [e for e in self.dynamics._events if isinstance(e, TCellDestroysMacrophage)]
         self.assertEqual(len(mi_death_tcell), 1)
 
-        # Macrophage infection
-        mac_infect = [e for e in self.dynamics._events if isinstance(e, CellInfection) and
+        # Macrophage ingest bacterium
+        mr_ingest_bac = [e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
                       e._cell_type == MACROPHAGE_RESTING]
-        self.assertEqual(len(mac_infect), 1)
+        self.assertEqual(len(mr_ingest_bac), 1)
+        ma_ingest_bac = [e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
+                         e._cell_type == MACROPHAGE_ACTIVATED]
+        self.assertEqual(len(ma_ingest_bac), 1)
 
         # Macrophage translocation
         mac_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
@@ -148,14 +141,19 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_CHANGE_TO_DORMANT] = 0.08
         params[TBDynamics.SIGMOID_CHANGE_TO_DORMANT] = -2
         params[TBDynamics.HALF_SAT_CHANGE_TO_DORMANT] = 0.09
-        params[TBDynamics.RP_MR_DESTROY_BACTERIA] = 0.10
-        params[TBDynamics.RP_MA_DESTROY_BACTERIA] = 0.11
+        params[TBDynamics.RP_MR_INGEST_BAC] = 0.10
+        params[TBDynamics.HALF_SAT_MR_INGEST_BAC] = 111
+        params[TBDynamics.PROB_MR_INFECTION] = 0.5
+        params[TBDynamics.RP_MA_INGEST_BAC] = 0.11
+        params[TBDynamics.HALF_SAT_MA_INGEST_BAC] = 112
+        params[TBDynamics.PROB_MA_INFECTION] = 0.0
         params[TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION] = 0.12
         params[TBDynamics.RP_DCI_RECRUITMENT] = 130.0
         params[TBDynamics.RP_DCI_DEATH] = 0.14
         params[TBDynamics.RP_DCM_DEATH] = 0.15
-        params[TBDynamics.RP_DCI_MATURATION] = 0.16
-        params[TBDynamics.HALF_SAT_DCI_MATURATION] = 0.17
+        params[TBDynamics.RP_DCI_INGEST_BACTERIUM] = 0.16
+        params[TBDynamics.HALF_SAT_DCI_INGEST_BACTERIUM] = 0.17
+        params[TBDynamics.PROB_DC_INFECTION] = 1.0
         params[TBDynamics.RP_DCM_TRANSLOCATION] = 0.18
         params[TBDynamics.RP_MR_RECRUIT_LUNG] = 190.0
         params[TBDynamics.RP_MR_RECRUIT_LYMPH] = 200.0
@@ -169,8 +167,6 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_MI_BURSTING] = 0.28
         params[TBDynamics.RP_TA_KILL_MI] = 0.29
         params[TBDynamics.HALF_SAT_TA_KILL_MI] = 0.30
-        params[TBDynamics.RP_MR_INFECTION] = 0.31
-        params[TBDynamics.HALF_SAT_MR_INFECTION] = 0.32
         params[TBDynamics.RP_MI_TRANSLOCATION] = 0.33
         params[TBDynamics.RP_TN_RECRUIT] = 340.0
         params[TBDynamics.RP_TCELL_ACTIVATION] = 0.35
@@ -179,9 +175,6 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_TN_DEATH] = 0.38
         params[TBDynamics.RP_TA_DEATH] = 0.39
 
-        params[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA] = 0.40
-        params[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA] = 0.41
-
         params[TBDynamics.RP_MR_RECRUIT_ENHANCE] = 0.42
         params[TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE] = 0.43
         params[TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT] = 0.5
@@ -189,9 +182,9 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.RP_DCI_RECRUITMENT_ENHANCED] = 0.44
         params[TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCED] = 0.43
 
-        params[PulmonaryNetwork.VENTILATION_SKEW] = 1.1
-        params[PulmonaryNetwork.PERFUSION_SKEW] = 2.2
-        params[PulmonaryNetwork.DRAINAGE_SKEW] = 3.3
+        params[TBDynamics.VENTILATION_SKEW] = 1.1
+        params[TBDynamics.PERFUSION_SKEW] = 2.2
+        params[TBDynamics.DRAINAGE_SKEW] = 3.3
 
         params[TBDynamics.IC_BER_LOAD] = 1
         params[TBDynamics.IC_BED_LOAD] = 2
@@ -231,19 +224,6 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(ber_to_bed._parameters[TBDynamics.HALF_SAT_CHANGE_TO_DORMANT],
                          params[TBDynamics.HALF_SAT_CHANGE_TO_DORMANT])
 
-        # Bacterial destruction
-        mr_kills_bac = next(e for e in self.dynamics._events if isinstance(e, MacrophageDestroysBacterium) and
-                        e._macrophage_type == MACROPHAGE_RESTING)
-        self.assertEqual(mr_kills_bac._reaction_parameter, params[TBDynamics.RP_MR_DESTROY_BACTERIA])
-        self.assertEqual(mr_kills_bac._parameters[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA],
-                         params[TBDynamics.HALF_SAT_MR_DESTROY_BACTERIA])
-
-        ma_kills_bac = next(e for e in self.dynamics._events if isinstance(e, MacrophageDestroysBacterium) and
-                        e._macrophage_type == MACROPHAGE_ACTIVATED)
-        self.assertEqual(ma_kills_bac._reaction_parameter, params[TBDynamics.RP_MA_DESTROY_BACTERIA])
-        self.assertEqual(ma_kills_bac._parameters[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA],
-                         params[TBDynamics.HALF_SAT_MA_DESTROY_BACTERIA])
-
         # Bacterial translocation
         bed_transl = next(e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
                           e._cell_type == BACTERIUM_EXTRACELLULAR_DORMANT)
@@ -255,11 +235,13 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(dc_rec_lung._reaction_parameter, params[TBDynamics.RP_DCI_RECRUITMENT])
 
         # DC infection
-        dc_infect = next(e for e in self.dynamics._events if isinstance(e, CellInfection) and
+        dc_infect = next(e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
                      e._cell_type == DENDRITIC_CELL_IMMATURE)
-        self.assertEqual(dc_infect._reaction_parameter, params[TBDynamics.RP_DCI_MATURATION])
-        self.assertEqual(dc_infect._parameters[TBDynamics.HALF_SAT_DCI_MATURATION],
-                         params[TBDynamics.HALF_SAT_DCI_MATURATION])
+        self.assertEqual(dc_infect._reaction_parameter, params[TBDynamics.RP_DCI_INGEST_BACTERIUM])
+        self.assertEqual(dc_infect._parameters[TBDynamics.HALF_SAT_DCI_INGEST_BACTERIUM],
+                         params[TBDynamics.HALF_SAT_DCI_INGEST_BACTERIUM])
+        self.assertEqual(dc_infect._parameters[TBDynamics.PROB_DC_INFECTION],
+                         params[TBDynamics.PROB_DC_INFECTION])
 
         # DC translocation
         dc_transl = next(e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
@@ -336,12 +318,21 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(mi_death_tcell._parameters[TBDynamics.HALF_SAT_TA_KILL_MI],
                          params[TBDynamics.HALF_SAT_TA_KILL_MI])
 
-        # Macrophage infection
-        mac_infect = next(e for e in self.dynamics._events if isinstance(e, CellInfection) and
-                      e._cell_type == MACROPHAGE_RESTING)
-        self.assertEqual(mac_infect._reaction_parameter, params[TBDynamics.RP_MR_INFECTION])
-        self.assertEqual(mac_infect._parameters[TBDynamics.HALF_SAT_MR_INFECTION],
-                         params[TBDynamics.HALF_SAT_MR_INFECTION])
+        # Macrophage ingest
+        mr_ingest_bac = next(e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
+                             e._cell_type == MACROPHAGE_RESTING)
+        self.assertEqual(mr_ingest_bac._reaction_parameter, params[TBDynamics.RP_MR_INGEST_BAC])
+        self.assertEqual(mr_ingest_bac._parameters[TBDynamics.HALF_SAT_MR_INGEST_BAC],
+                         params[TBDynamics.HALF_SAT_MR_INGEST_BAC])
+        self.assertEqual(mr_ingest_bac._parameters[TBDynamics.PROB_MR_INFECTION],
+                         params[TBDynamics.PROB_MR_INFECTION])
+        ma_ingest_bac = next(e for e in self.dynamics._events if isinstance(e, CellIngestBacterium) and
+                             e._cell_type == MACROPHAGE_ACTIVATED)
+        self.assertEqual(ma_ingest_bac._reaction_parameter, params[TBDynamics.RP_MA_INGEST_BAC])
+        self.assertEqual(ma_ingest_bac._parameters[TBDynamics.HALF_SAT_MA_INGEST_BAC],
+                         params[TBDynamics.HALF_SAT_MA_INGEST_BAC])
+        self.assertEqual(ma_ingest_bac._parameters[TBDynamics.PROB_MA_INFECTION],
+                         params[TBDynamics.PROB_MA_INFECTION])
 
         # Macrophage translocation
         mac_transl = next(e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
@@ -376,7 +367,8 @@ class TBDynamicsTestCase(unittest.TestCase):
         # Set Up
         self.dynamics.setUp(params)
 
-        for p,v in self.dynamics.network().nodes(data=True):
+        # Test seed by rates
+        for p, v in self.dynamics.network().nodes(data=True):
             if v[TypedNetwork.PATCH_TYPE] == PulmonaryNetwork.ALVEOLAR_PATCH:
                 # TODO test pul atts
                 pass
