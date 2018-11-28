@@ -24,11 +24,6 @@ class PulmonaryNetwork(TypedNetwork):
     LENGTH_DIVISOR = 'length_divisor'
     MINIMUM_AREA = 'minimum_area'
 
-    # Attribute seeding
-    VENTILATION_SKEW = 'ventilation_skew'
-    PERFUSION_SKEW = 'perfusion_skew'
-    DRAINAGE_SKEW = 'drainage_skew'
-
     def __init__(self, network_config, compartments):
         TypedNetwork.__init__(self, compartments, PulmonaryNetwork.PATCH_ATTRIBUTES, PulmonaryNetwork.EDGE_ATTRIBUTES)
 
@@ -37,6 +32,11 @@ class PulmonaryNetwork(TypedNetwork):
             self._build_single_patch_network()
         elif network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
+            # Get horizontal positions and max/min values
+            ys = [y for _, y in self._alveolar_positions.values()]
+            self._y_max = max(ys)
+            y_min = min(ys)
+            self._y_range = self._y_max - y_min
 
     def copy(self, as_view=False):
         return self.__class__(self._compartments, self._patch_attributes, self._edge_attributes, self)
@@ -151,7 +151,7 @@ class PulmonaryNetwork(TypedNetwork):
             self.add_edge(PulmonaryNetwork.LYMPH_PATCH, index)
             index += 1
 
-    def seed_pulmonary_attributes(self, ventilation_skew, perfusion_skew, drainage_skew):
+    def get_pulmonary_att_seeding(self, ventilation_skew, perfusion_skew, drainage_skew):
         """
         Set the initial values for pulmonary attributes
         :param ventilation_skew:
@@ -159,22 +159,15 @@ class PulmonaryNetwork(TypedNetwork):
         :param drainage_skew:
         :return:
         """
-        seeding = {}
         # Only 1 alveolar patch so just set everything to 1
         if len(self._alveolar_positions) == 1:
-            self.update_patch(PulmonaryNetwork.ALVEOLAR_PATCH, attribute_changes={PulmonaryNetwork.VENTILATION: 1,
-                                                                                  PulmonaryNetwork.PERFUSION: 1,
-                                                                                  PulmonaryNetwork.OXYGEN_TENSION: 1,
-                                                                                  PulmonaryNetwork.DRAINAGE: 1})
-            self.update_edge(PulmonaryNetwork.ALVEOLAR_PATCH, PulmonaryNetwork.LYMPH_PATCH,
-                             {PulmonaryNetwork.PERFUSION: 1})
-            return
+            seeding = {PulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES: {PulmonaryNetwork.VENTILATION: 1,
+                                                                                   PulmonaryNetwork.PERFUSION: 1,
+                                                                                   PulmonaryNetwork.OXYGEN_TENSION: 1,
+                                                                                   PulmonaryNetwork.DRAINAGE: 1}}}
+            return seeding
 
-        # Get horizontal positions and max/min values
-        ys = [y for _, y in self._alveolar_positions.values()]
-        y_max = max(ys)
-        y_min = min(ys)
-        y_diff = y_max - y_min
+        temp_seeding = {}
 
         total_v = 0
         total_q = 0
@@ -184,68 +177,73 @@ class PulmonaryNetwork(TypedNetwork):
         # For drainage, value in middle of lung will equal 1, values for base and apex are derived from this and the
         # skew, and used to calculate values in between
 
-        mins = {PulmonaryNetwork.VENTILATION: 1, PulmonaryNetwork.PERFUSION: 1,
+        mins = {PulmonaryNetwork.VENTILATION: 1.0, PulmonaryNetwork.PERFUSION: 1.0,
                 PulmonaryNetwork.DRAINAGE: 1.0 / (1 + (drainage_skew-1)/2.0)}
         maxs = {PulmonaryNetwork.VENTILATION: ventilation_skew, PulmonaryNetwork.PERFUSION: perfusion_skew,
                 PulmonaryNetwork.DRAINAGE: mins[PulmonaryNetwork.DRAINAGE] * drainage_skew}
-        diffs = dict([(k, maxs[k] - mins[k]) for k in mins.keys()])
+        diffs = {k: maxs[k] - mins[k] for k in mins.keys()}
 
-        # Calculate values - 1 + (y_max - y) * (skew - 1)/(ymax - ymin)
-        for index, (_,pos) in self._alveolar_positions.iteritems():
-            seeding[index] = {}
-            vent_value = mins[PulmonaryNetwork.VENTILATION] + (y_max - pos)*(diffs[PulmonaryNetwork.VENTILATION]/y_diff)
-            perf_value = mins[PulmonaryNetwork.PERFUSION] + (y_max - pos)*(diffs[PulmonaryNetwork.PERFUSION]/y_diff)
-            drain_value = mins[PulmonaryNetwork.DRAINAGE] + (y_max - pos)*(diffs[PulmonaryNetwork.DRAINAGE]/y_diff)
+        # Calculate values - 1 + (y_max - y) * (att_max - att_min)/(y_max - y_min)
+        for index, (_,y_pos) in self._alveolar_positions.iteritems():
+            temp_seeding[index] = {}
+            vent_value = mins[PulmonaryNetwork.VENTILATION] + (self._y_max - y_pos) * (
+                        diffs[PulmonaryNetwork.VENTILATION] / self._y_range)
+            perf_value = mins[PulmonaryNetwork.PERFUSION] + (self._y_max - y_pos) * (
+                        diffs[PulmonaryNetwork.PERFUSION] / self._y_range)
+            drain_value = mins[PulmonaryNetwork.DRAINAGE] + (self._y_max - y_pos) * (
+                        diffs[PulmonaryNetwork.DRAINAGE] / self._y_range)
             total_v += vent_value
             total_q += perf_value
-            seeding[index] = {PulmonaryNetwork.VENTILATION: vent_value,
-                              PulmonaryNetwork.PERFUSION: perf_value,
-                              PulmonaryNetwork.DRAINAGE: drain_value}
+            # Temp values - will be normalised below
+            temp_seeding[index] = {PulmonaryNetwork.VENTILATION: vent_value,
+                                   PulmonaryNetwork.PERFUSION: perf_value,
+                                   PulmonaryNetwork.DRAINAGE: drain_value}
 
+        seeding = {}
         # Normalise and assign
-        for patch_id, values in seeding.iteritems():
+        for patch_id, values in temp_seeding.iteritems():
+            seeding[patch_id] = {TypedNetwork.ATTRIBUTES: {}}
             v = values[PulmonaryNetwork.VENTILATION] / total_v
             q = values[PulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
-            self.update_patch(patch_id, attribute_changes={PulmonaryNetwork.VENTILATION: v,
-                                                           PulmonaryNetwork.PERFUSION: q,
-                                                           PulmonaryNetwork.OXYGEN_TENSION: o2,
-                                                           PulmonaryNetwork.DRAINAGE:
-                                                               values[PulmonaryNetwork.DRAINAGE]})
-            self.update_edge(patch_id, PulmonaryNetwork.LYMPH_PATCH, {PulmonaryNetwork.PERFUSION: q})
+            seeding[patch_id][TypedNetwork.ATTRIBUTES] = {PulmonaryNetwork.VENTILATION: v,
+                                                          PulmonaryNetwork.PERFUSION: q,
+                                                          PulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                          PulmonaryNetwork.DRAINAGE: values[PulmonaryNetwork.DRAINAGE]}
+        return seeding
 
-    def seed_patches_by_rates(self, lung_recruitment_death_rates, lymph_recruitment_death_rates):
-        """
-        Seed the lung patches with initial subpopulation values. Calculated to be the equilibrium values (i.e. perfusion
-        * recruitment rate / death rate)
-        :param lung_recruitment_death_rates: Lung recruitment and death rates,
-               dict of Cell_type:(recruit_rate, death_rate)
-        :param lymph_recruitment_death_rates: Lymph recruitment and death rates,
-               dict of Cell_type:(recruit_rate, death_rate)
-        :return:
-        """
-        # Calculate the values - perfusion * recruitment rate / death rate
-        for n in self.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
-            perfusion = self.get_attribute_value(n, PulmonaryNetwork.PERFUSION)
-            # Save all values in a dict and update all at once
-            seed_amounts = {}
-            for cell, (recruit_rate, death_rate) in lung_recruitment_death_rates.iteritems():
-                if recruit_rate > 0.0:
-                    assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
-                    seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
-                else:
-                    seed_amounts[cell] = 0
-            self.update_patch(n, seed_amounts)
-
-        # Lymph patches - recruitment / death rate
-        for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
-            seed_amounts = {}
-            for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
-                if recruit_rate > 0.0:
-                    assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
-                    seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
-                else:
-                    seed_amounts[cell] = 0
-            self.update_patch(n, seed_amounts)
+    # def seed_patches_by_rates(self, lung_recruitment_death_rates, lymph_recruitment_death_rates):
+    #     """
+    #     Seed the lung patches with initial subpopulation values. Calculated to be the equilibrium values (i.e. perfusion
+    #     * recruitment rate / death rate)
+    #     :param lung_recruitment_death_rates: Lung recruitment and death rates,
+    #            dict of Cell_type:(recruit_rate, death_rate)
+    #     :param lymph_recruitment_death_rates: Lymph recruitment and death rates,
+    #            dict of Cell_type:(recruit_rate, death_rate)
+    #     :return:
+    #     """
+    #     # Calculate the values - perfusion * recruitment rate / death rate
+    #     for n in self.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
+    #         perfusion = self.get_attribute_value(n, PulmonaryNetwork.PERFUSION)
+    #         # Save all values in a dict and update all at once
+    #         seed_amounts = {}
+    #         for cell, (recruit_rate, death_rate) in lung_recruitment_death_rates.iteritems():
+    #             if recruit_rate > 0.0:
+    #                 assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
+    #                 seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
+    #             else:
+    #                 seed_amounts[cell] = 0
+    #         self.update_patch(n, seed_amounts)
+    #
+    #     # Lymph patches - recruitment / death rate
+    #     for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
+    #         seed_amounts = {}
+    #         for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
+    #             if recruit_rate > 0.0:
+    #                 assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
+    #                 seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
+    #             else:
+    #                 seed_amounts[cell] = 0
+    #         self.update_patch(n, seed_amounts)
 
 # TODO change in patch perfusion needs to feed through to edge
