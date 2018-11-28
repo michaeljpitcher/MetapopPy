@@ -16,11 +16,11 @@ class EventTestCase(unittest.TestCase):
     def setUp(self):
         self.network = Network(compartments, attributes, [])
         self.network.add_node(1)
-        self.network.prepare()
+        self.network.reset()
 
         class NAEvent(Event):
             def __init__(self, rp_key):
-                Event.__init__(self, rp_key)
+                Event.__init__(self, compartments[0], [], rp_key)
 
             def _calculate_state_variable_at_patch(self, network, patch_id):
                 return network.get_compartment_value(patch_id, compartments[0])
@@ -52,13 +52,13 @@ class PatchTypeEventTestCase(unittest.TestCase):
         self.network.set_patch_type(1, self.patch_types[0])
         self.network.add_node(2)
         self.network.set_patch_type(2, self.patch_types[1])
-        self.network.prepare()
+        self.network.reset()
 
         class NAPatchTypeEvent(PatchTypeEvent):
             def __init__(self, patch_type, rp_key, add_par1, add_par2):
                 self.add_par1 = add_par1
                 self.add_par2 = add_par2
-                PatchTypeEvent.__init__(self, patch_type, rp_key, [add_par1, add_par2])
+                PatchTypeEvent.__init__(self, patch_type, compartments[0], [], rp_key, [add_par1, add_par2])
 
             def _calculate_state_variable_at_patch(self, network, patch_id):
                 return network.get_compartment_value(patch_id, compartments[0]) * (self._parameters[self.add_par1] +

@@ -56,40 +56,17 @@ class Network(networkx.Graph):
         """
         self._handler = handler
 
-    def prepare(self):
-        """
-        Prepare the network. Adds data to the node dictionary for subpopulation, environmental attributes and events
-        and rates. All set to zero, will be changed by the dynamics.
-        :return:
-        """
-        self._prepare_compartments()
-        self._prepare_attributes()
-        self._prepare_edges()
+    def reset(self):
+        self._reset_patches()
+        self._reset_edges()
 
-    def _prepare_compartments(self):
-        """
-        Prepare the network compartments (assumes all patches have same compartments)
-        :return:
-        """
-        for _, patch_data in self.nodes.data():
-            patch_data[Network.COMPARTMENTS] = dict([(c, 0) for c in self._compartments])
+    def _reset_patches(self):
+        networkx.set_node_attributes(self, {n: {TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
+                                                TypedNetwork.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
+                                            for n in self.nodes})
 
-    def _prepare_attributes(self):
-        """
-        Prepare the network attributes (assumes all patches have same attributes)
-        :return:
-        """
-        for _, patch_data in self.nodes.data():
-            patch_data[Network.ATTRIBUTES] = dict([(a, 0) for a in self._patch_attributes])
-
-    def _prepare_edges(self):
-        """
-        Prepare edge attributes (assumes all edges have the same attributes)
-        :return:
-        """
-        for u, v in self.edges:
-            for a in self._edge_attributes:
-                self.get_edge_data(u, v)[a] = 0.0
+    def _reset_edges(self):
+        networkx.set_edge_attributes(self, {(u,v): {a: 0.0 for a in self._edge_attributes} for (u,v) in self.edges})
 
     def get_compartment_value(self, patch_id, compartment):
         """
@@ -192,6 +169,11 @@ class TypedNetwork(Network):
         :return:
         """
         self.nodes[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
+        if patch_type not in self._patch_types:
+            self._patch_types[patch_type] = []
+        self._patch_types[patch_type].append(patch_id)
+        if patch_type not in self._attribute_by_type:
+            self._attribute_by_type[patch_type] = []
 
     def get_patches_by_type(self, patch_type, data=False):
         """
@@ -207,32 +189,9 @@ class TypedNetwork(Network):
         else:
             return self._patch_types[patch_type]
 
-    def prepare(self):
-        """
-        Prepare the network for experiment repetition. Ensures every patch has been given a type and builds lookup
-        lists.
-        :return:
-        """
-        for patch_id, patch_data in self.nodes.data():
-            # Ensure every patch has been given a type
-            assert TypedNetwork.PATCH_TYPE in patch_data, "Node {0} must be assigned a patch type".format(patch_id)
-            # Create the shortcut list for this patch type if we haven't seen it yet
-            if patch_data[TypedNetwork.PATCH_TYPE] not in self._patch_types:
-                self._patch_types[patch_data[TypedNetwork.PATCH_TYPE]] = []
-            # Add to the list
-            self._patch_types[patch_data[TypedNetwork.PATCH_TYPE]].append(patch_id)
-        Network.prepare(self)
-
-    def _prepare_attributes(self):
-        """
-        When preparing attributes, only assign patch attributes that correspond to the given patch type
-        :return:
-        """
-        # Prepare the network attributes
-        for _, patch_data in self.nodes.data():
-            p_type = patch_data[TypedNetwork.PATCH_TYPE]
-            if p_type in self._attribute_by_type:
-                attributes = self._attribute_by_type[p_type]
-                patch_data[Network.ATTRIBUTES] = dict([(a, 0) for a in attributes])
-            else:
-                patch_data[Network.ATTRIBUTES] = {}
+    def _reset_patches(self):
+        networkx.set_node_attributes(self, {n: {TypedNetwork.PATCH_TYPE: self.node[n][TypedNetwork.PATCH_TYPE],
+                                                TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
+                                                TypedNetwork.ATTRIBUTES: {a: 0 for a in
+                                                    self._attribute_by_type[self.node[n][TypedNetwork.PATCH_TYPE]]}}
+                                            for n in self.nodes})

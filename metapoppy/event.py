@@ -3,12 +3,14 @@ from .network import *
 
 class Event(object):
 
-    def __init__(self, reaction_parameter_key, additional_parameter_keys=None):
+    def __init__(self, dependent_compartments, dependent_attributes, reaction_parameter_key, additional_parameter_keys=None):
         """
         Create an event.
         :param reaction_parameter_key: The parameter key which corresponds to the reaction parameter
         :param additional_parameter_keys: Other parameter keys which are required by this event
         """
+        self.dependent_compartments = dependent_compartments
+        self.dependent_attributes = dependent_attributes
         self._reaction_parameter_key = reaction_parameter_key
         self._reaction_parameter = 0.0
         self._parameters = {}
@@ -63,7 +65,8 @@ class PatchTypeEvent(Event):
     An event which can only occur at a specific type of patch. Rate will always be zero if calculated at a patch which
     does not match the patch type.
     """
-    def __init__(self, patch_type, reaction_parameter_key, additional_parameter_keys=None):
+    def __init__(self, patch_type, dependent_compartments, dependent_attributes, reaction_parameter_key,
+                 additional_parameter_keys=None):
         """
         Create a patch type event
         :param patch_type:
@@ -71,7 +74,8 @@ class PatchTypeEvent(Event):
         :param additional_parameter_keys:
         """
         self._patch_type = patch_type
-        Event.__init__(self, reaction_parameter_key, additional_parameter_keys)
+        Event.__init__(self, dependent_compartments, dependent_attributes, reaction_parameter_key,
+                       additional_parameter_keys)
 
     def calculate_rate_at_patch(self, network, patch_id):
         """

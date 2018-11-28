@@ -22,8 +22,9 @@ class Dynamics(epyc.Experiment, object):
         :param network: Network on which to run dynamics
         """
         epyc.Experiment.__init__(self)
+
         # Initialise variables
-        self._network_prototype = self._rate_table = self._network = None
+        self._network = self._rate_table = self._patch_seeding = self._edge_seeding =None
 
         self._row_for_patch = {}
         self._active_patches = []
@@ -32,15 +33,21 @@ class Dynamics(epyc.Experiment, object):
         self._events = self._create_events()
         assert self._events, "No events created"
 
-        # Set the network prototype if one has been provided (if not provided, will be required during the configure
-        # stage)
-        if network:
-            self.set_network_prototype(network)
+        self.comp_dependencies = {c: [] for c in network.compartments()}
+        self.att_dependencies = {a: [] for a in network.patch_attributes()}
+        for col in range(len(self._events)):
+            for c in self._events[col].dependent_compartments:
+                self.comp_dependencies[c].append(col)
+            for a in self._events[col].dependent_attributes:
+                self.att_dependencies[a].append(col)
+
+        # Set the network prototype if one has been provided - this will be the network used for all runs.
+        # If not provided, a network must be created during configure stage.
+        self._prototype_network = network
 
         # Default start and end times
         self._start_time = self.DEFAULT_START_TIME
         self._max_time = self.DEFAULT_MAX_TIME
-
         self._record_interval = self.DEFAULT_RESULT_INTERVAL
 
     def _create_events(self):
@@ -49,17 +56,6 @@ class Dynamics(epyc.Experiment, object):
         :return:
         """
         raise NotImplementedError
-
-    def set_network_prototype(self, prototype):
-        """
-        Set the network prototype and configure rate tables
-        :param prototype:
-        :return:
-        """
-        # Prepare the network
-        self._network_prototype = prototype
-        assert isinstance(prototype, Network), "Graph must be instance of MetapopPy Network class"
-        assert self._network_prototype.nodes(), "Empty network is invalid"
 
     def set_start_time(self, start_time):
         """
@@ -93,65 +89,75 @@ class Dynamics(epyc.Experiment, object):
         return self._network
 
     def configure(self, params):
-        """
-        Configure the experiment for the given parameters. Sets the parameters for events (by passing all parameters to
-        events)m
-        :param params:
-        :return:
-        """
         epyc.Experiment.configure(self, params)
 
-        # Set the event reaction parameters
+        #  If a prototype has been provided (and hasn't already been set as the network i.e. first configure)
+        if self._prototype_network and not self._network:
+            self._network = self._prototype_network
+        # No prototype provided so we must build a new network from the parameters
+        elif not self._prototype_network:
+            self._network = self._build_network(params)
+
+        assert isinstance(self._network, Network), "Graph must be instance of MetapopPy Network class"
+        assert self._network.nodes(), "Empty network is invalid"
+
+        # Attach the update handler to the network
+        self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
+
+        self._patch_seeding = self._get_patch_seeding(params)
+        self._edge_seeding = self._get_edge_seeding(params)
+
+        # Configure events
         for e in self._events:
             e.set_parameters(params)
 
-        # Allow for designated start time (used for time/age specific events)
+        # Configure time
         if Dynamics.INITIAL_TIME in params:
             self._start_time = params[Dynamics.INITIAL_TIME]
 
-        # Ensure a network prototype is in place
-        assert self._network_prototype, "Network has not been configured"
+    def _build_network(self, params):
+        raise NotImplementedError
+
+    def _get_patch_seeding(self, params):
+        raise NotImplementedError
+
+    def _get_edge_seeding(self, params):
+        raise NotImplementedError
 
     def setUp(self, params):
-        """
-        Configure the dynamics and the network ready for a repetition of an experiment.
-        Copies the prototype network into the main network to be updated. Seeds this network with attribute and
-        compartment values.
-        :param params: Initial parameters - initial conditions of network and event reaction parameters.
-        :return:
-        """
-
         # Default setup
         epyc.Experiment.setUp(self, params)
 
-        # Use a copy of the network prototype (must be done on every run in case network has changed in order to start
-        # with a fresh network)
-        # TODO - inefficient to deepcopy?
-        self._network = copy.deepcopy(self._network_prototype)
-        # Set up compartment and attribute values as 0
-        self._network.prepare()
+        # TODO - resetting the network only works on the assumption that the network structure has not changed
+        # Reset the network
+        self._network.reset()
 
-        # Seed the prototype network
-        self._seed_network(params)
+        # Seed the network using the pre-calculated seeding
+        for n, seed in self._patch_seeding.iteritems():
+            if Network.COMPARTMENTS in seed:
+                comp_seed = seed[Network.COMPARTMENTS]
+            else:
+                comp_seed = {}
+            if Network.ATTRIBUTES in seed:
+                att_seed = seed[Network.ATTRIBUTES]
+            else:
+                att_seed = {}
+            self._network.update_patch(n, comp_seed, att_seed)
+        for (u, v), seed in self._edge_seeding.iteritems():
 
-        # Attach the update handler
-        self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
-
-        # Check which patches should be active based on seeding
-        for patch_id, data in self._network.nodes.data():
-            if self._patch_is_active(patch_id):
-                self._activate_patch(patch_id)
+            self._network.update_edge(u, v, seed)
 
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
 
-    def _seed_network(self, params):
-        """
-        Seed the network in some manner based on the parameters.
-        :param params:
-        :return:
-        """
-        raise NotImplementedError
+    def tearDown( self ):
+        # Perform the default tear-down
+        epyc.Experiment.tearDown(self)
+
+        # Reset rate table and lookups
+        self._rate_table = None
+        self._active_patches = []
+        self._row_for_patch = {}
 
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
@@ -163,14 +169,19 @@ class Dynamics(epyc.Experiment, object):
         :param edge_changes:
         :return:
         """
-        # TODO only update events which depend on changed compartments/attributes
         # Check if patch is active
         # TODO - more efficient way of checking if patch is active
         active = patch_id in self._active_patches
         # If patch is already active
         if active:
             row = self._row_for_patch[patch_id]
-            for col in range(len(self._events)):
+            cols_to_update = []
+            for c in compartment_changes:
+                cols_to_update += self.comp_dependencies[c]
+            for a in attribute_changes:
+                cols_to_update += self.att_dependencies[a]
+            cols_to_update = set(cols_to_update)
+            for col in cols_to_update:
                 event = self._events[col]
                 self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
         # Patch is not previously active but should become active from this update
@@ -221,15 +232,17 @@ class Dynamics(epyc.Experiment, object):
 
         def record_results(results, record_time):
             # TODO - we don't record edges
-            results["t=" + str(record_time)] = {}
-            for p, data in self.network().nodes(data=True):
-                results["t=" + str(record_time)][p] = copy.deepcopy(data)
+            results[record_time] = {}
+            # for p, data in self.network().nodes(data=True):
+            #     results["t=" + str(record_time)][p] = copy.deepcopy(data)
+            # TODO - only record active patches
+            for p in self._active_patches:
+                results[record_time][p] = copy.deepcopy(self._network.nodes[p])
             return results
 
-        # indices = range(0, self._rate_table.size)
-
         results = record_results(results, time)
-        next_record_interval = time + self._record_interval
+        # TODO - rounding issues for time intervals
+        next_record_interval = round(time + self._record_interval, 7)
 
         total_network_rate = numpy.sum(self._rate_table)
         assert total_network_rate, "No events possible at start of simulation"
@@ -243,7 +256,6 @@ class Dynamics(epyc.Experiment, object):
 
             # Choose an event and patch based on the values in the rate table
             # TODO - numpy multinomial is faster than numpy choice (in python 2, maybe not in 3?)
-            # index_choice = numpy.random.choice(indices, p=self._rate_table.flatten() / total_network_rate)
             index_choice = numpy.random.multinomial(1, self._rate_table.flatten() / total_network_rate).argmax()
             # Given the index, find the patch (row) and event (column) this refers to
             patch_id = self._active_patches[index_choice / num_events]
@@ -258,7 +270,7 @@ class Dynamics(epyc.Experiment, object):
             # Record results if interval(s) exceeded
             while time >= next_record_interval and next_record_interval <= self._max_time:
                 record_results(results, next_record_interval)
-                next_record_interval += self._record_interval
+                next_record_interval = round(next_record_interval + self._record_interval, 7)
 
             # Get the total rate by summing rates of all events at all patches
             total_network_rate = numpy.sum(self._rate_table)
@@ -277,19 +289,3 @@ class Dynamics(epyc.Experiment, object):
         :return: True to finish simulation
         """
         return t >= self._max_time
-
-    def tearDown(self):
-        """
-        After a repetition ends, remove the used graph and rate table.
-        :return:
-        """
-        # Perform the default tear-down
-        epyc.Experiment.tearDown(self)
-
-        # Remove the worked-on model
-        self._network = None
-
-        # Reset rate table and lookups
-        self._rate_table = None
-        self._active_patches = []
-        self._row_for_patch = {}
