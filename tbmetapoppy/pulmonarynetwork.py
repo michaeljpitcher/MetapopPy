@@ -38,9 +38,6 @@ class PulmonaryNetwork(TypedNetwork):
             y_min = min(ys)
             self._y_range = self._y_max - y_min
 
-    def copy(self, as_view=False):
-        return self.__class__(self._compartments, self._patch_attributes, self._edge_attributes, self)
-
     def _build_single_patch_network(self):
         # Create lymph patch
         self.add_node(PulmonaryNetwork.LYMPH_PATCH)
@@ -212,38 +209,5 @@ class PulmonaryNetwork(TypedNetwork):
                                                           PulmonaryNetwork.DRAINAGE: values[PulmonaryNetwork.DRAINAGE]}
         return seeding
 
-    # def seed_patches_by_rates(self, lung_recruitment_death_rates, lymph_recruitment_death_rates):
-    #     """
-    #     Seed the lung patches with initial subpopulation values. Calculated to be the equilibrium values (i.e. perfusion
-    #     * recruitment rate / death rate)
-    #     :param lung_recruitment_death_rates: Lung recruitment and death rates,
-    #            dict of Cell_type:(recruit_rate, death_rate)
-    #     :param lymph_recruitment_death_rates: Lymph recruitment and death rates,
-    #            dict of Cell_type:(recruit_rate, death_rate)
-    #     :return:
-    #     """
-    #     # Calculate the values - perfusion * recruitment rate / death rate
-    #     for n in self.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
-    #         perfusion = self.get_attribute_value(n, PulmonaryNetwork.PERFUSION)
-    #         # Save all values in a dict and update all at once
-    #         seed_amounts = {}
-    #         for cell, (recruit_rate, death_rate) in lung_recruitment_death_rates.iteritems():
-    #             if recruit_rate > 0.0:
-    #                 assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
-    #                 seed_amounts[cell] = int(round(float(perfusion * recruit_rate) / death_rate))
-    #             else:
-    #                 seed_amounts[cell] = 0
-    #         self.update_patch(n, seed_amounts)
-    #
-    #     # Lymph patches - recruitment / death rate
-    #     for n in self.get_patches_by_type(PulmonaryNetwork.LYMPH_PATCH):
-    #         seed_amounts = {}
-    #         for cell, (recruit_rate, death_rate) in lymph_recruitment_death_rates.iteritems():
-    #             if recruit_rate > 0.0:
-    #                 assert death_rate > 0.0, "Death rate for {0} cannot be zero".format(cell)
-    #                 seed_amounts[cell] = int(round(float(recruit_rate) / death_rate))
-    #             else:
-    #                 seed_amounts[cell] = 0
-    #         self.update_patch(n, seed_amounts)
 
 # TODO change in patch perfusion needs to feed through to edge
