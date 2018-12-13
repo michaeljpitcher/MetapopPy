@@ -17,11 +17,11 @@ TEST_PROB_DC_INFECTION = 'test_prob_mac_infection'
 class CellIngestBacteriumTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.event_mr = CellIngestBacterium(TEST_RATE_MR_INGESTION, MACROPHAGE_RESTING, TEST_HALFSAT_MR_INGESTION,
+        self.event_mr = CellIngestBacterium(TEST_RATE_MR_INGESTION, TBPulmonaryNetwork.MACROPHAGE_RESTING, TEST_HALFSAT_MR_INGESTION,
                                              TEST_PROB_MR_INFECTION)
-        self.event_ma = CellIngestBacterium(TEST_RATE_MA_INGESTION, MACROPHAGE_ACTIVATED, TEST_HALFSAT_MA_INGESTION,
+        self.event_ma = CellIngestBacterium(TEST_RATE_MA_INGESTION, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED, TEST_HALFSAT_MA_INGESTION,
                                              TEST_PROB_MA_INFECTION)
-        self.event_dc = CellIngestBacterium(TEST_RATE_DC_INGESTION, DENDRITIC_CELL_IMMATURE, TEST_HALFSAT_DC_INGESTION,
+        self.event_dc = CellIngestBacterium(TEST_RATE_DC_INGESTION, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE, TEST_HALFSAT_DC_INGESTION,
                                              TEST_PROB_DC_INFECTION)
 
         self.params = {TEST_RATE_MR_INGESTION: 0.1, TEST_HALFSAT_MR_INGESTION: 101, TEST_PROB_MR_INFECTION: 0.7,
@@ -31,18 +31,18 @@ class CellIngestBacteriumTestCase(unittest.TestCase):
         self.events = [self.event_mr, self.event_ma, self.event_dc]
         for e in self.events:
             e.set_parameters(self.params)
-        self.network = PulmonaryNetwork({PulmonaryNetwork.TOPOLOGY: None}, TB_COMPARTMENTS)
+        self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
         self.network.add_node(1)
-        self.network.set_patch_type(1, PulmonaryNetwork.ALVEOLAR_PATCH)
+        self.network.set_patch_type(1, TBPulmonaryNetwork.ALVEOLAR_PATCH)
         self.network.reset()
 
     def test_rate(self):
         for e in self.events:
             self.assertFalse(e.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, {MACROPHAGE_RESTING: 3, MACROPHAGE_ACTIVATED: 5, DENDRITIC_CELL_IMMATURE: 7})
+        self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_RESTING: 3, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED: 5, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE: 7})
         for e in self.events:
             self.assertFalse(e.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_REPLICATING: 11})
+        self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 11})
         self.assertEqual(self.event_mr.calculate_rate_at_patch(self.network, 1),
                          self.params[TEST_RATE_MR_INGESTION] * 3 * (
                                  11.0 / (11.0 + self.params[TEST_HALFSAT_MR_INGESTION])))
@@ -52,7 +52,7 @@ class CellIngestBacteriumTestCase(unittest.TestCase):
         self.assertEqual(self.event_dc.calculate_rate_at_patch(self.network, 1),
                          self.params[TEST_RATE_DC_INGESTION] * 7 * (
                                      11.0 / (11.0 + self.params[TEST_HALFSAT_DC_INGESTION])))
-        self.network.update_patch(1, {BACTERIUM_EXTRACELLULAR_DORMANT: 13})
+        self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 13})
         self.assertEqual(self.event_mr.calculate_rate_at_patch(self.network, 1),
                          self.params[TEST_RATE_MR_INGESTION] * 3 * (
                                  24.0 / (24.0 + self.params[TEST_HALFSAT_MR_INGESTION])))
@@ -64,25 +64,25 @@ class CellIngestBacteriumTestCase(unittest.TestCase):
                                  24.0 / (24.0 + self.params[TEST_HALFSAT_DC_INGESTION])))
 
     def test_perform(self):
-        self.network.update_patch(1, {MACROPHAGE_RESTING: 10, MACROPHAGE_ACTIVATED:10, DENDRITIC_CELL_IMMATURE:10,
-                                      BACTERIUM_EXTRACELLULAR_REPLICATING:15, BACTERIUM_EXTRACELLULAR_DORMANT: 15})
+        self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_RESTING: 10, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED:10, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE:10,
+                                      TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING:15, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 15})
         # Never infected
         for n in range(10):
             self.event_ma.perform(self.network, 1)
-            self.assertEqual(self.network.get_compartment_value(1, [BACTERIUM_EXTRACELLULAR_DORMANT,
-                                                                    BACTERIUM_EXTRACELLULAR_REPLICATING]), 30 - n - 1)
+            self.assertEqual(self.network.get_compartment_value(1, [TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT,
+                                                                    TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING]), 30 - n - 1)
         # Always infected
         for n in range(10):
             self.event_dc.perform(self.network, 1)
-            self.assertEqual(self.network.get_compartment_value(1, DENDRITIC_CELL_IMMATURE), 10-n-1)
-            self.assertEqual(self.network.get_compartment_value(1, BACTERIUM_INTRACELLULAR_DENDRITIC), n+1)
+            self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE), 10-n-1)
+            self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_DENDRITIC), n+1)
 
         # Either
         for n in range(10):
             self.event_mr.perform(self.network, 1)
-            self.assertEqual(self.network.get_compartment_value(1, [MACROPHAGE_RESTING, MACROPHAGE_INFECTED]), 10)
-            self.assertEqual(self.network.get_compartment_value(1, MACROPHAGE_INFECTED),
-                             self.network.get_compartment_value(1, BACTERIUM_INTRACELLULAR_MACROPHAGE))
+            self.assertEqual(self.network.get_compartment_value(1, [TBPulmonaryNetwork.MACROPHAGE_RESTING, TBPulmonaryNetwork.MACROPHAGE_INFECTED]), 10)
+            self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryNetwork.MACROPHAGE_INFECTED),
+                             self.network.get_compartment_value(1, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE))
 
 
 

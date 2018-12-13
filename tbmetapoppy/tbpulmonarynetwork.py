@@ -2,7 +2,7 @@ from metapoppy.network import TypedNetwork
 import numpy
 
 
-class PulmonaryNetwork(TypedNetwork):
+class TBPulmonaryNetwork(TypedNetwork):
     # Patch types
     ALVEOLAR_PATCH = 'alveolar_patch'
     LYMPH_PATCH = 'lymph_patch'
@@ -24,38 +24,74 @@ class PulmonaryNetwork(TypedNetwork):
     LENGTH_DIVISOR = 'length_divisor'
     MINIMUM_AREA = 'minimum_area'
 
-    def __init__(self, network_config, compartments):
-        TypedNetwork.__init__(self, compartments, PulmonaryNetwork.PATCH_ATTRIBUTES, PulmonaryNetwork.EDGE_ATTRIBUTES)
+    # Compartments
+    BACTERIUM_EXTRACELLULAR_REPLICATING = 'B_er'
+    BACTERIUM_EXTRACELLULAR_DORMANT = 'B_ed'
+    EXTRACELLULAR_BACTERIA = [BACTERIUM_EXTRACELLULAR_REPLICATING, BACTERIUM_EXTRACELLULAR_DORMANT]
+    BACTERIUM_INTRACELLULAR_DENDRITIC = 'B_id'
+    BACTERIUM_INTRACELLULAR_MACROPHAGE = 'B_im'
+    INTRACELLULAR_BACTERIA = [BACTERIUM_INTRACELLULAR_DENDRITIC, BACTERIUM_INTRACELLULAR_MACROPHAGE]
+    BACTERIA = EXTRACELLULAR_BACTERIA + INTRACELLULAR_BACTERIA
+
+    MACROPHAGE_RESTING = 'M_r'
+    MACROPHAGE_INFECTED = 'M_i'
+    MACROPHAGE_ACTIVATED = 'M_a'
+    MACROPHAGES = [MACROPHAGE_RESTING, MACROPHAGE_INFECTED, MACROPHAGE_ACTIVATED]
+
+    DENDRITIC_CELL_IMMATURE = 'D_i'
+    DENDRITIC_CELL_MATURE = 'D_m'
+    DENDRITIC_CELLS = [DENDRITIC_CELL_IMMATURE, DENDRITIC_CELL_MATURE]
+
+    T_CELL_NAIVE = 'T_n'
+    T_CELL_ACTIVATED = 'T_a'
+    T_CELLS = [T_CELL_NAIVE, T_CELL_ACTIVATED]
+
+    CASEUM = 'C'
+
+    TB_COMPARTMENTS = BACTERIA + MACROPHAGES + DENDRITIC_CELLS + T_CELLS + [CASEUM]
+
+    ACTIVATED_CELL = {MACROPHAGE_RESTING: MACROPHAGE_ACTIVATED, T_CELL_NAIVE: T_CELL_ACTIVATED}
+    INFECTED_CELL = {MACROPHAGE_RESTING: MACROPHAGE_INFECTED, DENDRITIC_CELL_IMMATURE: DENDRITIC_CELL_MATURE}
+    INTERNAL_BACTERIA_FOR_CELL = {MACROPHAGE_INFECTED: BACTERIUM_INTRACELLULAR_MACROPHAGE,
+                                  DENDRITIC_CELL_MATURE: BACTERIUM_INTRACELLULAR_DENDRITIC}
+
+    def __init__(self, network_config):
+        TypedNetwork.__init__(self, TBPulmonaryNetwork.TB_COMPARTMENTS, TBPulmonaryNetwork.PATCH_ATTRIBUTES,
+                              TBPulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
-        if network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SINGLE_PATCH:
+        if network_config[TBPulmonaryNetwork.TOPOLOGY] == TBPulmonaryNetwork.SINGLE_PATCH:
             self._build_single_patch_network()
-        elif network_config[PulmonaryNetwork.TOPOLOGY] == PulmonaryNetwork.SPACE_FILLING_TREE_2D:
+        elif network_config[TBPulmonaryNetwork.TOPOLOGY] == TBPulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
             # Get horizontal positions and max/min values
             ys = [y for _, y in self._alveolar_positions.values()]
             self._y_max = max(ys)
             y_min = min(ys)
             self._y_range = self._y_max - y_min
+        self._infected_patches = []
+
+    def infected_patches(self):
+        return self._infected_patches
 
     def _build_single_patch_network(self):
         # Create lymph patch
-        self.add_node(PulmonaryNetwork.LYMPH_PATCH)
-        self.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
+        self.add_node(TBPulmonaryNetwork.LYMPH_PATCH)
+        self.set_patch_type(TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.LYMPH_PATCH)
 
         # Create the alveolar patches
-        self.add_node(PulmonaryNetwork.ALVEOLAR_PATCH)
-        self.set_patch_type(PulmonaryNetwork.ALVEOLAR_PATCH, PulmonaryNetwork.ALVEOLAR_PATCH)
-        self._alveolar_positions[PulmonaryNetwork.ALVEOLAR_PATCH] = (1, 1)
+        self.add_node(TBPulmonaryNetwork.ALVEOLAR_PATCH)
+        self.set_patch_type(TBPulmonaryNetwork.ALVEOLAR_PATCH, TBPulmonaryNetwork.ALVEOLAR_PATCH)
+        self._alveolar_positions[TBPulmonaryNetwork.ALVEOLAR_PATCH] = (1, 1)
         # Add an edge from this alveolar patch to lymph patch
-        self.add_edge(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.ALVEOLAR_PATCH)
+        self.add_edge(TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.ALVEOLAR_PATCH)
 
     def _build_2d_space_filling_tree(self, network_config):
-        boundary = network_config[PulmonaryNetwork.BOUNDARY]
+        boundary = network_config[TBPulmonaryNetwork.BOUNDARY]
         if isinstance(boundary, str):
             boundary = [[float(a) for a in n[1:-1].split(",")] for n in boundary.split(":")]
-        length_divisor = float(network_config[PulmonaryNetwork.LENGTH_DIVISOR])
-        minimum_area = float(network_config[PulmonaryNetwork.MINIMUM_AREA])
+        length_divisor = float(network_config[TBPulmonaryNetwork.LENGTH_DIVISOR])
+        minimum_area = float(network_config[TBPulmonaryNetwork.MINIMUM_AREA])
 
         # apex = max([b[1] for b in boundary])
         # base = min([b[1] for b in boundary])
@@ -135,17 +171,17 @@ class PulmonaryNetwork(TypedNetwork):
                 alveolar_positions.append(new_split_point)
 
         # Create lymph patch
-        self.add_node(PulmonaryNetwork.LYMPH_PATCH)
-        self.set_patch_type(PulmonaryNetwork.LYMPH_PATCH, PulmonaryNetwork.LYMPH_PATCH)
+        self.add_node(TBPulmonaryNetwork.LYMPH_PATCH)
+        self.set_patch_type(TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.LYMPH_PATCH)
 
         # Create the alveolar patches
         index = 1
         for pos in alveolar_positions:
             self.add_node(index)
-            self.set_patch_type(index, PulmonaryNetwork.ALVEOLAR_PATCH)
+            self.set_patch_type(index, TBPulmonaryNetwork.ALVEOLAR_PATCH)
             self._alveolar_positions[index] = pos
             # Add an edge from this alveolar patch to lymph patch
-            self.add_edge(PulmonaryNetwork.LYMPH_PATCH, index)
+            self.add_edge(TBPulmonaryNetwork.LYMPH_PATCH, index)
             index += 1
 
     def get_pulmonary_att_seeding(self, ventilation_skew, perfusion_skew, drainage_skew):
@@ -158,10 +194,10 @@ class PulmonaryNetwork(TypedNetwork):
         """
         # Only 1 alveolar patch so just set everything to 1
         if len(self._alveolar_positions) == 1:
-            seeding = {PulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES: {PulmonaryNetwork.VENTILATION: 1,
-                                                                                   PulmonaryNetwork.PERFUSION: 1,
-                                                                                   PulmonaryNetwork.OXYGEN_TENSION: 1,
-                                                                                   PulmonaryNetwork.DRAINAGE: 1}}}
+            seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES: {TBPulmonaryNetwork.VENTILATION: 1,
+                                                                                TBPulmonaryNetwork.PERFUSION: 1,
+                                                                                TBPulmonaryNetwork.OXYGEN_TENSION: 1,
+                                                                                TBPulmonaryNetwork.DRAINAGE: 1}}}
             return seeding
 
         temp_seeding = {}
@@ -174,40 +210,51 @@ class PulmonaryNetwork(TypedNetwork):
         # For drainage, value in middle of lung will equal 1, values for base and apex are derived from this and the
         # skew, and used to calculate values in between
 
-        mins = {PulmonaryNetwork.VENTILATION: 1.0, PulmonaryNetwork.PERFUSION: 1.0,
-                PulmonaryNetwork.DRAINAGE: 1.0 / (1 + (drainage_skew-1)/2.0)}
-        maxs = {PulmonaryNetwork.VENTILATION: ventilation_skew, PulmonaryNetwork.PERFUSION: perfusion_skew,
-                PulmonaryNetwork.DRAINAGE: mins[PulmonaryNetwork.DRAINAGE] * drainage_skew}
+        mins = {TBPulmonaryNetwork.VENTILATION: 1.0, TBPulmonaryNetwork.PERFUSION: 1.0,
+                TBPulmonaryNetwork.DRAINAGE: 1.0 / (1 + (drainage_skew - 1) / 2.0)}
+        maxs = {TBPulmonaryNetwork.VENTILATION: ventilation_skew, TBPulmonaryNetwork.PERFUSION: perfusion_skew,
+                TBPulmonaryNetwork.DRAINAGE: mins[TBPulmonaryNetwork.DRAINAGE] * drainage_skew}
         diffs = {k: maxs[k] - mins[k] for k in mins.keys()}
 
         # Calculate values - 1 + (y_max - y) * (att_max - att_min)/(y_max - y_min)
         for index, (_,y_pos) in self._alveolar_positions.iteritems():
             temp_seeding[index] = {}
-            vent_value = mins[PulmonaryNetwork.VENTILATION] + (self._y_max - y_pos) * (
-                        diffs[PulmonaryNetwork.VENTILATION] / self._y_range)
-            perf_value = mins[PulmonaryNetwork.PERFUSION] + (self._y_max - y_pos) * (
-                        diffs[PulmonaryNetwork.PERFUSION] / self._y_range)
-            drain_value = mins[PulmonaryNetwork.DRAINAGE] + (self._y_max - y_pos) * (
-                        diffs[PulmonaryNetwork.DRAINAGE] / self._y_range)
+            vent_value = mins[TBPulmonaryNetwork.VENTILATION] + (self._y_max - y_pos) * (
+                    diffs[TBPulmonaryNetwork.VENTILATION] / self._y_range)
+            perf_value = mins[TBPulmonaryNetwork.PERFUSION] + (self._y_max - y_pos) * (
+                    diffs[TBPulmonaryNetwork.PERFUSION] / self._y_range)
+            drain_value = mins[TBPulmonaryNetwork.DRAINAGE] + (self._y_max - y_pos) * (
+                    diffs[TBPulmonaryNetwork.DRAINAGE] / self._y_range)
             total_v += vent_value
             total_q += perf_value
             # Temp values - will be normalised below
-            temp_seeding[index] = {PulmonaryNetwork.VENTILATION: vent_value,
-                                   PulmonaryNetwork.PERFUSION: perf_value,
-                                   PulmonaryNetwork.DRAINAGE: drain_value}
+            temp_seeding[index] = {TBPulmonaryNetwork.VENTILATION: vent_value,
+                                   TBPulmonaryNetwork.PERFUSION: perf_value,
+                                   TBPulmonaryNetwork.DRAINAGE: drain_value}
 
         seeding = {}
         # Normalise and assign
         for patch_id, values in temp_seeding.iteritems():
             seeding[patch_id] = {TypedNetwork.ATTRIBUTES: {}}
-            v = values[PulmonaryNetwork.VENTILATION] / total_v
-            q = values[PulmonaryNetwork.PERFUSION] / total_q
+            v = values[TBPulmonaryNetwork.VENTILATION] / total_v
+            q = values[TBPulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
-            seeding[patch_id][TypedNetwork.ATTRIBUTES] = {PulmonaryNetwork.VENTILATION: v,
-                                                          PulmonaryNetwork.PERFUSION: q,
-                                                          PulmonaryNetwork.OXYGEN_TENSION: o2,
-                                                          PulmonaryNetwork.DRAINAGE: values[PulmonaryNetwork.DRAINAGE]}
+            seeding[patch_id][TypedNetwork.ATTRIBUTES] = {TBPulmonaryNetwork.VENTILATION: v,
+                                                          TBPulmonaryNetwork.PERFUSION: q,
+                                                          TBPulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                          TBPulmonaryNetwork.DRAINAGE:
+                                                              values[TBPulmonaryNetwork.DRAINAGE]}
         return seeding
 
+    def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
+        if (self.nodes[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
+                any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes) and
+                patch_id not in self._infected_patches):
+                self._infected_patches.append(patch_id)
+        TypedNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
+
+    def reset(self):
+        self._infected_patches = []
+        TypedNetwork.reset(self)
 
 # TODO change in patch perfusion needs to feed through to edge

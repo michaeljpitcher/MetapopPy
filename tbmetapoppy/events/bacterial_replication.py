@@ -1,5 +1,5 @@
 from metapoppy.event import Event
-from ..tbcompartments import *
+from ..tbpulmonarynetwork import *
 
 
 class Replication(Event):
@@ -18,16 +18,16 @@ class IntracellularBacterialReplication(Replication):
     def __init__(self, replication_rate_key, sigmoid_key, capacity_key):
         self._sigmoid_key = sigmoid_key
         self._carrying_capacity_key = capacity_key
-        Replication.__init__(self, replication_rate_key, BACTERIUM_INTRACELLULAR_MACROPHAGE,
+        Replication.__init__(self, replication_rate_key, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE,
                              [sigmoid_key, capacity_key])
-        self.dependent_compartments += [BACTERIUM_INTRACELLULAR_MACROPHAGE, MACROPHAGE_INFECTED]
+        self.dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE, TBPulmonaryNetwork.MACROPHAGE_INFECTED]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        bac = network.get_compartment_value(patch_id, BACTERIUM_INTRACELLULAR_MACROPHAGE)
+        bac = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE)
         # Return 0 if no bacteria exist
         if not bac:
             return 0
         sig = self._parameters[self._sigmoid_key]
         cap = self._parameters[self._carrying_capacity_key]
-        mac = network.get_compartment_value(patch_id, MACROPHAGE_INFECTED)
+        mac = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
         return bac * (1 - (float(bac ** sig) / (bac ** sig + (cap * mac) ** sig)))

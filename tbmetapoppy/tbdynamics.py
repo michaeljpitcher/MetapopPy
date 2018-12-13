@@ -1,7 +1,6 @@
 from metapoppy.dynamics import Dynamics
-from .pulmonarynetwork import *
+from .tbpulmonarynetwork import *
 from tbmetapoppy.events import *
-from tbcompartments import *
 
 
 class TBDynamics(Dynamics):
@@ -72,7 +71,7 @@ class TBDynamics(Dynamics):
 
     def __init__(self, network_config):
         # Build network
-        pulmonary_network = PulmonaryNetwork(network_config, TB_COMPARTMENTS)
+        pulmonary_network = TBPulmonaryNetwork(network_config)
         Dynamics.__init__(self, pulmonary_network)
 
         self._perf_seed = {}
@@ -85,8 +84,8 @@ class TBDynamics(Dynamics):
         events = []
 
         # Bacteria replication
-        ber_replication = Replication(TBDynamics.RP_REPLICATION_BER, BACTERIUM_EXTRACELLULAR_REPLICATING)
-        bed_replication = Replication(TBDynamics.RP_REPLICATION_BED, BACTERIUM_EXTRACELLULAR_DORMANT)
+        ber_replication = Replication(TBDynamics.RP_REPLICATION_BER, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING)
+        bed_replication = Replication(TBDynamics.RP_REPLICATION_BED, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
         bim_replication = IntracellularBacterialReplication(TBDynamics.RP_REPLICATION_BIM,
                                                                   TBDynamics.SIGMOID_BIM_REPLICATION,
                                                                   TBDynamics.MACROPHAGE_CAPACITY)
@@ -104,40 +103,40 @@ class TBDynamics(Dynamics):
 
         # bacterial translocation
         bed_translocation = CellTranslocationToLung(TBDynamics.RP_BACTERIA_BLOOD_TRANSLOCATION,
-                                                    BACTERIUM_EXTRACELLULAR_DORMANT)
+                                                    TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
         events.append(bed_translocation)
 
         # Dendritic cell recruitment
-        dc_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, DENDRITIC_CELL_IMMATURE)
+        dc_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE)
         dc_recruit_lung_enh = EnhancedCellRecruitmentLung(TBDynamics.RP_DCI_RECRUITMENT_ENHANCED,
-                                                                     DENDRITIC_CELL_IMMATURE,
+                                                          TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE,
                                                                      TBDynamics.HALF_SAT_DCI_RECRUITMENT_ENHANCED,
                                                                      TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
         events += [dc_recruit_lung, dc_recruit_lung_enh]
 
         # Dendritic cell death
-        dci_death = CellDeath(TBDynamics.RP_DCI_DEATH, DENDRITIC_CELL_IMMATURE)
-        dcm_death = CellDeath(TBDynamics.RP_DCM_DEATH, DENDRITIC_CELL_MATURE)
+        dci_death = CellDeath(TBDynamics.RP_DCI_DEATH, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE)
+        dcm_death = CellDeath(TBDynamics.RP_DCM_DEATH, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
         events += [dci_death, dcm_death]
 
         # Dendritic Cell maturation
-        dc_maturation = CellIngestBacterium(TBDynamics.RP_DCI_INGEST_BACTERIUM, DENDRITIC_CELL_IMMATURE,
+        dc_maturation = CellIngestBacterium(TBDynamics.RP_DCI_INGEST_BACTERIUM, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE,
                                             TBDynamics.HALF_SAT_DCI_INGEST_BACTERIUM, TBDynamics.PROB_DC_INFECTION)
         events.append(dc_maturation)
 
         # Dendritic cell translocation
-        dc_translocation = CellTranslocationToLymph(TBDynamics.RP_DCM_TRANSLOCATION, DENDRITIC_CELL_MATURE)
+        dc_translocation = CellTranslocationToLymph(TBDynamics.RP_DCM_TRANSLOCATION, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
         events.append(dc_translocation)
 
         # Macrophage recruitment
-        mr_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, MACROPHAGE_RESTING)
-        mr_recruit_lymph = StandardCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, MACROPHAGE_RESTING)
+        mr_recruit_lung = StandardCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_LUNG, TBPulmonaryNetwork.MACROPHAGE_RESTING)
+        mr_recruit_lymph = StandardCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_LYMPH, TBPulmonaryNetwork.MACROPHAGE_RESTING)
         mr_recruit_lung_enhanced = EnhancedCellRecruitmentLung(TBDynamics.RP_MR_RECRUIT_ENHANCE,
-                                                               MACROPHAGE_RESTING,
+                                                               TBPulmonaryNetwork.MACROPHAGE_RESTING,
                                                                TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE,
                                                                TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
         mr_recruit_lymph_enhanced = EnhancedCellRecruitmentLymph(TBDynamics.RP_MR_RECRUIT_ENHANCE,
-                                                               MACROPHAGE_RESTING,
+                                                                 TBPulmonaryNetwork.MACROPHAGE_RESTING,
                                                                TBDynamics.HALF_SAT_MR_RECRUIT_ENHANCE,
                                                                TBDynamics.MI_TO_MA_CHEMOKINE_WEIGHT)
         
@@ -145,17 +144,17 @@ class TBDynamics(Dynamics):
 
         # Macrophage activation
         mr_activation_bac = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_BACTERIA,
-                                           TBDynamics.HALF_SAT_MR_ACTIVATION_BY_BACTERIA, MACROPHAGE_RESTING,
-                                           EXTRACELLULAR_BACTERIA)
+                                           TBDynamics.HALF_SAT_MR_ACTIVATION_BY_BACTERIA, TBPulmonaryNetwork.MACROPHAGE_RESTING,
+                                           TBPulmonaryNetwork.EXTRACELLULAR_BACTERIA)
         mr_activation_ta = CellActivation(TBDynamics.RP_MR_ACTIVATION_BY_TCELL,
                                           TBDynamics.HALF_SAT_MR_ACTIVATION_BY_TCELL,
-                                          MACROPHAGE_RESTING, [T_CELL_ACTIVATED])
+                                          TBPulmonaryNetwork.MACROPHAGE_RESTING, [TBPulmonaryNetwork.T_CELL_ACTIVATED])
         events += [mr_activation_bac, mr_activation_ta]
 
         # Macrophage death
-        mr_death = CellDeath(TBDynamics.RP_MR_DEATH, MACROPHAGE_RESTING)
-        ma_death = CellDeath(TBDynamics.RP_MA_DEATH, MACROPHAGE_ACTIVATED)
-        mi_death = CellDeath(TBDynamics.RP_MI_DEATH, MACROPHAGE_INFECTED)
+        mr_death = CellDeath(TBDynamics.RP_MR_DEATH, TBPulmonaryNetwork.MACROPHAGE_RESTING)
+        ma_death = CellDeath(TBDynamics.RP_MA_DEATH, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED)
+        mi_death = CellDeath(TBDynamics.RP_MI_DEATH, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
         mi_burst = MacrophageBursting(TBDynamics.RP_MI_BURSTING, TBDynamics.SIGMOID_BIM_REPLICATION,
                                       TBDynamics.MACROPHAGE_CAPACITY)
 
@@ -163,25 +162,25 @@ class TBDynamics(Dynamics):
         events += [mr_death, ma_death, mi_death, mi_burst, ta_kills_mi]
 
         # Macrophage ingest bacterium
-        mr_ingest_bac = CellIngestBacterium(TBDynamics.RP_MR_INGEST_BAC, MACROPHAGE_RESTING,
+        mr_ingest_bac = CellIngestBacterium(TBDynamics.RP_MR_INGEST_BAC, TBPulmonaryNetwork.MACROPHAGE_RESTING,
                                             TBDynamics.HALF_SAT_MR_INGEST_BAC,
                                             TBDynamics.PROB_MR_INFECTION)
-        ma_ingest_bac = CellIngestBacterium(TBDynamics.RP_MA_INGEST_BAC, MACROPHAGE_ACTIVATED,
+        ma_ingest_bac = CellIngestBacterium(TBDynamics.RP_MA_INGEST_BAC, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED,
                                             TBDynamics.HALF_SAT_MA_INGEST_BAC,
                                             TBDynamics.PROB_MA_INFECTION)
         events += [mr_ingest_bac, ma_ingest_bac]
 
         # Macrophage translocation
-        mi_translocation = CellTranslocationToLymph(TBDynamics.RP_MI_TRANSLOCATION, MACROPHAGE_INFECTED)
+        mi_translocation = CellTranslocationToLymph(TBDynamics.RP_MI_TRANSLOCATION, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
         events.append(mi_translocation)
 
         # T-cell recruitment
-        tn_recruit = StandardCellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, T_CELL_NAIVE)
+        tn_recruit = StandardCellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, TBPulmonaryNetwork.T_CELL_NAIVE)
         events.append(tn_recruit)
 
         # T-cell activation
         tn_activation = CellActivation(TBDynamics.RP_TCELL_ACTIVATION, TBDynamics.HALF_SAT_TCELL_ACTIVATION,
-                                       T_CELL_NAIVE, [DENDRITIC_CELL_MATURE, MACROPHAGE_INFECTED])
+                                       TBPulmonaryNetwork.T_CELL_NAIVE, [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
         events.append(tn_activation)
 
         # T-cell translocation
@@ -189,8 +188,8 @@ class TBDynamics(Dynamics):
         events.append(ta_translocation)
 
         # T-cell death
-        tn_death = CellDeath(TBDynamics.RP_TN_DEATH, T_CELL_NAIVE)
-        ta_death = CellDeath(TBDynamics.RP_TA_DEATH, T_CELL_ACTIVATED)
+        tn_death = CellDeath(TBDynamics.RP_TN_DEATH, TBPulmonaryNetwork.T_CELL_NAIVE)
+        ta_death = CellDeath(TBDynamics.RP_TA_DEATH, TBPulmonaryNetwork.T_CELL_ACTIVATED)
         events += [tn_death, ta_death]
 
         return events
@@ -210,14 +209,14 @@ class TBDynamics(Dynamics):
         tn_recruit = params[TBDynamics.RP_TN_RECRUIT]
         tn_death = params[TBDynamics.RP_TN_DEATH]
         for n, v in patch_seeding.iteritems():
-            self._perf_seed[n] = v[TypedNetwork.ATTRIBUTES][PulmonaryNetwork.PERFUSION]
-            v[TypedNetwork.COMPARTMENTS] = {MACROPHAGE_RESTING: int(round(self._perf_seed[n] *
+            self._perf_seed[n] = v[TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION]
+            v[TypedNetwork.COMPARTMENTS] = {TBPulmonaryNetwork.MACROPHAGE_RESTING: int(round(self._perf_seed[n] *
                                                                           (mac_recruit_lung / mac_death))),
-                                            DENDRITIC_CELL_IMMATURE: int(round(self._perf_seed[n] *
+                                            TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE: int(round(self._perf_seed[n] *
                                                                                (dc_recruit / dc_death)))}
-        lymph_seed = {MACROPHAGE_RESTING: int(round(mac_recruit_lymph / mac_death)),
-                      T_CELL_NAIVE: int(round(tn_recruit / tn_death))}
-        patch_seeding[PulmonaryNetwork.LYMPH_PATCH] = {TypedNetwork.COMPARTMENTS: lymph_seed}
+        lymph_seed = {TBPulmonaryNetwork.MACROPHAGE_RESTING: int(round(mac_recruit_lymph / mac_death)),
+                      TBPulmonaryNetwork.T_CELL_NAIVE: int(round(tn_recruit / tn_death))}
+        patch_seeding[TBPulmonaryNetwork.LYMPH_PATCH] = {TypedNetwork.COMPARTMENTS: lymph_seed}
 
         # Bacteria
         # Ventilation based - assumes sum of ventilation values = 1.0
@@ -232,16 +231,19 @@ class TBDynamics(Dynamics):
         #             params[TBDynamics.IC_BED_LOAD]
         #         break
         # TODO - debug code
-        patch_seeding[9][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_REPLICATING] = \
+        patch_seeding[9][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING] = \
             params[TBDynamics.IC_BER_LOAD]
-        patch_seeding[9][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_DORMANT] = \
+        patch_seeding[9][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT] = \
             params[TBDynamics.IC_BED_LOAD]
         return patch_seeding
 
+    def _build_network(self, params):
+        pass
+
     def _get_edge_seeding(self, params):
         seeding = {}
-        for n, v in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH, data=True):
-            seeding[(n, PulmonaryNetwork.LYMPH_PATCH)] = {PulmonaryNetwork.PERFUSION: self._perf_seed[n]}
+        for n, v in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH, data=True):
+            seeding[(n, TBPulmonaryNetwork.LYMPH_PATCH)] = {TBPulmonaryNetwork.PERFUSION: self._perf_seed[n]}
         return seeding
 
     def _patch_is_active(self, patch_id):
@@ -251,5 +253,5 @@ class TBDynamics(Dynamics):
         :param patch_id:
         :return:
         """
-        return patch_id == PulmonaryNetwork.LYMPH_PATCH or \
-               sum([self._network.get_compartment_value(patch_id, n) for n in BACTERIA]) > 0
+        return patch_id == TBPulmonaryNetwork.LYMPH_PATCH or \
+               sum([self._network.get_compartment_value(patch_id, n) for n in TBPulmonaryNetwork.BACTERIA]) > 0
