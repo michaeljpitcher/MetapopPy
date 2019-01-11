@@ -60,6 +60,8 @@ class TBDynamics(Dynamics):
     RP_MI_TRANSLOCATION = 'macrophage_translocation_rate'
 
     RP_TN_RECRUIT = 't_cell_recruitment_rate'
+    RP_TN_ENHANCED_RECRUIT = 't_cell_enhanced_recruitment_rate'
+    HALF_SAT_TN_ENHANCED_RECRUIT = 't_cell_enhanced_recruitment_half_sat'
     RP_TCELL_ACTIVATION = 't_cell_activation_rate'
     HALF_SAT_TCELL_ACTIVATION = 't_cell_activation_half_sat'
     RP_TN_DEATH = 't_cell_naive_death_rate'
@@ -178,9 +180,15 @@ class TBDynamics(Dynamics):
         tn_recruit = StandardCellRecruitmentLymph(TBDynamics.RP_TN_RECRUIT, TBPulmonaryNetwork.T_CELL_NAIVE)
         events.append(tn_recruit)
 
+        # T-cell enhanced recruitment
+        tn_recruit_enhanced = EnhancedTCellRecruitmentLymph(TBDynamics.RP_TN_ENHANCED_RECRUIT,
+                                                            TBDynamics.HALF_SAT_TN_ENHANCED_RECRUIT)
+        events.append(tn_recruit_enhanced)
+
         # T-cell activation
         tn_activation = CellActivation(TBDynamics.RP_TCELL_ACTIVATION, TBDynamics.HALF_SAT_TCELL_ACTIVATION,
-                                       TBPulmonaryNetwork.T_CELL_NAIVE, [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
+                                       TBPulmonaryNetwork.T_CELL_NAIVE, [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE,
+                                                                         TBPulmonaryNetwork.MACROPHAGE_INFECTED])
         events.append(tn_activation)
 
         # T-cell translocation
