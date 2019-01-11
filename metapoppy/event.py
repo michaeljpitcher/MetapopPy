@@ -2,6 +2,19 @@ from .network import *
 
 
 class Event(object):
+    """
+    A MetapopPy event which occurs upon a networked metapopulation.
+
+    Each event contains a reaction parameter (the rate of a single occurrence of the event) and a function to calculate
+    the state variable (number of possible occurrences) at a patch. These are multiplied together to give the rate of
+    occurrence of the event at a patch.
+
+    Each patch contains a function to alter the network in some manner at a patch when the event occurs.
+
+    Patches must define the compartments and attributes their state variable functions are dependent upon (needed to
+    propagate patch updates). They must also define the parameter keys that are required for state variable calculation
+    (to be updated when the parameters update).
+    """
 
     def __init__(self, dependent_compartments, dependent_attributes, reaction_parameter_key, additional_parameter_keys=None):
         """

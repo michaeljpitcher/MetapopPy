@@ -6,6 +6,20 @@ import numpy
 
 
 class Dynamics(epyc.Experiment, object):
+    """
+    MetapopPy Dynamics. Creates the dynamics that will occur over a networked metapopulation. Essentially a list of
+    event and their respective rates of occurrence for each patch (node) on the network.
+
+    For each parameter sample, an empty network is created and seeding calculated. For each repetition of the parameter
+    sample, the network is set to an empty state and then seeded using the seed values. Patches can be determined to be
+    "active" based on their values.
+
+    All events calculate their rates for the active patches based on the patch contents. An event/patch combination is
+    chosen probabilistically based on the individual rates, and a time-step for the event to occur if chosen based on
+    the total rates, as per the Gillespie Algorithm. The event is performed, the network is updated and the updates are
+    propagated to recalculate the rates of events. The process continues until a time limit is reached.
+    """
+
     INITIAL_TIME = 'initial_time'
     MAX_TIME = 'max_time'
 
@@ -89,6 +103,12 @@ class Dynamics(epyc.Experiment, object):
         return self._network
 
     def configure(self, params):
+        """
+        Configure each param sample. Run once for every sample of parameter values. Creates a network (if needed),
+        attaches the update propagation mechanism and obtains the seedings required for each run.
+        :param params:
+        :return:
+        """
         epyc.Experiment.configure(self, params)
 
         #  If a prototype has been provided (and hasn't already been set as the network i.e. first configure)
@@ -125,6 +145,12 @@ class Dynamics(epyc.Experiment, object):
         raise NotImplementedError
 
     def setUp(self, params):
+        """
+        Set up the run for each repetition. Runs once for every repetition within a parameter sample. Resets the network
+        to an empty state and then seeds it with the already-calculated values.
+        :param params:
+        :return:
+        """
         # Default setup
         epyc.Experiment.setUp(self, params)
 
@@ -150,18 +176,9 @@ class Dynamics(epyc.Experiment, object):
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
 
-    def tearDown( self ):
-        # Perform the default tear-down
-        epyc.Experiment.tearDown(self)
-
-        # Reset rate table and lookups
-        self._rate_table = None
-        self._active_patches = []
-        self._row_for_patch = {}
-
     def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
         """
-        When a patch ID is changed, update the relevant entries in the rate table. This function is passed as a lambda
+        When a patch is changed, update the relevant entries in the rate table. This function is passed as a lambda
         function to the network, and is called whenever a change is made.
         :param patch_id:
         :param compartment_changes:
@@ -250,7 +267,6 @@ class Dynamics(epyc.Experiment, object):
         num_events = len(self._events)
 
         while not self._at_equilibrium(time):
-
             # Calculate the timestep delta
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
@@ -289,3 +305,17 @@ class Dynamics(epyc.Experiment, object):
         :return: True to finish simulation
         """
         return t >= self._max_time
+
+    def tearDown( self ):
+        """
+        Finish a run for a repetition. Runs once for every repetition within a parameter sample. Resets all values ready
+        for the next run.
+        :return:
+        """
+        # Perform the default tear-down
+        epyc.Experiment.tearDown(self)
+
+        # Reset rate table and lookups
+        self._rate_table = None
+        self._active_patches = []
+        self._row_for_patch = {}

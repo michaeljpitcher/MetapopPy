@@ -61,11 +61,19 @@ class Network(networkx.Graph):
         self._reset_edges()
 
     def _reset_patches(self):
+        """
+        Reset all patches to zero population and attribute values.
+        :return:
+        """
         networkx.set_node_attributes(self, {n: {TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
                                                 TypedNetwork.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
                                             for n in self.nodes})
 
     def _reset_edges(self):
+        """
+        Reset all edges to zero attribute values.
+        :return:
+        """
         networkx.set_edge_attributes(self, {(u,v): {a: 0.0 for a in self._edge_attributes} for (u,v) in self.edges})
 
     def get_compartment_value(self, patch_id, compartment):
@@ -190,6 +198,11 @@ class TypedNetwork(Network):
             return self._patch_types[patch_type]
 
     def _reset_patches(self):
+        """
+        Reset all patches to zero population and attribute values - ensuring only the necessary attributes for a patch
+        type are applied.
+        :return:
+        """
         networkx.set_node_attributes(self, {n: {TypedNetwork.PATCH_TYPE: self.node[n][TypedNetwork.PATCH_TYPE],
                                                 TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
                                                 TypedNetwork.ATTRIBUTES: {a: 0 for a in
