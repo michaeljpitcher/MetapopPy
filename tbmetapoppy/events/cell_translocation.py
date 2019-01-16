@@ -1,18 +1,24 @@
 from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
 from ..tbcompartments import *
 from metapoppy.event import PatchTypeEvent
+from parameters import RATE
 import numpy
 
 
 class CellTranslocationToLymph(PatchTypeEvent):
-    def __init__(self, translocation_rate_key, cell_type):
+    TRANSLOCATION_TO_LYMPH = '_translocation_to_lymph' + RATE
+
+    def __init__(self, cell_type):
         self._cell_type = cell_type
         if cell_type in TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL:
             self._internal_compartment = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[cell_type]
         else:
             self._internal_compartment = None
-        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [cell_type], [TBPulmonaryNetwork.DRAINAGE],
-                                translocation_rate_key)
+        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [cell_type], [TBPulmonaryNetwork.DRAINAGE])
+
+    def _define_parameter_keys(self):
+        rp_key = self._cell_type + CellTranslocationToLymph.TRANSLOCATION_TO_LYMPH
+        return rp_key, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._cell_type) * \
@@ -34,9 +40,15 @@ class CellTranslocationToLymph(PatchTypeEvent):
 
 
 class CellTranslocationToLung(PatchTypeEvent):
-    def __init__(self, translocation_rate_key, cell_type):
+    TRANSLOCATION_TO_LUNG = '_translocation_to_lung' + RATE
+
+    def __init__(self, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, [cell_type], [], translocation_rate_key)
+        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, [cell_type], [])
+
+    def _define_parameter_keys(self):
+        rp_key = self._cell_type + CellTranslocationToLung.TRANSLOCATION_TO_LUNG
+        return rp_key, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._cell_type)
@@ -52,8 +64,11 @@ class CellTranslocationToLung(PatchTypeEvent):
 
 
 class TCellTranslocationToLungByInfection(CellTranslocationToLung):
-    def __init__(self, translocation_rate_key):
-        CellTranslocationToLung.__init__(self, translocation_rate_key, TBPulmonaryNetwork.T_CELL_ACTIVATED)
+    def __init__(self):
+        CellTranslocationToLung.__init__(self, TBPulmonaryNetwork.T_CELL_ACTIVATED)
+
+    # TODO - this forces t-cells into the lung even if infection has been wiped out. State var maybe should depend
+    # on infection levels
 
     def perform(self, network, patch_id):
         infected_patches = network.infected_patches()

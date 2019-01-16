@@ -25,28 +25,28 @@ class TBPulmonaryNetwork(TypedNetwork):
     MINIMUM_AREA = 'minimum_area'
 
     # Compartments
-    BACTERIUM_EXTRACELLULAR_REPLICATING = 'B_er'
-    BACTERIUM_EXTRACELLULAR_DORMANT = 'B_ed'
+    BACTERIUM_EXTRACELLULAR_REPLICATING = 'b_er'
+    BACTERIUM_EXTRACELLULAR_DORMANT = 'b_ed'
     EXTRACELLULAR_BACTERIA = [BACTERIUM_EXTRACELLULAR_REPLICATING, BACTERIUM_EXTRACELLULAR_DORMANT]
-    BACTERIUM_INTRACELLULAR_DENDRITIC = 'B_id'
-    BACTERIUM_INTRACELLULAR_MACROPHAGE = 'B_im'
+    BACTERIUM_INTRACELLULAR_DENDRITIC = 'b_id'
+    BACTERIUM_INTRACELLULAR_MACROPHAGE = 'b_im'
     INTRACELLULAR_BACTERIA = [BACTERIUM_INTRACELLULAR_DENDRITIC, BACTERIUM_INTRACELLULAR_MACROPHAGE]
     BACTERIA = EXTRACELLULAR_BACTERIA + INTRACELLULAR_BACTERIA
 
-    MACROPHAGE_RESTING = 'M_r'
-    MACROPHAGE_INFECTED = 'M_i'
-    MACROPHAGE_ACTIVATED = 'M_a'
+    MACROPHAGE_RESTING = 'm_r'
+    MACROPHAGE_INFECTED = 'm_i'
+    MACROPHAGE_ACTIVATED = 'm_a'
     MACROPHAGES = [MACROPHAGE_RESTING, MACROPHAGE_INFECTED, MACROPHAGE_ACTIVATED]
 
-    DENDRITIC_CELL_IMMATURE = 'D_i'
-    DENDRITIC_CELL_MATURE = 'D_m'
+    DENDRITIC_CELL_IMMATURE = 'd_i'
+    DENDRITIC_CELL_MATURE = 'd_m'
     DENDRITIC_CELLS = [DENDRITIC_CELL_IMMATURE, DENDRITIC_CELL_MATURE]
 
-    T_CELL_NAIVE = 'T_n'
-    T_CELL_ACTIVATED = 'T_a'
+    T_CELL_NAIVE = 't_n'
+    T_CELL_ACTIVATED = 't_a'
     T_CELLS = [T_CELL_NAIVE, T_CELL_ACTIVATED]
 
-    CASEUM = 'C'
+    CASEUM = 'c'
 
     TB_COMPARTMENTS = BACTERIA + MACROPHAGES + DENDRITIC_CELLS + T_CELLS + [CASEUM]
 
@@ -248,8 +248,9 @@ class TBPulmonaryNetwork(TypedNetwork):
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         if (self.nodes[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
-                any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes) and
+                compartment_changes and any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes) and
                 patch_id not in self._infected_patches):
+                # TODO - awkward way of doing this
                 self._infected_patches.append(patch_id)
         TypedNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
 

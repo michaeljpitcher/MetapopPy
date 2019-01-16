@@ -71,6 +71,12 @@ class Dynamics(epyc.Experiment, object):
         """
         raise NotImplementedError
 
+    def required_event_parameters(self):
+        params = []
+        for e in self._events:
+            params += e.parameters()
+        return list(set(params))
+
     def set_start_time(self, start_time):
         """
         Set the initial time of simulations

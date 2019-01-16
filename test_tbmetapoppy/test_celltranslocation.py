@@ -1,17 +1,13 @@
 import unittest
 from tbmetapoppy.events.cell_translocation import *
 
-TEST_TRANSLOCATION_RATE_MI = 'test_translocation_rate_mi'
-TEST_TRANSLOCATION_RATE_DCM = 'test_translocation_rate_dcm'
-TEST_TRANSLOCATION_RATE_TA = 'test_translocation_rate_ta'
-
 
 class CellTranslocationToLymphTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.event_mi = CellTranslocationToLymph(TEST_TRANSLOCATION_RATE_MI, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        self.event_dcm = CellTranslocationToLymph(TEST_TRANSLOCATION_RATE_DCM, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
-        self.params = {TEST_TRANSLOCATION_RATE_MI: 0.1, TEST_TRANSLOCATION_RATE_DCM: 0.2}
+        self.event_mi = CellTranslocationToLymph(TBPulmonaryNetwork.MACROPHAGE_INFECTED)
+        self.event_dcm = CellTranslocationToLymph(TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
+        self.params = {'m_i_translocation_to_lymph_rate': 0.1, 'd_m_translocation_to_lymph_rate': 0.2}
         self.event_mi.set_parameters(self.params)
         self.event_dcm.set_parameters(self.params)
         self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
@@ -22,12 +18,13 @@ class CellTranslocationToLymphTestCase(unittest.TestCase):
 
     def test_rate(self):
         self.assertFalse(self.event_mi.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.MACROPHAGE_INFECTED: 3, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE: 5},
+        self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.MACROPHAGE_INFECTED: 3,
+                                                          TBPulmonaryNetwork.DENDRITIC_CELL_MATURE: 5},
                                   attribute_changes={TBPulmonaryNetwork.DRAINAGE: 0.7})
         self.assertEqual(self.event_mi.calculate_rate_at_patch(self.network, 1),
-                         self.params[TEST_TRANSLOCATION_RATE_MI] * 0.7 * 3)
+                         self.params['m_i_translocation_to_lymph_rate'] * 0.7 * 3)
         self.assertAlmostEqual(self.event_dcm.calculate_rate_at_patch(self.network, 1),
-                         self.params[TEST_TRANSLOCATION_RATE_DCM] * 0.7 * 5)
+                         self.params['d_m_translocation_to_lymph_rate'] * 0.7 * 5)
 
     def test_perform(self):
         # MI even split
@@ -72,8 +69,8 @@ class CellTranslocationToLymphTestCase(unittest.TestCase):
 class CellTranslocationToLungTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.event = CellTranslocationToLung(TEST_TRANSLOCATION_RATE_TA, TBPulmonaryNetwork.T_CELL_ACTIVATED)
-        self.params = {TEST_TRANSLOCATION_RATE_TA: 0.1}
+        self.event = CellTranslocationToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        self.params = {'t_a_translocation_to_lung_rate': 0.1}
         self.event.set_parameters(self.params)
         self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
         for a in range(1,4):
@@ -86,7 +83,7 @@ class CellTranslocationToLungTestCase(unittest.TestCase):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH))
         self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.T_CELL_ACTIVATED: 5})
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH),
-                         self.params[TEST_TRANSLOCATION_RATE_TA] * 5)
+                         self.params['t_a_translocation_to_lung_rate'] * 5)
 
     def test_perform(self):
         self.network.update_edge(1, TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.PERFUSION: 0.1})

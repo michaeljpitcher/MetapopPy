@@ -1,23 +1,19 @@
 import unittest
 from tbmetapoppy import *
 
-TEST_CHANGE_RATE_R_TO_D = 'test_change_rate_r_to_d'
-TEST_SIGMOID_R_TO_D = 'test_change_sigmoid_r_to_d'
-TEST_HALFSAT_R_TO_D = 'test_change_halfsat_r_to_d'
-TEST_CHANGE_RATE_D_TO_R = 'test_change_rate_d_to_r'
-TEST_SIGMOID_D_TO_R = 'test_change_sigmoid_d_to_r'
-TEST_HALFSAT_D_TO_R = 'test_change_halfsat_d_to_r'
-
 
 class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.event_r_to_d = BacteriumChangeStateThroughOxygen(True, TEST_CHANGE_RATE_R_TO_D, TEST_SIGMOID_R_TO_D,
-                                                              TEST_HALFSAT_R_TO_D)
-        self.event_d_to_r = BacteriumChangeStateThroughOxygen(False, TEST_CHANGE_RATE_D_TO_R, TEST_SIGMOID_D_TO_R,
-                                                              TEST_HALFSAT_D_TO_R)
-        self.params = {TEST_CHANGE_RATE_D_TO_R: 0.1, TEST_SIGMOID_D_TO_R: 2, TEST_HALFSAT_D_TO_R: 0.5,
-                       TEST_CHANGE_RATE_R_TO_D: 0.2, TEST_SIGMOID_R_TO_D: -3, TEST_HALFSAT_R_TO_D: 0.7}
+        self.event_r_to_d = BacteriumChangeStateThroughOxygen(True)
+        self.event_d_to_r = BacteriumChangeStateThroughOxygen(False)
+
+        self.params = {BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + RATE: 0.1,
+                       BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID: 0.2,
+                       BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + HALF_SAT: 0.3,
+                       BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + RATE: 7.4,
+                       BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID: -7.5,
+                       BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + HALF_SAT: 7.6}
 
         self.event_r_to_d.set_parameters(self.params)
         self.event_d_to_r.set_parameters(self.params)
@@ -34,27 +30,27 @@ class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
 
         self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 2, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 2})
         r_to_d_1_4 = self.event_r_to_d.calculate_rate_at_patch(self.network, 1)
-        self.assertEqual(r_to_d_1_4, self.params[TEST_CHANGE_RATE_R_TO_D] * 2 * (
-                    (1.4 ** self.params[TEST_SIGMOID_R_TO_D]) / (
-                        1.4 ** self.params[TEST_SIGMOID_R_TO_D] + self.params[TEST_HALFSAT_R_TO_D] ** self.params[
-                    TEST_SIGMOID_R_TO_D])))
+        self.assertEqual(r_to_d_1_4, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + RATE] * 2 * (
+                    (1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID]) / (
+                        1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID] + self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + HALF_SAT] ** self.params[
+            BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID])))
         d_to_r_1_4 = self.event_d_to_r.calculate_rate_at_patch(self.network, 1)
-        self.assertEqual(d_to_r_1_4, self.params[TEST_CHANGE_RATE_D_TO_R] * 2 * (
-                (1.4 ** self.params[TEST_SIGMOID_D_TO_R]) / (
-                1.4 ** self.params[TEST_SIGMOID_D_TO_R] + self.params[TEST_HALFSAT_D_TO_R] ** self.params[
-            TEST_SIGMOID_D_TO_R])))
+        self.assertEqual(d_to_r_1_4, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + RATE] * 2 * (
+                (1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID]) / (
+                1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID] + self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + HALF_SAT] ** self.params[
+            BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID])))
 
         self.network.update_patch(1, attribute_changes={TBPulmonaryNetwork.OXYGEN_TENSION: 0.1})
         r_to_d_1_5 = self.event_r_to_d.calculate_rate_at_patch(self.network, 1)
-        self.assertEqual(r_to_d_1_5, self.params[TEST_CHANGE_RATE_R_TO_D] * 2 * (
-                (1.5 ** self.params[TEST_SIGMOID_R_TO_D]) / (
-                1.5 ** self.params[TEST_SIGMOID_R_TO_D] + self.params[TEST_HALFSAT_R_TO_D] ** self.params[
-            TEST_SIGMOID_R_TO_D])))
+        self.assertEqual(r_to_d_1_5, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + RATE] * 2 * (
+                (1.5 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID]) / (
+                1.5 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID] + self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + HALF_SAT] ** self.params[
+            BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID])))
         d_to_r_1_5 = self.event_d_to_r.calculate_rate_at_patch(self.network, 1)
-        self.assertEqual(d_to_r_1_5, self.params[TEST_CHANGE_RATE_D_TO_R] * 2 * (
-                (1.5 ** self.params[TEST_SIGMOID_D_TO_R]) / (
-                1.5 ** self.params[TEST_SIGMOID_D_TO_R] + self.params[TEST_HALFSAT_D_TO_R] ** self.params[
-            TEST_SIGMOID_D_TO_R])))
+        self.assertEqual(d_to_r_1_5, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + RATE] * 2 * (
+                (1.5 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID]) / (
+                1.5 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID] + self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + HALF_SAT] ** self.params[
+            BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID])))
 
         self.assertTrue(r_to_d_1_4 > r_to_d_1_5) # Oxygen up, so less chance to switch to dormant
         self.assertTrue(d_to_r_1_4 < d_to_r_1_5) # Oxygen down, so more chance to switch to dormant

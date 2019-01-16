@@ -1,25 +1,20 @@
 import unittest
 from tbmetapoppy import *
 
-TEST_RATE_MR_TA = 'test_rate_MR_TA'
-TEST_RATE_MR_BE = 'test_rate_MR_BE'
-TEST_RATE_TA_APC = 'test_rate_MR_APC'
-TEST_HALFSAT_MR_TA = 'test_halfsat_MR_TA'
-TEST_HALFSAT_MR_BE = 'test_halfsat_MR_BE'
-TEST_HALFSAT_TA_APC = 'test_halfsat_MR_APC'
-
 
 class CellActivationTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.event_mr_t = CellActivation(TEST_RATE_MR_TA, TEST_HALFSAT_MR_TA, TBPulmonaryNetwork.MACROPHAGE_RESTING, [TBPulmonaryNetwork.T_CELL_ACTIVATED])
-        self.event_mr_b = CellActivation(TEST_RATE_MR_BE, TEST_HALFSAT_MR_BE, TBPulmonaryNetwork.MACROPHAGE_RESTING,
+        self.event_mr_t = CellActivation(TBPulmonaryNetwork.MACROPHAGE_RESTING, [TBPulmonaryNetwork.T_CELL_ACTIVATED])
+        self.event_mr_b = CellActivation(TBPulmonaryNetwork.MACROPHAGE_RESTING,
                                          TBPulmonaryNetwork.EXTRACELLULAR_BACTERIA)
-        self.event_t = CellActivation(TEST_RATE_TA_APC, TEST_HALFSAT_TA_APC, TBPulmonaryNetwork.T_CELL_NAIVE,
+        self.event_t = CellActivation(TBPulmonaryNetwork.T_CELL_NAIVE,
                                       [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
 
-        self.params = {TEST_RATE_MR_TA: 0.1, TEST_RATE_MR_BE: 0.2, TEST_RATE_TA_APC: 0.3, TEST_HALFSAT_MR_TA: 100,
-                       TEST_HALFSAT_MR_BE: 200, TEST_HALFSAT_TA_APC: 300}
+        self.params = {'m_r_activation_by_t_a_rate': 0.1, 'm_r_activation_by_b_er_b_ed_rate': 0.2,
+                       't_n_activation_by_d_m_m_i_rate': 0.3,
+                       'm_r_activation_by_t_a_half_sat': 100, 'm_r_activation_by_b_er_b_ed_half_sat': 200,
+                       't_n_activation_by_d_m_m_i_half_sat': 300}
 
         for e in [self.event_mr_t, self.event_mr_b, self.event_t]:
             e.set_parameters(self.params)
@@ -34,46 +29,47 @@ class CellActivationTestCase(unittest.TestCase):
         self.assertFalse(self.event_mr_b.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
-        self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.MACROPHAGE_RESTING: 2, TBPulmonaryNetwork.T_CELL_NAIVE: 3})
+        self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.MACROPHAGE_RESTING: 2,
+                                                          TBPulmonaryNetwork.T_CELL_NAIVE: 3})
         self.assertFalse(self.event_mr_t.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_mr_b.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.T_CELL_ACTIVATED: 5})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_TA] * 2 *
-                         (5.0 / (5 + self.params[TEST_HALFSAT_MR_TA])))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_t_a_rate'] * 2 *
+                         (5.0 / (5 + self.params['m_r_activation_by_t_a_half_sat'])))
         self.assertFalse(self.event_mr_b.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 7})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_TA] * 2 *
-                         (5.0 / (5 + self.params[TEST_HALFSAT_MR_TA])))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_BE] * 2 *
-                         (7.0 / (7 + self.params[TEST_HALFSAT_MR_BE])))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_t_a_rate'] * 2 *
+                         (5.0 / (5 + self.params['m_r_activation_by_t_a_half_sat'])))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_b_er_b_ed_rate'] * 2 *
+                         (7.0 / (7 + self.params['m_r_activation_by_b_er_b_ed_half_sat'])))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 11})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_TA] * 2 *
-                         (5.0 / (5 + self.params[TEST_HALFSAT_MR_TA])))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_BE] * 2 *
-                         (18.0 / (18 + self.params[TEST_HALFSAT_MR_BE])))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_t_a_rate'] * 2 *
+                         (5.0 / (5 + self.params['m_r_activation_by_t_a_half_sat'])))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_b_er_b_ed_rate'] * 2 *
+                         (18.0 / (18 + self.params['m_r_activation_by_b_er_b_ed_half_sat'])))
         self.assertFalse(self.event_t.calculate_rate_at_patch(self.network, 1))
 
         self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.DENDRITIC_CELL_MATURE: 13})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_TA] * 2 *
-                         (5.0 / (5 + self.params[TEST_HALFSAT_MR_TA])))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_BE] * 2 *
-                         (18.0 / (18 + self.params[TEST_HALFSAT_MR_BE])))
-        self.assertEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_TA_APC] * 3 *
-                         (13.0 / (13 + self.params[TEST_HALFSAT_TA_APC])))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_t_a_rate'] * 2 *
+                         (5.0 / (5 + self.params['m_r_activation_by_t_a_half_sat'])))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_b_er_b_ed_rate'] * 2 *
+                         (18.0 / (18 + self.params['m_r_activation_by_b_er_b_ed_half_sat'])))
+        self.assertEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.params['t_n_activation_by_d_m_m_i_rate'] * 3 *
+                         (13.0 / (13 + self.params['t_n_activation_by_d_m_m_i_half_sat'])))
 
         self.network.update_patch(1, compartment_changes={TBPulmonaryNetwork.MACROPHAGE_INFECTED: 17})
-        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_TA] * 2 *
-                         (5.0 / (5 + self.params[TEST_HALFSAT_MR_TA])))
-        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_MR_BE] * 2 *
-                         (18.0 / (18 + self.params[TEST_HALFSAT_MR_BE])))
-        self.assertAlmostEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.params[TEST_RATE_TA_APC] *
-                               3 * (30.0 / (30 + self.params[TEST_HALFSAT_TA_APC])))
+        self.assertEqual(self.event_mr_t.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_t_a_rate'] * 2 *
+                         (5.0 / (5 + self.params['m_r_activation_by_t_a_half_sat'])))
+        self.assertEqual(self.event_mr_b.calculate_rate_at_patch(self.network, 1), self.params['m_r_activation_by_b_er_b_ed_rate'] * 2 *
+                         (18.0 / (18 + self.params['m_r_activation_by_b_er_b_ed_half_sat'])))
+        self.assertAlmostEqual(self.event_t.calculate_rate_at_patch(self.network, 1), self.params['t_n_activation_by_d_m_m_i_rate'] *
+                               3 * (30.0 / (30 + self.params['t_n_activation_by_d_m_m_i_half_sat'])))
 
     def test_perform(self):
         self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_RESTING: 2, TBPulmonaryNetwork.T_CELL_NAIVE: 1})

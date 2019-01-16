@@ -1,22 +1,32 @@
 from ..tbpulmonarynetwork import TBPulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
+from parameters import RATE, SIGMOID, HALF_SAT
 # TODO - more advanced dormancy dynamics
 
 
 class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
 
-    def __init__(self, replicating_to_dormant, change_rate_key, sigmoid_key, half_sat_key):
+    BACTERIUM_CHANGE_TO_DORMANT = 'bacterium_change_to_dormant'
+    BACTERIUM_CHANGE_TO_REPLICATING = 'bacterium_change_to_replicating'
+
+    def __init__(self, replicating_to_dormant):
         if replicating_to_dormant:
             self._compartment_from = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
             self._compartment_to = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
+            self._key_prefix = BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT
         else:
             self._compartment_from = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
             self._compartment_to = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
-        self._sigmoid_key = sigmoid_key
-        self._half_sat_key = half_sat_key
+            self._key_prefix = BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING
+        self._sigmoid_key = None
+        self._half_sat_key = None
         PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [self._compartment_from],
-                                [TBPulmonaryNetwork.OXYGEN_TENSION], change_rate_key,
-                                [sigmoid_key, half_sat_key])
+                                [TBPulmonaryNetwork.OXYGEN_TENSION])
+
+    def _define_parameter_keys(self):
+        self._sigmoid_key = self._key_prefix + SIGMOID
+        self._half_sat_key = self._key_prefix + HALF_SAT
+        return self._key_prefix + RATE, [self._sigmoid_key, self._half_sat_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, self._compartment_from)
