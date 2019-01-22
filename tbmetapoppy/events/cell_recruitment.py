@@ -1,6 +1,5 @@
 from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
-from ..tbcompartments import *
 from parameters import RATE, HALF_SAT
 
 

@@ -1,5 +1,4 @@
 from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
-from ..tbcompartments import *
 from metapoppy.event import PatchTypeEvent
 from parameters import RATE
 import numpy
