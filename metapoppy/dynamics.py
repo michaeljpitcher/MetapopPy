@@ -176,7 +176,6 @@ class Dynamics(epyc.Experiment, object):
                 att_seed = {}
             self._network.update_patch(n, comp_seed, att_seed)
         for (u, v), seed in self._edge_seeding.iteritems():
-
             self._network.update_edge(u, v, seed)
 
         # Check that at least one patch is active
@@ -210,6 +209,15 @@ class Dynamics(epyc.Experiment, object):
         # Patch is not previously active but should become active from this update
         elif self._patch_is_active(patch_id):
             self._activate_patch(patch_id)
+
+        # TODO - this recalculates all events. Also need to consider propagation to other patches when a patch becomes
+        #  active
+        if edge_changes:
+            if patch_id in self._row_for_patch:
+                row = self._row_for_patch[patch_id]
+                for col in range(len(self._events)):
+                    event = self._events[col]
+                    self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
 
     def _patch_is_active(self, patch_id):
         """
