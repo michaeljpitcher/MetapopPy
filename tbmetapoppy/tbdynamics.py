@@ -129,8 +129,6 @@ class TBDynamics(Dynamics):
 
     def _get_patch_seeding(self, params):
 
-
-
         # Get patch attributes
         patch_seeding = self._network.get_pulmonary_att_seeding(params[TBDynamics.VENTILATION_SKEW],
                                                                     params[TBDynamics.PERFUSION_SKEW],
@@ -156,21 +154,16 @@ class TBDynamics(Dynamics):
 
         # Bacteria
         # Ventilation based - assumes sum of ventilation values = 1.0
-        # r = numpy.random.random()
-        # count = 0
-        # for p in self._network.get_patches_by_type(PulmonaryNetwork.ALVEOLAR_PATCH):
-        #     count += patch_seeding[p][TypedNetwork.ATTRIBUTES][PulmonaryNetwork.VENTILATION]
-        #     if count >= r:
-        #         patch_seeding[p][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_REPLICATING] = \
-        #             params[TBDynamics.IC_BER_LOAD]
-        #         patch_seeding[p][TypedNetwork.COMPARTMENTS][BACTERIUM_EXTRACELLULAR_DORMANT] = \
-        #             params[TBDynamics.IC_BED_LOAD]
-        #         break
-        # TODO - debug code
-        patch_seeding[9][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING] = \
-            params[TBDynamics.IC_BER_LOAD]
-        patch_seeding[9][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT] = \
-            params[TBDynamics.IC_BED_LOAD]
+        r = numpy.random.random()
+        count = 0
+        for p in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH):
+            count += patch_seeding[p][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.VENTILATION]
+            if count >= r:
+                patch_seeding[p][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING] = \
+                    params[TBDynamics.IC_BER_LOAD]
+                patch_seeding[p][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT] = \
+                    params[TBDynamics.IC_BED_LOAD]
+                break
         return patch_seeding
 
     def _build_network(self, params):
