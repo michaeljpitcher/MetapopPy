@@ -18,7 +18,6 @@ class TBPulmonaryNetwork(TypedNetwork):
 
     # Configuration
     TOPOLOGY = 'topology'
-    SINGLE_PATCH_WHOLE_LUNG = 'single_patch_whole_lung'
     SINGLE_PATCH = 'single_patch'
     SPACE_FILLING_TREE_2D = 'space_filling_tree_2d'
     BOUNDARY = 'boundary'
@@ -66,7 +65,7 @@ class TBPulmonaryNetwork(TypedNetwork):
 
         self._alveolar_positions = {}
         self._topology = network_config[TBPulmonaryNetwork.TOPOLOGY]
-        if self._topology == TBPulmonaryNetwork.SINGLE_PATCH_WHOLE_LUNG:
+        if self._topology == TBPulmonaryNetwork.SINGLE_PATCH:
             self._build_single_patch_network()
         elif self._topology == TBPulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
@@ -193,22 +192,25 @@ class TBPulmonaryNetwork(TypedNetwork):
     def get_pulmonary_att_seeding(self, params):
         """
         Set the initial values for pulmonary attributes
-        :param ventilation_skew:
-        :param perfusion_skew:
-        :param drainage_skew:
+        :param params:
         :return:
         """
+        # Only 1 alveolar patch so just set everything to 1
+        if len(self._alveolar_positions) == 1:
+            vent = params[TBPulmonaryNetwork.VENTILATION]
+            perf = params[TBPulmonaryNetwork.PERFUSION]
+            o2 = float(vent)/perf
+            drain = params[TBPulmonaryNetwork.DRAINAGE]
+            seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES:
+                                                                   {TBPulmonaryNetwork.VENTILATION: vent,
+                                                                    TBPulmonaryNetwork.PERFUSION: perf,
+                                                                    TBPulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                                    TBPulmonaryNetwork.DRAINAGE: drain}}}
+            return seeding
 
         ventilation_skew = params[TBPulmonaryNetwork.VENTILATION_SKEW]
         perfusion_skew = params[TBPulmonaryNetwork.PERFUSION_SKEW]
         drainage_skew = params[TBPulmonaryNetwork.DRAINAGE_SKEW]
-        # Only 1 alveolar patch so just set everything to 1
-        if len(self._alveolar_positions) == 1:
-            seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES: {TBPulmonaryNetwork.VENTILATION: 1,
-                                                                                TBPulmonaryNetwork.PERFUSION: 1,
-                                                                                TBPulmonaryNetwork.OXYGEN_TENSION: 1,
-                                                                                TBPulmonaryNetwork.DRAINAGE: 1}}}
-            return seeding
 
         temp_seeding = {}
 
