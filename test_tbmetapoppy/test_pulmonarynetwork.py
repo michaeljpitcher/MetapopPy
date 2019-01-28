@@ -29,11 +29,9 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
         self.assertEqual(len(self.tree_network[TBPulmonaryNetwork.LYMPH_PATCH]), 16)
 
     def test_pulmonary_attribute_seeding(self):
-        params = {TBDynamics.VENTILATION_SKEW: 3.5, TBDynamics.PERFUSION_SKEW: 3,
-                  TBDynamics.DRAINAGE_SKEW: 2}
-        seeding = self.tree_network.get_pulmonary_att_seeding(params[TBDynamics.VENTILATION_SKEW],
-                                                              params[TBDynamics.PERFUSION_SKEW],
-                                                              params[TBDynamics.DRAINAGE_SKEW])
+        params = {TBPulmonaryNetwork.VENTILATION_SKEW: 3.5, TBPulmonaryNetwork.PERFUSION_SKEW: 3,
+                  TBPulmonaryNetwork.DRAINAGE_SKEW: 2}
+        seeding = self.tree_network.get_pulmonary_att_seeding(params)
 
         alv_patch_ids = self.tree_network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH)
 
@@ -43,12 +41,12 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
         maxv = max([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.VENTILATION] for a in alv_patch_ids])
         minv = min([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.VENTILATION] for a in alv_patch_ids])
 
-        self.assertAlmostEqual(maxv / minv, params[TBDynamics.VENTILATION_SKEW])
+        self.assertAlmostEqual(maxv / minv, params[TBPulmonaryNetwork.VENTILATION_SKEW])
 
         maxq = max([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION] for a in alv_patch_ids])
         minq = min([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION] for a in alv_patch_ids])
 
-        self.assertAlmostEqual(maxq / minq, params[TBDynamics.PERFUSION_SKEW])
+        self.assertAlmostEqual(maxq / minq, params[TBPulmonaryNetwork.PERFUSION_SKEW])
 
         maxd = max([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.DRAINAGE] for a in alv_patch_ids])
         mind = min([seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.DRAINAGE] for a in alv_patch_ids])
@@ -56,7 +54,7 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
         self.assertEqual(mind, 2.0 / 3.0)
         self.assertEqual(maxd, 4.0 / 3.0)
 
-        self.assertAlmostEqual(maxd / mind, params[TBDynamics.DRAINAGE_SKEW])
+        self.assertAlmostEqual(maxd / mind, params[TBPulmonaryNetwork.DRAINAGE_SKEW])
 
         for a in alv_patch_ids:
             self.assertEqual(seeding[a][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.OXYGEN_TENSION],

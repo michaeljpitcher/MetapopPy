@@ -5,9 +5,6 @@ from tbmetapoppy.events import *
 
 class TBDynamics(Dynamics):
     # Attribute seeding params
-    VENTILATION_SKEW = 'ventilation_skew'
-    PERFUSION_SKEW = 'perfusion_skew'
-    DRAINAGE_SKEW = 'drainage_skew'
 
     IC_BER_LOAD = 'initial_bacterial_load_replicating'
     IC_BED_LOAD = 'initial_bacterial_load_dormant'
@@ -130,9 +127,7 @@ class TBDynamics(Dynamics):
     def _get_patch_seeding(self, params):
 
         # Get patch attributes
-        patch_seeding = self._network.get_pulmonary_att_seeding(params[TBDynamics.VENTILATION_SKEW],
-                                                                    params[TBDynamics.PERFUSION_SKEW],
-                                                                    params[TBDynamics.DRAINAGE_SKEW])
+        patch_seeding = self._network.get_pulmonary_att_seeding(params)
 
         lung_recruit_rates = {c: params[self._lung_recruit_keys[c]] for c in
                               [TBPulmonaryNetwork.MACROPHAGE_RESTING, TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE]}

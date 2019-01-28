@@ -132,9 +132,9 @@ class TBDynamicsTestCase(unittest.TestCase):
 
         params = {p: numpy.random.random() for p in self.dynamics.required_event_parameters()}
 
-        params[TBDynamics.VENTILATION_SKEW] = 1.1
-        params[TBDynamics.PERFUSION_SKEW] = 2.2
-        params[TBDynamics.DRAINAGE_SKEW] = 3.3
+        params[TBPulmonaryNetwork.VENTILATION_SKEW] = 1.1
+        params[TBPulmonaryNetwork.PERFUSION_SKEW] = 2.2
+        params[TBPulmonaryNetwork.DRAINAGE_SKEW] = 3.3
 
         params[TBDynamics.IC_BER_LOAD] = 1
         params[TBDynamics.IC_BED_LOAD] = 2

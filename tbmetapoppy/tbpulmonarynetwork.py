@@ -18,11 +18,16 @@ class TBPulmonaryNetwork(TypedNetwork):
 
     # Configuration
     TOPOLOGY = 'topology'
+    SINGLE_PATCH_WHOLE_LUNG = 'single_patch_whole_lung'
     SINGLE_PATCH = 'single_patch'
     SPACE_FILLING_TREE_2D = 'space_filling_tree_2d'
     BOUNDARY = 'boundary'
     LENGTH_DIVISOR = 'length_divisor'
     MINIMUM_AREA = 'minimum_area'
+
+    VENTILATION_SKEW = 'ventilation_skew'
+    PERFUSION_SKEW = 'perfusion_skew'
+    DRAINAGE_SKEW = 'drainage_skew'
 
     # Compartments
     BACTERIUM_EXTRACELLULAR_REPLICATING = 'b_er'
@@ -60,9 +65,10 @@ class TBPulmonaryNetwork(TypedNetwork):
                               TBPulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
-        if network_config[TBPulmonaryNetwork.TOPOLOGY] == TBPulmonaryNetwork.SINGLE_PATCH:
+        self._topology = network_config[TBPulmonaryNetwork.TOPOLOGY]
+        if self._topology == TBPulmonaryNetwork.SINGLE_PATCH_WHOLE_LUNG:
             self._build_single_patch_network()
-        elif network_config[TBPulmonaryNetwork.TOPOLOGY] == TBPulmonaryNetwork.SPACE_FILLING_TREE_2D:
+        elif self._topology == TBPulmonaryNetwork.SPACE_FILLING_TREE_2D:
             self._build_2d_space_filling_tree(network_config)
             # Get horizontal positions and max/min values
             ys = [y for _, y in self._alveolar_positions.values()]
@@ -184,7 +190,7 @@ class TBPulmonaryNetwork(TypedNetwork):
             self.add_edge(TBPulmonaryNetwork.LYMPH_PATCH, index)
             index += 1
 
-    def get_pulmonary_att_seeding(self, ventilation_skew, perfusion_skew, drainage_skew):
+    def get_pulmonary_att_seeding(self, params):
         """
         Set the initial values for pulmonary attributes
         :param ventilation_skew:
@@ -192,6 +198,10 @@ class TBPulmonaryNetwork(TypedNetwork):
         :param drainage_skew:
         :return:
         """
+
+        ventilation_skew = params[TBPulmonaryNetwork.VENTILATION_SKEW]
+        perfusion_skew = params[TBPulmonaryNetwork.PERFUSION_SKEW]
+        drainage_skew = params[TBPulmonaryNetwork.DRAINAGE_SKEW]
         # Only 1 alveolar patch so just set everything to 1
         if len(self._alveolar_positions) == 1:
             seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES: {TBPulmonaryNetwork.VENTILATION: 1,
