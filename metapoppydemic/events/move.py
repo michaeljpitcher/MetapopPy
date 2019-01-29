@@ -7,7 +7,7 @@ class Move(Event):
 
     def __init__(self, moving_compartment):
         self._mover = moving_compartment
-        Event.__init__(self, [moving_compartment], [])
+        Event.__init__(self, [moving_compartment], [], [])
 
     def _define_parameter_keys(self):
         return Move.MOVEMENT_RATE_KEY + self._mover, []

@@ -8,7 +8,7 @@ class Change(Event):
     def __init__(self, compartment_from, compartment_to):
         self._comp_from = compartment_from
         self._comp_to = compartment_to
-        Event.__init__(self, [compartment_from], [])
+        Event.__init__(self, [compartment_from], [], [])
 
     def _define_parameter_keys(self):
         return Change.RATE_OF_CHANGE + self._comp_from + '_' + self._comp_to, []
