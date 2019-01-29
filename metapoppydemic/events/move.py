@@ -3,7 +3,6 @@ import numpy
 
 
 class Move(Event):
-
     MOVEMENT_RATE_KEY = 'movement_rate_'
 
     def __init__(self, moving_compartment):
