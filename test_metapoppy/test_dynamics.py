@@ -8,7 +8,7 @@ edge_attributes = ['g','h','i']
 class NAEvent1(Event):
     RP_1_KEY = 'rp1'
     def __init__(self):
-        Event.__init__(self, [compartments[0]], [])
+        Event.__init__(self, [compartments[0]], [], [])
 
     def _define_parameter_keys(self):
         return NAEvent1.RP_1_KEY, []
@@ -23,7 +23,7 @@ class NAEvent1(Event):
 class NAEvent2(Event):
     RP_2_KEY = 'rp2'
     def __init__(self):
-        Event.__init__(self, [compartments[1]], [])
+        Event.__init__(self, [compartments[1]], [], [])
 
     def _define_parameter_keys(self):
         return NAEvent2.RP_2_KEY, []

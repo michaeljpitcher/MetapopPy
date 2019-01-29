@@ -21,7 +21,7 @@ class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
         self._sigmoid_key = None
         self._half_sat_key = None
         PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [self._compartment_from],
-                                [TBPulmonaryNetwork.OXYGEN_TENSION])
+                                [TBPulmonaryNetwork.OXYGEN_TENSION], [])
 
     def _define_parameter_keys(self):
         self._sigmoid_key = self._key_prefix + SIGMOID

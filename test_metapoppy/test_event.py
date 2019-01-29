@@ -20,7 +20,7 @@ class EventTestCase(unittest.TestCase):
 
         class NAEvent(Event):
             def __init__(self):
-                Event.__init__(self, compartments[0], [])
+                Event.__init__(self, compartments[0], [], [])
 
             def _define_parameter_keys(self):
                 return RP1_key, []
@@ -50,7 +50,7 @@ class NAPatchTypeEvent(PatchTypeEvent):
     PAR2 = 'par2'
 
     def __init__(self, patch_type):
-        PatchTypeEvent.__init__(self, patch_type, compartments[0], [])
+        PatchTypeEvent.__init__(self, patch_type, compartments[0], [], [])
 
     def _define_parameter_keys(self):
         return "test_" + self._patch_type, [NAPatchTypeEvent.PAR1, NAPatchTypeEvent.PAR2]
@@ -79,9 +79,9 @@ class PatchTypeEventTestCase(unittest.TestCase):
 
     def test_calculate_rate(self):
         params = {}
-        for p in self.event_type1.parameters():
+        for p in self.event_type1.parameter_keys():
             params[p] = numpy.random.random()
-        for p in self.event_type2.parameters():
+        for p in self.event_type2.parameter_keys():
             params[p] = numpy.random.random()
         self.event_type1.set_parameters(params)
         self.event_type2.set_parameters(params)

@@ -18,7 +18,7 @@ class CellIngestBacterium(Event):
             self._infected_cell_type = self._internalised_bac_type = None
         self._half_sat_key = None
         Event.__init__(self, [self._cell_type, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT,
-                              TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING], [])
+                              TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING], [], [])
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellIngestBacterium.INGEST_BACTERIUM + RATE

@@ -58,10 +58,11 @@ class NetworkTestCase(unittest.TestCase):
         self.check_value = []
 
         # When an update is performed store values used in a variable
-        def handler(a,b,c,d):
-            self.check_value = [a,b,c,d]
+        def patch_handler(a,b,c):
+            self.check_value.append([a,b,c])
 
-        self.network.set_handler(lambda a,b,c,d: handler(a,b,c,d))
+
+        self.network.set_handlers(lambda a, b, c: patch_handler(a, b, c), None)
 
         self.network.add_node(1)
         self.network.reset()
@@ -76,31 +77,28 @@ class NetworkTestCase(unittest.TestCase):
         self.assertEqual(self.network.get_attribute_value(1, self.patch_attributes[1]), 4)
 
         # Check the values were passed into the handler
-        # print self.check_value
-        self.assertEqual(self.check_value[0], 1)
-        self.assertItemsEqual(self.check_value[1], [self.compartments[0], self.compartments[1]])
-        self.assertItemsEqual(self.check_value[2], [self.patch_attributes[0], self.patch_attributes[1]])
-        self.assertFalse(self.check_value[3])
+        self.assertEqual(self.check_value[0][0], 1)
+        self.assertItemsEqual(self.check_value[0][1], [self.compartments[0], self.compartments[1]])
+        self.assertItemsEqual(self.check_value[0][2], [self.patch_attributes[0], self.patch_attributes[1]])
 
     def test_update_edge(self):
         self.check_value = []
 
         # When an update is performed store values used in a variable
-        def handler(a, b, c, d):
-            self.check_value.append([a, b, c, d])
+        def edge_handler(a, b, c):
+            self.check_value.append([a, b, c])
 
         self.network.add_node(1)
         self.network.add_node(2)
         self.network.add_edge(1, 2)
         self.network.reset()
-        self.network.set_handler(lambda a, b, c, d: handler(a, b, c, d))
+        self.network.set_handlers(None, lambda a, b, c: edge_handler(a, b, c))
 
         self.network.update_edge(1, 2, {self.edge_attributes[0]: 1, self.edge_attributes[1]: 2})
 
         self.assertEqual(self.check_value[0][0], 1)
-        self.assertFalse(self.check_value[0][1])
-        self.assertFalse(self.check_value[0][2])
-        self.assertItemsEqual(self.check_value[0][3], [self.edge_attributes[0], self.edge_attributes[1]])
+        self.assertEqual(self.check_value[0][1], 2)
+        self.assertItemsEqual(self.check_value[0][2], [self.edge_attributes[0], self.edge_attributes[1]])
 
 
 class TypedNetworkTestCase(unittest.TestCase):

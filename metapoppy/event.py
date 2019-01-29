@@ -16,19 +16,29 @@ class Event(object):
     (to be updated when the parameters update).
     """
 
-    def __init__(self, dependent_compartments, dependent_attributes):
+    def __init__(self, dependent_compartments, dependent_patch_attributes, dependent_edge_attributes):
         """
         Create an event.
         :param reaction_parameter_key: The parameter key which corresponds to the reaction parameter
         :param additional_parameter_keys: Other parameter keys which are required by this event
         """
-        self.dependent_compartments = dependent_compartments
-        self.dependent_attributes = dependent_attributes
+        self._dependent_compartments = dependent_compartments
+        self._dependent_patch_attributes = dependent_patch_attributes
+        self._dependent_edge_attributes = dependent_edge_attributes
         self._reaction_parameter_key, self._parameter_keys = self._define_parameter_keys()
         self._parameters = {}
         if self._parameter_keys:
             self._parameters = {p:0.0 for p in self._parameter_keys}
         self._reaction_parameter = 0.0
+
+    def get_dependent_compartments(self):
+        return self._dependent_compartments
+
+    def get_dependent_patch_attributes(self):
+        return self._dependent_patch_attributes
+
+    def get_dependent_edge_attributes(self):
+        return self._dependent_edge_attributes
 
     def _define_parameter_keys(self):
         raise NotImplementedError
@@ -36,7 +46,7 @@ class Event(object):
     def reaction_parameter(self):
         return self._reaction_parameter_key
 
-    def parameters(self):
+    def parameter_keys(self):
         return [self._reaction_parameter_key] + self._parameter_keys
 
     def set_parameters(self, parameter_values):
@@ -86,15 +96,9 @@ class PatchTypeEvent(Event):
     An event which can only occur at a specific type of patch. Rate will always be zero if calculated at a patch which
     does not match the patch type.
     """
-    def __init__(self, patch_type, dependent_compartments, dependent_attributes):
-        """
-        Create a patch type event
-        :param patch_type:
-        :param reaction_parameter_key:
-        :param additional_parameter_keys:
-        """
+    def __init__(self, patch_type, dependent_compartments, dependent_attributes, dependent_edge_attributes):
         self._patch_type = patch_type
-        Event.__init__(self, dependent_compartments, dependent_attributes)
+        Event.__init__(self, dependent_compartments, dependent_attributes, dependent_edge_attributes)
 
     def calculate_rate_at_patch(self, network, patch_id):
         """

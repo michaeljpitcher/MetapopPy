@@ -11,7 +11,7 @@ class CellDeath(Event):
         self._dying_compartment = dying_compartment
         assert dying_compartment not in TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL, \
             "Standard cell death not appropriate for {0} as it has internal bacteria".format(dying_compartment)
-        Event.__init__(self, [self._dying_compartment], [])
+        Event.__init__(self, [self._dying_compartment], [], [])
 
     def _define_parameter_keys(self):
         return self._dying_compartment + CellDeath.DEATH + RATE, []
@@ -31,7 +31,7 @@ class InfectedCellDeath(CellDeath):
         self._dying_compartment = dying_compartment
         self._internal_bacteria = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
         self._bac_percent_to_destroy_key = None
-        Event.__init__(self, [self._dying_compartment], [])
+        Event.__init__(self, [self._dying_compartment], [], [])
 
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = self._dying_compartment + CellDeath.DEATH + \
@@ -56,7 +56,7 @@ class MacrophageBursting(InfectedCellDeath):
 
     def __init__(self):
         InfectedCellDeath.__init__(self, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        self.dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
+        self._dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
 
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = MacrophageBursting.BURSTING + InfectedCellDeath.PERCENT_BACTERIA_DESTROYED
@@ -79,7 +79,7 @@ class TCellDestroysMacrophage(InfectedCellDeath):
 
     def __init__(self):
         InfectedCellDeath.__init__(self, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        self.dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
+        self._dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
 
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = TCellDestroysMacrophage.T_CELL_DESTROYS_MACROPHAGE + \
@@ -105,7 +105,7 @@ class MacrophageDestroysBacterium(Event):
         self._half_sat_key = None
         Event.__init__(self, [TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING,
                               TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT,
-                              self._macrophage_type], [])
+                              self._macrophage_type], [], [])
 
     def _define_parameter_keys(self):
         rp_key = self._macrophage_type + MacrophageDestroysBacterium.DESTROYS_BACTERIUM + RATE

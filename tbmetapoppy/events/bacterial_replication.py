@@ -9,7 +9,7 @@ class Replication(Event):
 
     def __init__(self, cell_type):
         self._cell_type = cell_type
-        Event.__init__(self, [self._cell_type], [])
+        Event.__init__(self, [self._cell_type], [], [])
 
     def _define_parameter_keys(self):
         return self._cell_type + Replication.REPLICATION_RATE, []
@@ -25,7 +25,8 @@ class IntracellularBacterialReplication(Replication):
 
     def __init__(self):
         Replication.__init__(self, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE)
-        self.dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE, TBPulmonaryNetwork.MACROPHAGE_INFECTED]
+        self._dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE,
+                                         TBPulmonaryNetwork.MACROPHAGE_INFECTED]
 
     def _define_parameter_keys(self):
         return self._cell_type + Replication.REPLICATION_RATE, [INTRACELLULAR_REPLICATION_SIGMOID,

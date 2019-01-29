@@ -1,6 +1,6 @@
 from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
-from parameters import RATE
+from parameters import RATE, HALF_SAT
 import numpy
 
 
@@ -13,7 +13,7 @@ class CellTranslocationToLymph(PatchTypeEvent):
             self._internal_compartment = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[cell_type]
         else:
             self._internal_compartment = None
-        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [cell_type], [TBPulmonaryNetwork.DRAINAGE])
+        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [cell_type], [TBPulmonaryNetwork.DRAINAGE], [])
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellTranslocationToLymph.TRANSLOCATION_TO_LYMPH
@@ -43,7 +43,7 @@ class CellTranslocationToLung(PatchTypeEvent):
 
     def __init__(self, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, [cell_type], [])
+        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, [cell_type], [], [])
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellTranslocationToLung.TRANSLOCATION_TO_LUNG
@@ -67,7 +67,7 @@ class TCellTranslocationToLungByInfection(CellTranslocationToLung):
         CellTranslocationToLung.__init__(self, TBPulmonaryNetwork.T_CELL_ACTIVATED)
 
     # TODO - this forces t-cells into the lung even if infection has been wiped out. State var maybe should depend
-    # on infection levels
+    #  on infection levels
 
     def perform(self, network, patch_id):
         infected_patches = network.infected_patches()

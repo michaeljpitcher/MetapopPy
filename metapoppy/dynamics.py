@@ -3,6 +3,7 @@ import math
 from network import *
 import copy
 import numpy
+import itertools
 
 
 class Dynamics(epyc.Experiment, object):
@@ -47,13 +48,19 @@ class Dynamics(epyc.Experiment, object):
         self._events = self._create_events()
         assert self._events, "No events created"
 
-        self.comp_dependencies = {c: [] for c in network.compartments()}
-        self.att_dependencies = {a: [] for a in network.patch_attributes()}
+        # Create dependency matrices
+        self._comp_dependencies = {c: [] for c in network.compartments()}
+        self._patch_att_dependencies = {a: [] for a in network.patch_attributes()}
+        self._edge_att_dependencies = {a: [] for a in network.edge_attributes()}
+
         for col in range(len(self._events)):
-            for c in self._events[col].dependent_compartments:
-                self.comp_dependencies[c].append(col)
-            for a in self._events[col].dependent_attributes:
-                self.att_dependencies[a].append(col)
+            event = self._events[col]
+            for c in event.get_dependent_compartments():
+                self._comp_dependencies[c].append(col)
+            for a in event.get_dependent_patch_attributes():
+                self._patch_att_dependencies[a].append(col)
+            for a in event.get_dependent_edge_attributes():
+                self._edge_att_dependencies[a].append(col)
 
         # Set the network prototype if one has been provided - this will be the network used for all runs.
         # If not provided, a network must be created during configure stage.
@@ -74,7 +81,7 @@ class Dynamics(epyc.Experiment, object):
     def required_event_parameters(self):
         params = []
         for e in self._events:
-            params += e.parameters()
+            params += e.parameter_keys()
         return list(set(params))
 
     def set_start_time(self, start_time):
@@ -128,7 +135,8 @@ class Dynamics(epyc.Experiment, object):
         assert self._network.nodes(), "Empty network is invalid"
 
         # Attach the update handler to the network
-        self._network.set_handler(lambda a, b, c, d: self._propagate_updates(a, b, c, d))
+        self._network.set_handlers(lambda p, c, a: self._propagate_patch_update(p, c, a),
+                                   lambda u, v, a: self._propagate_edge_update(u, v, a))
 
         self._patch_seeding = self._get_patch_seeding(params)
         self._edge_seeding = self._get_edge_seeding(params)
@@ -181,14 +189,13 @@ class Dynamics(epyc.Experiment, object):
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
 
-    def _propagate_updates(self, patch_id, compartment_changes, attribute_changes, edge_changes):
+    def _propagate_patch_update(self, patch_id, compartment_changes, patch_attribute_changes):
         """
         When a patch is changed, update the relevant entries in the rate table. This function is passed as a lambda
         function to the network, and is called whenever a change is made.
         :param patch_id:
         :param compartment_changes:
-        :param attribute_changes:
-        :param edge_changes:
+        :param patch_attribute_changes:
         :return:
         """
         # Check if patch is active
@@ -197,12 +204,9 @@ class Dynamics(epyc.Experiment, object):
         # If patch is already active
         if active:
             row = self._row_for_patch[patch_id]
-            cols_to_update = []
-            for c in compartment_changes:
-                cols_to_update += self.comp_dependencies[c]
-            for a in attribute_changes:
-                cols_to_update += self.att_dependencies[a]
-            cols_to_update = set(cols_to_update)
+            # Determine columns (events) to update by finding events which have dependencies on the items changed
+            cols_to_update = set(itertools.chain(*[self._comp_dependencies[c] for c in compartment_changes] +
+                                                  [self._patch_att_dependencies[c] for c in patch_attribute_changes]))
             for col in cols_to_update:
                 event = self._events[col]
                 self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
@@ -210,14 +214,22 @@ class Dynamics(epyc.Experiment, object):
         elif self._patch_is_active(patch_id):
             self._activate_patch(patch_id)
 
-        # TODO - this recalculates all events. Also need to consider propagation to other patches when a patch becomes
-        #  active
-        if edge_changes:
-            if patch_id in self._row_for_patch:
+    def _propagate_edge_update(self, patch, neighbour, edge_attribute_changes):
+        for patch_id in [patch, neighbour]:
+            # Check if patch is active
+            # TODO - more efficient way of checking if patch is active
+            active = patch_id in self._active_patches
+            # If patch is already active
+            if active:
                 row = self._row_for_patch[patch_id]
-                for col in range(len(self._events)):
+                # Determine columns (events) to update by finding events which have dependencies on the items changed
+                cols_to_update = set(itertools.chain(*[self._edge_att_dependencies[a] for a in edge_attribute_changes]))
+                for col in cols_to_update:
                     event = self._events[col]
                     self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+            # Patch is not previously active but should become active from this update
+            elif self._patch_is_active(patch_id):
+                self._activate_patch(patch_id)
 
     def _patch_is_active(self, patch_id):
         """
@@ -262,17 +274,14 @@ class Dynamics(epyc.Experiment, object):
         time = self._start_time
 
         def record_results(results, record_time):
-            # TODO - we don't record edges
+            # TODO - we don't record edges / non-active patches
             results[record_time] = {}
-            # for p, data in self.network().nodes(data=True):
-            #     results["t=" + str(record_time)][p] = copy.deepcopy(data)
-            # TODO - only record active patches
             for p in self._active_patches:
                 results[record_time][p] = copy.deepcopy(self._network.nodes[p])
             return results
 
         results = record_results(results, time)
-        # TODO - rounding issues for time intervals
+        # Avoid rounding issues with time interval by rounding to 7 decimal places
         next_record_interval = round(time + self._record_interval, 7)
 
         total_network_rate = numpy.sum(self._rate_table)

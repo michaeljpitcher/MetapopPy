@@ -12,7 +12,7 @@ class CellRecruitment(PatchTypeEvent):
 
     def __init__(self, patch_type, cell_type):
         self._cell_type = cell_type
-        PatchTypeEvent.__init__(self, patch_type, [cell_type], [])
+        PatchTypeEvent.__init__(self, patch_type, [cell_type], [], [])
 
     def _define_parameter_keys(self):
         raise NotImplementedError
@@ -27,7 +27,7 @@ class CellRecruitment(PatchTypeEvent):
 class StandardCellRecruitmentLung(CellRecruitment):
     def __init__(self, cell_type):
         CellRecruitment.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, cell_type)
-        self.dependent_attributes += [TBPulmonaryNetwork.PERFUSION]
+        self._dependent_patch_attributes += [TBPulmonaryNetwork.PERFUSION]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.STANDARD_RECRUITMENT + "_" + self._patch_type + RATE
@@ -42,7 +42,7 @@ class EnhancedCellRecruitmentLung(CellRecruitment):
         self._half_sat_key = None
         self._weight_key = None
         CellRecruitment.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, cell_recruited)
-        self.dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
+        self._dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -78,7 +78,7 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
         self._half_sat_key = None
         self._weight_key = None
         CellRecruitment.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type)
-        self.dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
+        self._dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -100,7 +100,7 @@ class EnhancedTCellRecruitmentLymph(CellRecruitment):
     def __init__(self):
         self._half_sat_key = None
         CellRecruitment.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.T_CELL_NAIVE)
-        self.dependent_compartments += [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE]
+        self._dependent_compartments += [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE

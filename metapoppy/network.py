@@ -19,7 +19,8 @@ class Network(networkx.Graph):
         self._compartments = compartments
         self._patch_attributes = patch_attributes
         self._edge_attributes = edge_attributes
-        self._handler = None
+        self._patch_handler = None
+        self._edge_handler = None
         networkx.Graph.__init__(self)
 
         if template:
@@ -47,14 +48,15 @@ class Network(networkx.Graph):
         """
         return self._edge_attributes
 
-    def set_handler(self, handler):
+    def set_handlers(self, patch_handler, edge_handler):
         """
         Given a lambda function as an update handler, assign it to the network. Function will be called when an update
         is performed
         :param handler:
         :return:
         """
-        self._handler = handler
+        self._patch_handler = patch_handler
+        self._edge_handler = edge_handler
 
     def reset(self):
         self._reset_patches()
@@ -121,12 +123,12 @@ class Network(networkx.Graph):
             for attr, change in attribute_changes.iteritems():
                 patch_data[Network.ATTRIBUTES][attr] += change
         # Propagate the changes
-        if self._handler:
+        if self._patch_handler:
             if not compartment_changes:
                 compartment_changes = {}
             if not attribute_changes:
                 attribute_changes = {}
-            self._handler(patch_id, compartment_changes.keys(), attribute_changes.keys(), {})
+            self._patch_handler(patch_id, compartment_changes.keys(), attribute_changes.keys())
 
     def update_edge(self, u, v, attribute_changes):
         """
@@ -140,9 +142,8 @@ class Network(networkx.Graph):
         for attr, change in attribute_changes.iteritems():
             edge[attr] += change
         # If a handler exists, propagate the updates
-        if self._handler:
-            self._handler(u, [], [], attribute_changes.keys())
-            self._handler(v, [], [], attribute_changes.keys())
+        if self._edge_handler:
+            self._edge_handler(u, v, attribute_changes.keys())
 
 
 class TypedNetwork(Network):

@@ -11,7 +11,7 @@ class CellActivation(Event):
         self._resting_cell = resting_cell
         self._activated_cell = TBPulmonaryNetwork.ACTIVATED_CELL[self._resting_cell]
         self._triggers = triggers
-        Event.__init__(self, [self._resting_cell] + self._triggers, [])
+        Event.__init__(self, [self._resting_cell] + self._triggers, [], [])
 
     def _define_parameter_keys(self):
         rp_key = self._resting_cell + CellActivation.ACTIVATION_BY + '_'.join(self._triggers) + RATE

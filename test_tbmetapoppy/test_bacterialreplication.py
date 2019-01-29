@@ -7,7 +7,7 @@ class ReplicationTestCase(unittest.TestCase):
 
     def setUp(self):
         self.event = Replication(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING)
-        self.rep_key = self.event.parameters()[0]
+        self.rep_key = self.event.parameter_keys()[0]
         self.params = {self.rep_key: 0.1}
         self.event.set_parameters(self.params)
         self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
@@ -18,7 +18,7 @@ class ReplicationTestCase(unittest.TestCase):
 
     def test_initialise(self):
         self.assertItemsEqual([TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING + Replication.REPLICATION_RATE],
-                         self.event.parameters())
+                              self.event.parameter_keys())
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
@@ -49,7 +49,7 @@ class IntracellularBacterialReplicationTestCase(unittest.TestCase):
         self.network.reset()
 
     def test_initialise(self):
-        self.assertItemsEqual(self.params.keys(), self.event.parameters())
+        self.assertItemsEqual(self.params.keys(), self.event.parameter_keys())
 
     def test_rate(self):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
