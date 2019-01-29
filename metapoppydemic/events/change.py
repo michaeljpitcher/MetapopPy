@@ -2,10 +2,16 @@ from metapoppy import *
 
 
 class Change(Event):
-    def __init__(self, rp_key, compartment_from, compartment_to):
+
+    RATE_OF_CHANGE = 'rate_of_change_'
+
+    def __init__(self, compartment_from, compartment_to):
         self._comp_from = compartment_from
         self._comp_to = compartment_to
-        Event.__init__(self, rp_key)
+        Event.__init__(self, [compartment_from], [])
+
+    def _define_parameter_keys(self):
+        return Change.RATE_OF_CHANGE + self._comp_from + '_' + self._comp_to, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._comp_from)
@@ -15,9 +21,14 @@ class Change(Event):
 
 
 class Infect(Change):
-    def __init__(self, rp_key, susceptible_compartment, infectious_compartment, infected_compartment):
+    INFECTION_RATE_KEY = 'infection_rate'
+
+    def __init__(self, susceptible_compartment, infectious_compartment, infected_compartment):
         self._infectious = infectious_compartment
-        Change.__init__(self, rp_key, susceptible_compartment, infected_compartment)
+        Change.__init__(self, susceptible_compartment, infected_compartment)
+
+    def _define_parameter_keys(self):
+        return Infect.INFECTION_RATE_KEY, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._comp_from) * \

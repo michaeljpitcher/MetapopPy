@@ -18,13 +18,21 @@ class SISDynamics(Epidemic):
         Epidemic.__init__(self, [SUSCEPTIBLE, INFECTIOUS], template_network)
 
     def _create_events(self):
-        infect = Infect(SISDynamics.RP_INFECT, SUSCEPTIBLE, INFECTIOUS, INFECTIOUS)
-        recover = Change(SISDynamics.RP_RECOVER, INFECTIOUS, SUSCEPTIBLE)
-        move_s = Move(SISDynamics.RP_MOVE_S, SUSCEPTIBLE)
-        move_i = Move(SISDynamics.RP_MOVE_I, INFECTIOUS)
+        infect = Infect(SUSCEPTIBLE, INFECTIOUS, INFECTIOUS)
+        recover = Change(INFECTIOUS, SUSCEPTIBLE)
+        move_s = Move(SUSCEPTIBLE)
+        move_i = Move(INFECTIOUS)
         return [infect, recover, move_s, move_i]
 
-    def _seed_prototype_network(self, params):
+    def _build_network(self, params):
+        raise NotImplementedError
+
+    def _get_patch_seeding(self, params):
+        seed = {}
         for n in self.network().nodes():
-            self._network.update_patch(n, {SUSCEPTIBLE: params[SISDynamics.INIT_S]})
-            self._network.update_patch(n, {INFECTIOUS: params[SISDynamics.INIT_I]})
+            seed[n] = {TypedNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SISDynamics.INIT_S],
+                                                  INFECTIOUS: params[SISDynamics.INIT_I]}}
+        return seed
+
+    def _get_edge_seeding(self, params):
+        return {}
