@@ -90,7 +90,7 @@ class Dynamics(epyc.Experiment, object):
         :param start_time:
         :return:
         """
-        self._start_time = start_time
+        self._start_time = float(start_time)
 
     def set_maximum_time(self, maximum_time):
         """
@@ -98,6 +98,7 @@ class Dynamics(epyc.Experiment, object):
         :param maximum_time:
         :return:
         """
+        assert maximum_time > self._start_time, "Maximum time must exceed start time"
         self._max_time = maximum_time
 
     def set_record_interval(self, record_interval):
@@ -168,21 +169,29 @@ class Dynamics(epyc.Experiment, object):
         # Default setup
         epyc.Experiment.setUp(self, params)
 
-        # TODO - resetting the network only works on the assumption that the network structure has not changed
+        # TODO - resetting the network only works on the assumption that the network structure (edges) has not changed
         # Reset the network
         self._network.reset()
 
         # Seed the network using the pre-calculated seeding
-        for n, seed in self._patch_seeding.iteritems():
-            if Network.COMPARTMENTS in seed:
-                comp_seed = seed[Network.COMPARTMENTS]
-            else:
-                comp_seed = {}
-            if Network.ATTRIBUTES in seed:
-                att_seed = seed[Network.ATTRIBUTES]
-            else:
-                att_seed = {}
-            self._network.update_patch(n, comp_seed, att_seed)
+
+        for n in self._network.nodes:
+            # Patch has a seeding
+            if n in self._patch_seeding:
+                seed = self._patch_seeding[n]
+                if Network.COMPARTMENTS in seed:
+                    comp_seed = seed[Network.COMPARTMENTS]
+                else:
+                    comp_seed = {}
+                if Network.ATTRIBUTES in seed:
+                    att_seed = seed[Network.ATTRIBUTES]
+                else:
+                    att_seed = {}
+                self._network.update_patch(n, comp_seed, att_seed)
+            # Patch does not have a seeding, need to check if it is active
+            elif self._patch_is_active(n):
+                self._activate_patch(n)
+
         for (u, v), seed in self._edge_seeding.iteritems():
             self._network.update_edge(u, v, seed)
 
