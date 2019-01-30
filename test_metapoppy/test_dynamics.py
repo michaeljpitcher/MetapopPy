@@ -5,6 +5,7 @@ compartments = ['a','b','c']
 patch_attributes = ['d','e','f']
 edge_attributes = ['g','h','i']
 
+
 class NAEvent1(Event):
     RP_1_KEY = 'rp1'
     def __init__(self):
@@ -83,6 +84,25 @@ class DynamicsTestCase(unittest.TestCase):
 
         self.dynamics = NADynamics(self.network)
 
+    def test_required_event_parameters(self):
+        self.assertItemsEqual(self.dynamics.required_event_parameters(), [NAEvent1.RP_1_KEY, NAEvent2.RP_2_KEY])
+
+    def test_set_start_time_maximum_time_record_interval(self):
+
+        params = {NAEvent1.RP_1_KEY: 0.1, NAEvent2.RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
+                  NADynamics.INITIAL_COMP_1: 5,
+                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
+                  NADynamics.INITIAL_EDGE_1: 17}
+        self.dynamics.set_start_time(101.0)
+        self.dynamics.set_maximum_time(102.0)
+        self.dynamics.set_record_interval(0.25)
+
+        self.dynamics.configure(params)
+        self.dynamics.setUp(params)
+        res = self.dynamics.do(params)
+
+        self.assertItemsEqual(res.keys(), [101.0, 101.25, 101.5, 101.75, 102.0])
+
     def test_configure(self):
         params = {NAEvent1.RP_1_KEY: 0.1, NAEvent2.RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3,
                   NADynamics.INITIAL_COMP_1: 5,
@@ -160,12 +180,151 @@ class DynamicsTestCase(unittest.TestCase):
                 self.assertItemsEqual(q[Network.ATTRIBUTES], patch_attributes)
 
     def test_do(self):
-        params = {NAEvent1.RP_1_KEY: 0.1, NAEvent2.RP_2_KEY: 0.2, NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
-                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11, NADynamics.INITIAL_EDGE_0: 13,
-                  NADynamics.INITIAL_EDGE_1: 17}
+        params = {NAEvent1.RP_1_KEY: 0.1, NAEvent2.RP_2_KEY: 0.2,
+                  NADynamics.INITIAL_COMP_0: 3, NADynamics.INITIAL_COMP_1: 5,
+                  NADynamics.INITIAL_ATT_0: 7, NADynamics.INITIAL_ATT_1: 11,
+                  NADynamics.INITIAL_EDGE_0: 13, NADynamics.INITIAL_EDGE_1: 17}
         self.dynamics.configure(params)
         self.dynamics.setUp(params)
         self.dynamics.do(params)
+
+
+
+
+class EventNoDep(Event):
+    def __init__(self):
+        Event.__init__(self, [], [], [])
+
+    def _define_parameter_keys(self):
+        return self.__class__.__name__, []
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return 1
+
+    def perform(self, network, patch_id):
+        pass
+
+
+class EventPatchCompDep(Event):
+    def __init__(self, comp):
+        self.comp = comp
+        Event.__init__(self, [comp], [], [])
+
+    def _define_parameter_keys(self):
+        return self.__class__.__name__, []
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return network.get_compartment_value(patch_id, self.comp)
+
+    def perform(self, network, patch_id):
+        pass
+
+
+class EventPatchAttDep(Event):
+    def __init__(self, att):
+        self.att = att
+        Event.__init__(self, [], [att], [])
+
+    def _define_parameter_keys(self):
+        return self.__class__.__name__, []
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return network.get_attribute_value(patch_id, self.att)
+
+    def perform(self, network, patch_id):
+        pass
+
+
+class EventEdgeAttDep(Event):
+    def __init__(self, att):
+        self.att = att
+        Event.__init__(self, [], [], [att])
+
+    def _define_parameter_keys(self):
+        return self.__class__.__name__, []
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return sum(v[self.att] for v in network[patch_id].values())
+
+    def perform(self, network, patch_id):
+        pass
+
+
+class PropDynamics(Dynamics):
+    def __init__(self, network):
+        Dynamics.__init__(self, network)
+
+    def _create_events(self):
+        events = [EventNoDep(), EventPatchCompDep(compartments[0]), EventPatchAttDep(patch_attributes[0]),
+                  EventEdgeAttDep(edge_attributes[0])]
+        return events
+
+    def _get_patch_seeding(self, params):
+        return {}
+
+    def _get_edge_seeding(self, params):
+        return {}
+
+class PropagationTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.network = Network(compartments, patch_attributes, edge_attributes)
+        self.nodes = ['a1', 'b1', 'c1']
+        self.network.add_nodes_from(self.nodes)
+        self.network.add_edges_from([('a1', 'b1'), ('b1', 'c1')])
+        self.dynamics = PropDynamics(self.network)
+
+    def test_propagation(self):
+        params = {EventNoDep.__name__: 0.1, EventPatchCompDep.__name__: 0.2,
+                  EventPatchAttDep.__name__: 0.3, EventEdgeAttDep.__name__: 0.4}
+        self.dynamics.configure(params)
+        self.dynamics.setUp(params)
+
+        # No values so check rates - NoDep should have value, rest should be 0
+        for row in range(len(self.nodes)):
+            self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
+            for col in range(1,4):
+                self.assertEqual(self.dynamics._rate_table[row][col], 0.0)
+
+        # Update compartment - should propagate to col 1 of rate table
+        self.network.update_patch(self.nodes[0], {compartments[0]: 1})
+        self.network.update_patch(self.nodes[1], {compartments[0]: 2})
+        self.network.update_patch(self.nodes[2], {compartments[0]: 3})
+
+        # No values so check rates - NoDep should have value, rest should be 0
+        for row in range(len(self.nodes)):
+            node = self.network.node[self.dynamics._active_patches[row]]
+            self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
+            self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
+                             node[Network.COMPARTMENTS][compartments[0]])
+            for col in range(2, 4):
+                self.assertEqual(self.dynamics._rate_table[row][col], 0.0)
+
+        # Update compartment - should propagate to col 1 of rate table
+        self.network.update_patch(self.nodes[0], attribute_changes={patch_attributes[0]: 4})
+        self.network.update_patch(self.nodes[1], attribute_changes={patch_attributes[0]: 5})
+        self.network.update_patch(self.nodes[2], attribute_changes={patch_attributes[0]: 6})
+
+        for row in range(len(self.nodes)):
+            node = self.network.node[self.dynamics._active_patches[row]]
+            self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
+            self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
+                             node[Network.COMPARTMENTS][compartments[0]])
+            self.assertEqual(self.dynamics._rate_table[row][2], params[EventPatchAttDep.__name__] *
+                             node[Network.ATTRIBUTES][patch_attributes[0]])
+            self.assertEqual(self.dynamics._rate_table[row][3], 0.0)
+
+        self.network.update_edge(self.nodes[0], self.nodes[1], {edge_attributes[0]: 11})
+        self.network.update_edge(self.nodes[1], self.nodes[2], {edge_attributes[0]: 13})
+        for row in range(len(self.nodes)):
+            node = self.network.node[self.dynamics._active_patches[row]]
+            self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
+            self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
+                             node[Network.COMPARTMENTS][compartments[0]])
+            self.assertEqual(self.dynamics._rate_table[row][2], params[EventPatchAttDep.__name__] *
+                             node[Network.ATTRIBUTES][patch_attributes[0]])
+            val = sum([n[edge_attributes[0]] for n in self.network[self.dynamics._active_patches[row]].values()])
+            self.assertEqual(self.dynamics._rate_table[row][3], params[EventEdgeAttDep.__name__] * val)
 
 
 if __name__ == '__main__':

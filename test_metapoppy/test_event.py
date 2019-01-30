@@ -11,27 +11,29 @@ PARAM_B = 'param_b'
 PARAM_C = 'param_c'
 
 
+class NAEvent(Event):
+    def __init__(self, dep_comp, changed_comp):
+        self._dep_comp = dep_comp
+        self._changed_comp = changed_comp
+        Event.__init__(self, dep_comp, [], [])
+
+    def _define_parameter_keys(self):
+        return RP1_key, []
+
+    def _calculate_state_variable_at_patch(self, network, patch_id):
+        return network.get_compartment_value(patch_id, self._dep_comp)
+
+    def perform(self, network, patch_id):
+        network.update_patch(patch_id, {compartments[1]: 1})
+
+
 class EventTestCase(unittest.TestCase):
 
     def setUp(self):
         self.network = Network(compartments, attributes, [])
         self.network.add_node(1)
         self.network.reset()
-
-        class NAEvent(Event):
-            def __init__(self):
-                Event.__init__(self, compartments[0], [], [])
-
-            def _define_parameter_keys(self):
-                return RP1_key, []
-
-            def _calculate_state_variable_at_patch(self, network, patch_id):
-                return network.get_compartment_value(patch_id, compartments[0])
-
-            def perform(self, network, patch_id):
-                network.update_patch(patch_id, {compartments[1]: 1})
-
-        self.event = NAEvent()
+        self.event = NAEvent(compartments[0], compartments[1])
 
     def test_calculate_rate(self):
         self.event.set_parameters({RP1_key: 0.1})
