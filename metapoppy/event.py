@@ -53,6 +53,8 @@ class Event(object):
         :param parameter_values:
         :return:
         """
+        assert self._reaction_parameter_key in parameter_values, "Reaction parameter {0} missing".format(
+            self._reaction_parameter_key)
         assert parameter_values[self._reaction_parameter_key] >= 0.0, "Reaction parameter cannot be negative"
         self._reaction_parameter = parameter_values[self._reaction_parameter_key]
         for p in self._parameters:
