@@ -19,8 +19,6 @@ class Event(object):
     def __init__(self, dependent_compartments, dependent_patch_attributes, dependent_edge_attributes):
         """
         Create an event.
-        :param reaction_parameter_key: The parameter key which corresponds to the reaction parameter
-        :param additional_parameter_keys: Other parameter keys which are required by this event
         """
         self._dependent_compartments = dependent_compartments
         self._dependent_patch_attributes = dependent_patch_attributes

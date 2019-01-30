@@ -113,7 +113,7 @@ class Network(networkx.Graph):
         :param attribute_changes: dict of Key:attribute, Value: amount changed
         :return:
         """
-        patch_data = self.nodes[patch_id]
+        patch_data = self._node[patch_id]
         if compartment_changes:
             for comp, change in compartment_changes.iteritems():
                 patch_data[Network.COMPARTMENTS][comp] += change
@@ -177,7 +177,7 @@ class TypedNetwork(Network):
         :param patch_type:
         :return:
         """
-        self.nodes[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
+        self._node[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
         if patch_type not in self._patch_types:
             self._patch_types[patch_type] = []
         self._patch_types[patch_type].append(patch_id)
@@ -194,7 +194,7 @@ class TypedNetwork(Network):
         if patch_type not in self._patch_types:
             return []
         elif data:
-            return [(n, self.nodes[n]) for n in self._patch_types[patch_type]]
+            return [(n, self._node[n]) for n in self._patch_types[patch_type]]
         else:
             return self._patch_types[patch_type]
 
@@ -204,8 +204,8 @@ class TypedNetwork(Network):
         type are applied.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedNetwork.PATCH_TYPE: self.node[n][TypedNetwork.PATCH_TYPE],
+        networkx.set_node_attributes(self, {n: {TypedNetwork.PATCH_TYPE: self._node[n][TypedNetwork.PATCH_TYPE],
                                                 TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
                                                 TypedNetwork.ATTRIBUTES: {a: 0 for a in
-                                                    self._attribute_by_type[self.node[n][TypedNetwork.PATCH_TYPE]]}}
+                                                    self._attribute_by_type[self._node[n][TypedNetwork.PATCH_TYPE]]}}
                                             for n in self.nodes})

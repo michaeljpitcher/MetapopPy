@@ -259,11 +259,11 @@ class TBPulmonaryNetwork(TypedNetwork):
         return seeding
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
-        if (self.nodes[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
-                compartment_changes and any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes) and
-                patch_id not in self._infected_patches):
-                # TODO - awkward way of doing this
-                self._infected_patches.append(patch_id)
+        if (patch_id not in self._infected_patches and
+           self._node[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
+           compartment_changes and any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes)):
+            # TODO - awkward way of doing this
+            self._infected_patches.append(patch_id)
         TypedNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
 
     def reset(self):

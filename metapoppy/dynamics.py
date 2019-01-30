@@ -277,7 +277,7 @@ class Dynamics(epyc.Experiment, object):
             # TODO - we don't record edges / non-active patches
             results[record_time] = {}
             for p in self._active_patches:
-                results[record_time][p] = copy.deepcopy(self._network.nodes[p])
+                results[record_time][p] = copy.deepcopy(self._network.node[p])
             return results
 
         results = record_results(results, time)
