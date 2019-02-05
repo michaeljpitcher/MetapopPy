@@ -14,7 +14,8 @@ class TBPulmonaryNetwork(TypedNetwork):
     PATCH_ATTRIBUTES = {ALVEOLAR_PATCH: [VENTILATION, PERFUSION, OXYGEN_TENSION, DRAINAGE]}
 
     # Edge attributes
-    EDGE_ATTRIBUTES = [PERFUSION]
+    CYTOKINE = 'cytokine'
+    EDGE_ATTRIBUTES = [PERFUSION, CYTOKINE]
 
     # Configuration
     TOPOLOGY = 'topology'
@@ -265,6 +266,13 @@ class TBPulmonaryNetwork(TypedNetwork):
             # TODO - awkward way of doing this
             self._infected_patches.append(patch_id)
         TypedNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
+        if self._node[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH:
+            if compartment_changes and TBPulmonaryNetwork.MACROPHAGE_INFECTED in compartment_changes:
+                self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
+                        {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
+            if attribute_changes and TBPulmonaryNetwork.PERFUSION in attribute_changes:
+                self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
+                                 {TBPulmonaryNetwork.PERFUSION: attribute_changes[TBPulmonaryNetwork.PERFUSION]})
 
     def reset(self):
         self._infected_patches = []
