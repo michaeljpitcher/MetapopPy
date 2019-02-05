@@ -39,9 +39,9 @@ class TBDynamics(Dynamics):
         ber_to_bed = BacteriumChangeStateThroughOxygen(True)
         events += [bed_to_ber, ber_to_bed]
 
-        # bacterial translocation
-        bed_translocation = CellTranslocationToLung(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
-        events.append(bed_translocation)
+        # TODO - bacterial translocation
+        # bed_translocation = TranslocationLymphToLung(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
+        # events.append(bed_translocation)
 
         # Dendritic cell recruitment
         dc_recruit_lung = StandardCellRecruitmentLung(TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE)
@@ -60,7 +60,7 @@ class TBDynamics(Dynamics):
         events.append(dc_maturation)
 
         # Dendritic cell translocation
-        dc_translocation = CellTranslocationToLymph(TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
+        dc_translocation = TranslocationLungToLymph(TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
         events.append(dc_translocation)
 
         # Macrophage recruitment
@@ -95,7 +95,7 @@ class TBDynamics(Dynamics):
         events += [mr_ingest_bac, ma_ingest_bac]
 
         # Macrophage translocation
-        mi_translocation = CellTranslocationToLymph(TBPulmonaryNetwork.MACROPHAGE_INFECTED)
+        mi_translocation = TranslocationLungToLymph(TBPulmonaryNetwork.MACROPHAGE_INFECTED)
         events.append(mi_translocation)
 
         # T-cell recruitment
@@ -113,7 +113,8 @@ class TBDynamics(Dynamics):
         events.append(tn_activation)
 
         # T-cell translocation
-        ta_translocation = TCellTranslocationToLungByInfection()
+        # ta_translocation = TCellTranslocationToLungByInfection()
+        ta_translocation = TranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         events.append(ta_translocation)
 
         # T-cell death
@@ -166,8 +167,8 @@ class TBDynamics(Dynamics):
 
     def _get_edge_seeding(self, params):
         seeding = {}
-        for n, v in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH, data=True):
-            seeding[(n, TBPulmonaryNetwork.LYMPH_PATCH)] = {TBPulmonaryNetwork.PERFUSION: self._perf_seed[n]}
+        # for n, v in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH, data=True):
+        #     seeding[(n, TBPulmonaryNetwork.LYMPH_PATCH)] = {TBPulmonaryNetwork.PERFUSION: self._perf_seed[n]}
         return seeding
 
     def _patch_is_active(self, patch_id):

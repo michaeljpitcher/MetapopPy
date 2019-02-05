@@ -34,9 +34,9 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(ber_to_bed), 1)
 
         # Bacterial translocation
-        bed_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
-                      e._cell_type == TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT]
-        self.assertEqual(len(bed_transl), 1)
+        # bed_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
+        #               e._cell_type == TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT]
+        # self.assertEqual(len(bed_transl), 1)
 
         # DC recruitment
         dc_rec_lung = [e for e in self.dynamics._events if isinstance(e, StandardCellRecruitmentLung) and
@@ -52,7 +52,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(dc_infect), 1)
 
         # DC translocation
-        dc_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
+        dc_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLungToLymph) and
                      e._cell_type == TBPulmonaryNetwork.DENDRITIC_CELL_MATURE]
         self.assertEqual(len(dc_transl), 1)
 
@@ -100,7 +100,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertEqual(len(ma_ingest_bac), 1)
 
         # Macrophage translocation
-        mac_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLymph) and
+        mac_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLungToLymph) and
                       e._cell_type == TBPulmonaryNetwork.MACROPHAGE_INFECTED]
         self.assertEqual(len(mac_transl), 1)
 
@@ -116,7 +116,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertItemsEqual(tc_act[0]._triggers, [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
 
         # T-cell translocation
-        tc_transl = [e for e in self.dynamics._events if isinstance(e, CellTranslocationToLung) and
+        tc_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLymphToLung) and
                      e._cell_type == TBPulmonaryNetwork.T_CELL_ACTIVATED]
         self.assertEqual(len(tc_transl), 1)
 
@@ -130,6 +130,7 @@ class TBDynamicsTestCase(unittest.TestCase):
 
     def test_configure_setUp_run(self):
 
+        # Assign random param values
         params = {p: numpy.random.random() for p in self.dynamics.required_event_parameters()}
 
         params[TBPulmonaryNetwork.VENTILATION_SKEW] = 1.1
