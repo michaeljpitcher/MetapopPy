@@ -112,7 +112,7 @@ class PatchTypeEvent(Event):
         else:
             return 0.0
 
-    def _calculate_state_variable_at_patch(self, patch_data, edges):
+    def _calculate_state_variable_at_patch(self, network, patch_id):
         """
         Determine the state variable at patch (i.e. number of possible occurrences). Must be overriden as specific to
         each event type.
