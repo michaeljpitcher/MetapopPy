@@ -1,6 +1,6 @@
 import unittest
 from tbmetapoppy import *
-from metapoppy.network import Network
+from metapoppy.network import MetapopulationNetwork
 
 
 

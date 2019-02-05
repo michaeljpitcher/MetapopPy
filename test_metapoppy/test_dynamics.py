@@ -61,8 +61,8 @@ class NADynamics(Dynamics):
         value_att_1 = params[NADynamics.INITIAL_ATT_1]
 
         for p in self._network.nodes():
-            seeding[p] = {Network.COMPARTMENTS: {compartments[0]: value_comp_0, compartments[1]: value_comp_1},
-                          Network.ATTRIBUTES: {patch_attributes[0]: value_att_0, patch_attributes[1]: value_att_1}}
+            seeding[p] = {MetapopulationNetwork.COMPARTMENTS: {compartments[0]: value_comp_0, compartments[1]: value_comp_1},
+                          MetapopulationNetwork.ATTRIBUTES: {patch_attributes[0]: value_att_0, patch_attributes[1]: value_att_1}}
 
         return seeding
 
@@ -77,7 +77,7 @@ class NADynamics(Dynamics):
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.network = Network(compartments, patch_attributes, edge_attributes)
+        self.network = MetapopulationNetwork(compartments, patch_attributes, edge_attributes)
         self.nodes = ['a1','b1','c1']
         self.network.add_nodes_from(self.nodes)
         self.network.add_edges_from([('a1','b1'),('b1','c1')])
@@ -127,11 +127,11 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Populations updated - ensure seeding from configure used in setup
         for a in ['a1','b1','c1']:
-            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[0]],
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.COMPARTMENTS][compartments[0]],
                              params[NADynamics.INITIAL_COMP_0])
-            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[1]],
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.COMPARTMENTS][compartments[1]],
                              params[NADynamics.INITIAL_COMP_1])
-            self.assertEqual(self.dynamics._network.node[a][Network.COMPARTMENTS][compartments[2]], 0)
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.COMPARTMENTS][compartments[2]], 0)
 
         # Population updates feeds through to event rates
         for col in range(0, 3):
@@ -142,11 +142,11 @@ class DynamicsTestCase(unittest.TestCase):
 
         # Attribute updates
         for a in ['a1','b1','c1']:
-            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[0]],
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.ATTRIBUTES][patch_attributes[0]],
                              params[NADynamics.INITIAL_ATT_0])
-            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[1]],
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.ATTRIBUTES][patch_attributes[1]],
                              params[NADynamics.INITIAL_ATT_1])
-            self.assertEqual(self.dynamics._network.node[a][Network.ATTRIBUTES][patch_attributes[2]], 0)
+            self.assertEqual(self.dynamics._network.node[a][MetapopulationNetwork.ATTRIBUTES][patch_attributes[2]], 0)
 
         # Edge updates
         for _, _, d in self.dynamics._network.edges(data=True):
@@ -175,9 +175,9 @@ class DynamicsTestCase(unittest.TestCase):
             self.assertTrue(isinstance(t, float))
             self.assertItemsEqual(v.keys(), self.nodes)
             for n,q in v.iteritems():
-                self.assertItemsEqual(q.keys(), [Network.ATTRIBUTES, Network.COMPARTMENTS])
-                self.assertItemsEqual(q[Network.COMPARTMENTS], compartments)
-                self.assertItemsEqual(q[Network.ATTRIBUTES], patch_attributes)
+                self.assertItemsEqual(q.keys(), [MetapopulationNetwork.ATTRIBUTES, MetapopulationNetwork.COMPARTMENTS])
+                self.assertItemsEqual(q[MetapopulationNetwork.COMPARTMENTS], compartments)
+                self.assertItemsEqual(q[MetapopulationNetwork.ATTRIBUTES], patch_attributes)
 
     def test_do(self):
         params = {NAEvent1.RP_1_KEY: 0.1, NAEvent2.RP_2_KEY: 0.2,
@@ -268,7 +268,7 @@ class PropDynamics(Dynamics):
 class PropagationTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.network = Network(compartments, patch_attributes, edge_attributes)
+        self.network = MetapopulationNetwork(compartments, patch_attributes, edge_attributes)
         self.nodes = ['a1', 'b1', 'c1']
         self.network.add_nodes_from(self.nodes)
         self.network.add_edges_from([('a1', 'b1'), ('b1', 'c1')])
@@ -296,7 +296,7 @@ class PropagationTestCase(unittest.TestCase):
             node = self.network.node[self.dynamics._active_patches[row]]
             self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
             self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
-                             node[Network.COMPARTMENTS][compartments[0]])
+                             node[MetapopulationNetwork.COMPARTMENTS][compartments[0]])
             for col in range(2, 4):
                 self.assertEqual(self.dynamics._rate_table[row][col], 0.0)
 
@@ -309,9 +309,9 @@ class PropagationTestCase(unittest.TestCase):
             node = self.network.node[self.dynamics._active_patches[row]]
             self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
             self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
-                             node[Network.COMPARTMENTS][compartments[0]])
+                             node[MetapopulationNetwork.COMPARTMENTS][compartments[0]])
             self.assertEqual(self.dynamics._rate_table[row][2], params[EventPatchAttDep.__name__] *
-                             node[Network.ATTRIBUTES][patch_attributes[0]])
+                             node[MetapopulationNetwork.ATTRIBUTES][patch_attributes[0]])
             self.assertEqual(self.dynamics._rate_table[row][3], 0.0)
 
         self.network.update_edge(self.nodes[0], self.nodes[1], {edge_attributes[0]: 11})
@@ -320,9 +320,9 @@ class PropagationTestCase(unittest.TestCase):
             node = self.network.node[self.dynamics._active_patches[row]]
             self.assertEqual(self.dynamics._rate_table[row][0], params[EventNoDep.__name__] * 1)
             self.assertEqual(self.dynamics._rate_table[row][1], params[EventPatchCompDep.__name__] *
-                             node[Network.COMPARTMENTS][compartments[0]])
+                             node[MetapopulationNetwork.COMPARTMENTS][compartments[0]])
             self.assertEqual(self.dynamics._rate_table[row][2], params[EventPatchAttDep.__name__] *
-                             node[Network.ATTRIBUTES][patch_attributes[0]])
+                             node[MetapopulationNetwork.ATTRIBUTES][patch_attributes[0]])
             val = sum([n[edge_attributes[0]] for n in self.network[self.dynamics._active_patches[row]].values()])
             self.assertEqual(self.dynamics._rate_table[row][3], params[EventEdgeAttDep.__name__] * val)
 

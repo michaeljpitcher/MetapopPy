@@ -6,6 +6,8 @@ from tbmetapoppy.events import *
 class TBDynamics(Dynamics):
     # Attribute seeding params
 
+    IC_BAC_LOCATION = 'initial_bacterial_load_location'
+    RANDOM = 'random'
     IC_BER_LOAD = 'initial_bacterial_load_replicating'
     IC_BED_LOAD = 'initial_bacterial_load_dormant'
 
@@ -140,26 +142,35 @@ class TBDynamics(Dynamics):
 
         # Compartment seeding
         for n, v in patch_seeding.iteritems():
-            self._perf_seed[n] = v[TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION]
-            v[TypedNetwork.COMPARTMENTS] = {c: int(round(self._perf_seed[n] * (lung_recruit_rates[c] / death_rates[c])))
-                                            for c in lung_recruit_rates}
+            self._perf_seed[n] = v[TypedMetapopulationNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION]
+            v[TypedMetapopulationNetwork.COMPARTMENTS] = {
+               c: int(round(self._perf_seed[n] * (lung_recruit_rates[c] / death_rates[c]))) for c in lung_recruit_rates}
 
         lymph_seed = {c: int(round((lymph_recruit_rates[c] / death_rates[c]))) for c in lymph_recruit_rates}
 
-        patch_seeding[TBPulmonaryNetwork.LYMPH_PATCH] = {TypedNetwork.COMPARTMENTS: lymph_seed}
+        patch_seeding[TBPulmonaryNetwork.LYMPH_PATCH] = {TypedMetapopulationNetwork.COMPARTMENTS: lymph_seed}
 
         # Bacteria
+        # TODO - option to hard code
         # Ventilation based - assumes sum of ventilation values = 1.0
-        r = numpy.random.random()
-        count = 0
-        for p in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH):
-            count += patch_seeding[p][TypedNetwork.ATTRIBUTES][TBPulmonaryNetwork.VENTILATION]
-            if count >= r:
-                patch_seeding[p][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING] = \
-                    params[TBDynamics.IC_BER_LOAD]
-                patch_seeding[p][TypedNetwork.COMPARTMENTS][TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT] = \
-                    params[TBDynamics.IC_BED_LOAD]
-                break
+        initial_bac_patch = None
+
+        if params[TBDynamics.IC_BAC_LOCATION] == TBDynamics.RANDOM:
+            r = numpy.random.random()
+            count = 0
+            for p in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH):
+                count += patch_seeding[p][TypedMetapopulationNetwork.ATTRIBUTES][TBPulmonaryNetwork.VENTILATION]
+                if count >= r:
+                    initial_bac_patch = p
+                    break
+        else:
+            initial_bac_patch = params[TBDynamics.IC_BAC_LOCATION]
+
+        patch_seeding[initial_bac_patch][TypedMetapopulationNetwork.COMPARTMENTS][
+                TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING] = params[TBDynamics.IC_BER_LOAD]
+        patch_seeding[initial_bac_patch][TypedMetapopulationNetwork.COMPARTMENTS][
+                TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT] = params[TBDynamics.IC_BED_LOAD]
+
         return patch_seeding
 
     def _build_network(self, params):

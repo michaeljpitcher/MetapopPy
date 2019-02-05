@@ -1,8 +1,8 @@
-from metapoppy.network import TypedNetwork
+from metapoppy.network import TypedMetapopulationNetwork
 import numpy
 
 
-class TBPulmonaryNetwork(TypedNetwork):
+class TBPulmonaryNetwork(TypedMetapopulationNetwork):
     # Patch types
     ALVEOLAR_PATCH = 'alveolar_patch'
     LYMPH_PATCH = 'lymph_patch'
@@ -61,8 +61,8 @@ class TBPulmonaryNetwork(TypedNetwork):
                                   DENDRITIC_CELL_MATURE: BACTERIUM_INTRACELLULAR_DENDRITIC}
 
     def __init__(self, network_config):
-        TypedNetwork.__init__(self, TBPulmonaryNetwork.TB_COMPARTMENTS, TBPulmonaryNetwork.PATCH_ATTRIBUTES,
-                              TBPulmonaryNetwork.EDGE_ATTRIBUTES)
+        TypedMetapopulationNetwork.__init__(self, TBPulmonaryNetwork.TB_COMPARTMENTS, TBPulmonaryNetwork.PATCH_ATTRIBUTES,
+                                            TBPulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
         self._topology = network_config[TBPulmonaryNetwork.TOPOLOGY]
@@ -202,7 +202,7 @@ class TBPulmonaryNetwork(TypedNetwork):
             perf = params[TBPulmonaryNetwork.PERFUSION]
             o2 = float(vent)/perf
             drain = params[TBPulmonaryNetwork.DRAINAGE]
-            seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedNetwork.ATTRIBUTES:
+            seeding = {TBPulmonaryNetwork.ALVEOLAR_PATCH: {TypedMetapopulationNetwork.ATTRIBUTES:
                                                                    {TBPulmonaryNetwork.VENTILATION: vent,
                                                                     TBPulmonaryNetwork.PERFUSION: perf,
                                                                     TBPulmonaryNetwork.OXYGEN_TENSION: o2,
@@ -248,25 +248,25 @@ class TBPulmonaryNetwork(TypedNetwork):
         seeding = {}
         # Normalise and assign
         for patch_id, values in temp_seeding.iteritems():
-            seeding[patch_id] = {TypedNetwork.ATTRIBUTES: {}}
+            seeding[patch_id] = {TypedMetapopulationNetwork.ATTRIBUTES: {}}
             v = values[TBPulmonaryNetwork.VENTILATION] / total_v
             q = values[TBPulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
-            seeding[patch_id][TypedNetwork.ATTRIBUTES] = {TBPulmonaryNetwork.VENTILATION: v,
-                                                          TBPulmonaryNetwork.PERFUSION: q,
-                                                          TBPulmonaryNetwork.OXYGEN_TENSION: o2,
-                                                          TBPulmonaryNetwork.DRAINAGE:
+            seeding[patch_id][TypedMetapopulationNetwork.ATTRIBUTES] = {TBPulmonaryNetwork.VENTILATION: v,
+                                                                        TBPulmonaryNetwork.PERFUSION: q,
+                                                                        TBPulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                                        TBPulmonaryNetwork.DRAINAGE:
                                                               values[TBPulmonaryNetwork.DRAINAGE]}
         return seeding
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         if (patch_id not in self._infected_patches and
-           self._node[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
+           self._node[patch_id][TypedMetapopulationNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH and
            compartment_changes and any(x in TBPulmonaryNetwork.BACTERIA for x in compartment_changes)):
             # TODO - awkward way of doing this
             self._infected_patches.append(patch_id)
-        TypedNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
-        if self._node[patch_id][TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH:
+        TypedMetapopulationNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
+        if self._node[patch_id][TypedMetapopulationNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH:
             if compartment_changes and TBPulmonaryNetwork.MACROPHAGE_INFECTED in compartment_changes:
                 self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
                         {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
@@ -276,6 +276,6 @@ class TBPulmonaryNetwork(TypedNetwork):
 
     def reset(self):
         self._infected_patches = []
-        TypedNetwork.reset(self)
+        TypedMetapopulationNetwork.reset(self)
 
 # TODO change in patch perfusion needs to feed through to edge

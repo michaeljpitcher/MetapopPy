@@ -26,8 +26,8 @@ class SIRDynamics(Epidemic):
     def _get_patch_seeding(self, params):
         seed = {}
         for n in self.network().nodes():
-            seed[n] = {TypedNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SIRDynamics.INIT_S],
-                                                  INFECTIOUS: params[SIRDynamics.INIT_I]}}
+            seed[n] = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SIRDynamics.INIT_S],
+                                                                 INFECTIOUS: params[SIRDynamics.INIT_I]}}
         return seed
 
     def _get_edge_seeding(self, params):
