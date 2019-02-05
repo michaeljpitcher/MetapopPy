@@ -125,14 +125,14 @@ class Dynamics(epyc.Experiment, object):
         """
         epyc.Experiment.configure(self, params)
 
-        #  If a prototype has been provided (and hasn't already been set as the network i.e. first configure)
-        if self._prototype_network and not self._network:
-            self._network = self._prototype_network
         # No prototype provided so we must build a new network from the parameters
-        elif not self._prototype_network:
+        if not self._prototype_network:
             self._network = self._build_network(params)
+        #  If a prototype has been provided and hasn't been set yet
+        elif not self._network:
+            self._network = self._prototype_network
 
-        assert isinstance(self._network, Network), "Graph must be instance of MetapopPy Network class"
+        assert isinstance(self._network, MetapopulationNetwork), "Graph must be instance of MetapopPy Network class"
         assert self._network.nodes(), "Empty network is invalid"
 
         # Attach the update handler to the network
@@ -179,12 +179,12 @@ class Dynamics(epyc.Experiment, object):
             # Patch has a seeding
             if n in self._patch_seeding:
                 seed = self._patch_seeding[n]
-                if Network.COMPARTMENTS in seed:
-                    comp_seed = seed[Network.COMPARTMENTS]
+                if MetapopulationNetwork.COMPARTMENTS in seed:
+                    comp_seed = seed[MetapopulationNetwork.COMPARTMENTS]
                 else:
                     comp_seed = {}
-                if Network.ATTRIBUTES in seed:
-                    att_seed = seed[Network.ATTRIBUTES]
+                if MetapopulationNetwork.ATTRIBUTES in seed:
+                    att_seed = seed[MetapopulationNetwork.ATTRIBUTES]
                 else:
                     att_seed = {}
                 self._network.update_patch(n, comp_seed, att_seed)

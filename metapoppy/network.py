@@ -1,7 +1,7 @@
 import networkx
 
 
-class Network(networkx.Graph):
+class MetapopulationNetwork(networkx.Graph):
     """
     A MetapopPy network. Extends networkX graph, adding data for patch subpopulations and environmental attributes.
     """
@@ -67,8 +67,8 @@ class Network(networkx.Graph):
         Reset all patches to zero population and attribute values.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
-                                                TypedNetwork.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
+        networkx.set_node_attributes(self, {n: {TypedMetapopulationNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
+                                                TypedMetapopulationNetwork.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
                                             for n in self.nodes})
 
     def _reset_edges(self):
@@ -86,10 +86,10 @@ class Network(networkx.Graph):
         :return:
         """
         if isinstance(compartment, list):
-            data = self._node[patch_id][Network.COMPARTMENTS]
+            data = self._node[patch_id][MetapopulationNetwork.COMPARTMENTS]
             return sum([data[c] for c in compartment])
         else:
-            return self._node[patch_id][Network.COMPARTMENTS][compartment]
+            return self._node[patch_id][MetapopulationNetwork.COMPARTMENTS][compartment]
 
     def get_attribute_value(self, patch_id, attribute):
         """
@@ -99,10 +99,10 @@ class Network(networkx.Graph):
         :return:
         """
         if isinstance(attribute, list):
-            data = self._node[patch_id][Network.ATTRIBUTES]
+            data = self._node[patch_id][MetapopulationNetwork.ATTRIBUTES]
             return sum([data[c] for c in attribute])
         else:
-            return self._node[patch_id][Network.ATTRIBUTES][attribute]
+            return self._node[patch_id][MetapopulationNetwork.ATTRIBUTES][attribute]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         """
@@ -116,12 +116,12 @@ class Network(networkx.Graph):
         patch_data = self._node[patch_id]
         if compartment_changes:
             for comp, change in compartment_changes.iteritems():
-                patch_data[Network.COMPARTMENTS][comp] += change
-                assert patch_data[Network.COMPARTMENTS][comp] >= 0, \
+                patch_data[MetapopulationNetwork.COMPARTMENTS][comp] += change
+                assert patch_data[MetapopulationNetwork.COMPARTMENTS][comp] >= 0, \
                     "Compartment {0} cannot drop below zero".format(comp)
         if attribute_changes:
             for attr, change in attribute_changes.iteritems():
-                patch_data[Network.ATTRIBUTES][attr] += change
+                patch_data[MetapopulationNetwork.ATTRIBUTES][attr] += change
         # Propagate the changes
         if self._patch_handler:
             if not compartment_changes:
@@ -146,7 +146,7 @@ class Network(networkx.Graph):
             self._edge_handler(u, v, attribute_changes.keys())
 
 
-class TypedNetwork(Network):
+class TypedMetapopulationNetwork(MetapopulationNetwork):
     """
     A MetapopPy network where patches are assigned a "type", which can be used to restrict which dynamics occurs there.
     """
@@ -166,8 +166,8 @@ class TypedNetwork(Network):
         all_patch_attributes = []
         for a in patch_attributes_by_type.values():
             all_patch_attributes += a
-        all_patch_attributes.append(TypedNetwork.PATCH_TYPE)
-        Network.__init__(self, compartments, all_patch_attributes, edge_attributes)
+        all_patch_attributes.append(TypedMetapopulationNetwork.PATCH_TYPE)
+        MetapopulationNetwork.__init__(self, compartments, all_patch_attributes, edge_attributes)
         self._patch_types = {}
 
     def set_patch_type(self, patch_id, patch_type):
@@ -177,7 +177,7 @@ class TypedNetwork(Network):
         :param patch_type:
         :return:
         """
-        self._node[patch_id][TypedNetwork.PATCH_TYPE] = patch_type
+        self._node[patch_id][TypedMetapopulationNetwork.PATCH_TYPE] = patch_type
         if patch_type not in self._patch_types:
             self._patch_types[patch_type] = []
         self._patch_types[patch_type].append(patch_id)
@@ -204,8 +204,8 @@ class TypedNetwork(Network):
         type are applied.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedNetwork.PATCH_TYPE: self._node[n][TypedNetwork.PATCH_TYPE],
-                                                TypedNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
-                                                TypedNetwork.ATTRIBUTES: {a: 0 for a in
-                                                    self._attribute_by_type[self._node[n][TypedNetwork.PATCH_TYPE]]}}
+        networkx.set_node_attributes(self, {n: {TypedMetapopulationNetwork.PATCH_TYPE: self._node[n][TypedMetapopulationNetwork.PATCH_TYPE],
+                                                TypedMetapopulationNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
+                                                TypedMetapopulationNetwork.ATTRIBUTES: {a: 0 for a in
+                                                                                        self._attribute_by_type[self._node[n][TypedMetapopulationNetwork.PATCH_TYPE]]}}
                                             for n in self.nodes})
