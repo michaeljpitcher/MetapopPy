@@ -67,7 +67,50 @@ class TranslocationLungToLymphTestCase(unittest.TestCase):
 
 class TranslocationLymphToLungTestCase(unittest.TestCase):
     def setUp(self):
-        self.event = TranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        self.event = TranslocationLymphToLung(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
+        self.params = {'b_ed_translocation_from_lymph_patch_rate': 0.1}
+        self.event.set_parameters(self.params)
+
+        self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
+        for n in range(5):
+            self.network.add_edge(n, TBPulmonaryNetwork.LYMPH_PATCH)
+            self.network.set_patch_type(n, TBPulmonaryNetwork.ALVEOLAR_PATCH)
+        self.network.set_patch_type(TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.LYMPH_PATCH)
+        self.network.reset()
+
+    def test_rate(self):
+        # No bac
+        self.assertFalse(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH))
+
+        # Bac
+        self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH,
+                                  {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 13})
+        self.assertEqual(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH),
+                         self.params['b_ed_translocation_from_lymph_patch_rate'] * 13)
+
+
+    def test_perform(self):
+        for n in range(5):
+            self.network.update_patch(n, attribute_changes={TBPulmonaryNetwork.PERFUSION: n+0.5})
+
+        total = 10000
+        self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH,
+                                  {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: total})
+
+        for n in range(total):
+            self.event.perform(self.network, TBPulmonaryNetwork.LYMPH_PATCH)
+        self.assertEqual(sum([self.network.get_compartment_value(n, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT) for n in range(5)]), total)
+        # TODO - random involved so may fail
+        self.assertTrue(self.network.get_compartment_value(0, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT) <
+                        self.network.get_compartment_value(1, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT) <
+                        self.network.get_compartment_value(2, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT) <
+                        self.network.get_compartment_value(3, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT) <
+                        self.network.get_compartment_value(4, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT))
+
+
+class TranslocationLymphToLungCytokineDrivenTestCase(unittest.TestCase):
+    def setUp(self):
+        self.event = TranslocationLymphToLungCytokineDriven(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         self.params = {'t_a_translocation_from_lymph_patch_rate': 0.1,
                        't_a_translocation_from_lymph_patch_sigmoid': 2}
         self.event.set_parameters(self.params)

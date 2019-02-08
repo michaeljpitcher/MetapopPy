@@ -61,8 +61,8 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
                                   DENDRITIC_CELL_MATURE: BACTERIUM_INTRACELLULAR_DENDRITIC}
 
     def __init__(self, network_config):
-        TypedMetapopulationNetwork.__init__(self, TBPulmonaryNetwork.TB_COMPARTMENTS, TBPulmonaryNetwork.PATCH_ATTRIBUTES,
-                                            TBPulmonaryNetwork.EDGE_ATTRIBUTES)
+        TypedMetapopulationNetwork.__init__(self, TBPulmonaryNetwork.TB_COMPARTMENTS,
+                                            TBPulmonaryNetwork.PATCH_ATTRIBUTES, TBPulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
         self._topology = network_config[TBPulmonaryNetwork.TOPOLOGY]

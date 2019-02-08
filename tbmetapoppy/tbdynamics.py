@@ -116,7 +116,7 @@ class TBDynamics(Dynamics):
 
         # T-cell translocation
         # ta_translocation = TCellTranslocationToLungByInfection()
-        ta_translocation = TranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        ta_translocation = TranslocationLymphToLungCytokineDriven(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         events.append(ta_translocation)
 
         # T-cell death
