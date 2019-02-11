@@ -41,9 +41,9 @@ class TBDynamics(Dynamics):
         ber_to_bed = BacteriumChangeStateThroughOxygen(True)
         events += [bed_to_ber, ber_to_bed]
 
-        # TODO - bacterial translocation
-        # bed_translocation = TranslocationLymphToLung(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
-        # events.append(bed_translocation)
+        # Bacterial translocation - lymph to lung
+        bed_translocation = TranslocationLymphToLung(TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
+        events.append(bed_translocation)
 
         # Dendritic cell recruitment
         dc_recruit_lung = StandardCellRecruitmentLung(TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE)
@@ -151,7 +151,6 @@ class TBDynamics(Dynamics):
         patch_seeding[TBPulmonaryNetwork.LYMPH_PATCH] = {TypedMetapopulationNetwork.COMPARTMENTS: lymph_seed}
 
         # Bacteria
-        # TODO - option to hard code
         # Ventilation based - assumes sum of ventilation values = 1.0
         initial_bac_patch = None
 
@@ -177,10 +176,7 @@ class TBDynamics(Dynamics):
         pass
 
     def _get_edge_seeding(self, params):
-        seeding = {}
-        # for n, v in self._network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH, data=True):
-        #     seeding[(n, TBPulmonaryNetwork.LYMPH_PATCH)] = {TBPulmonaryNetwork.PERFUSION: self._perf_seed[n]}
-        return seeding
+        pass
 
     def _patch_is_active(self, patch_id):
         """
@@ -190,4 +186,4 @@ class TBDynamics(Dynamics):
         :return:
         """
         return patch_id == TBPulmonaryNetwork.LYMPH_PATCH or \
-               sum([self._network.get_compartment_value(patch_id, n) for n in TBPulmonaryNetwork.BACTERIA]) > 0
+            sum([self._network.get_compartment_value(patch_id, n) for n in TBPulmonaryNetwork.BACTERIA]) > 0
