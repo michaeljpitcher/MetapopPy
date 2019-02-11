@@ -177,7 +177,7 @@ class Dynamics(epyc.Experiment, object):
 
         for n in self._network.nodes:
             # Patch has a seeding
-            if n in self._patch_seeding:
+            if self._patch_seeding and n in self._patch_seeding:
                 seed = self._patch_seeding[n]
                 if MetapopulationNetwork.COMPARTMENTS in seed:
                     comp_seed = seed[MetapopulationNetwork.COMPARTMENTS]
@@ -192,8 +192,9 @@ class Dynamics(epyc.Experiment, object):
             elif self._patch_is_active(n):
                 self._activate_patch(n)
 
-        for (u, v), seed in self._edge_seeding.iteritems():
-            self._network.update_edge(u, v, seed)
+        if self._edge_seeding:
+            for (u, v), seed in self._edge_seeding.iteritems():
+                self._network.update_edge(u, v, seed)
 
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
