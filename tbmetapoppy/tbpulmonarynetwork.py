@@ -256,7 +256,7 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
                                                                         TBPulmonaryNetwork.PERFUSION: q,
                                                                         TBPulmonaryNetwork.OXYGEN_TENSION: o2,
                                                                         TBPulmonaryNetwork.DRAINAGE:
-                                                              values[TBPulmonaryNetwork.DRAINAGE]}
+                                                                        values[TBPulmonaryNetwork.DRAINAGE]}
         return seeding
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
@@ -277,5 +277,3 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
     def reset(self):
         self._infected_patches = []
         TypedMetapopulationNetwork.reset(self)
-
-# TODO change in patch perfusion needs to feed through to edge
