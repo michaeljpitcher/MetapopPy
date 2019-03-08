@@ -122,7 +122,8 @@ class TCellDestroysMacrophageTestCase(unittest.TestCase):
 
     def setUp(self):
         self.event = TCellDestroysMacrophage()
-        self.params = {'t_cell_destroys_macrophage_rate': 0.1, 't_cell_destroys_macrophage_half_sat': 25, 't_cell_destroys_macrophage_percentage_bacteria_destroyed': 0.5}
+        self.params = {'t_cell_destroys_macrophage_rate': 0.1, 't_cell_destroys_macrophage_half_sat': 25,
+                       't_cell_destroys_macrophage_percentage_bacteria_destroyed': 0.5}
         self.event.set_parameters(self.params)
         self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
         self.network.add_node(1)
@@ -133,29 +134,8 @@ class TCellDestroysMacrophageTestCase(unittest.TestCase):
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
         self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_INFECTED: 3, TBPulmonaryNetwork.T_CELL_ACTIVATED: 7})
         self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, 1),
-                               self.params['t_cell_destroys_macrophage_rate'] * 3.0 * 7.0 / (7 + self.params['t_cell_destroys_macrophage_half_sat']))
-
-
-class MacrophageDestroysBacteriumTestCase(unittest.TestCase):
-
-    def setUp(self):
-        self.event = MacrophageDestroysBacterium(TBPulmonaryNetwork.MACROPHAGE_RESTING)
-        self.params = {'m_r_destroys_bacterium_rate': 0.1, 'm_r_destroys_bacterium_half_sat': 100}
-        self.event.set_parameters(self.params)
-        self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
-        self.network.add_node(1)
-        self.network.set_patch_type(1, TBPulmonaryNetwork.LYMPH_PATCH)
-        self.network.reset()
-
-    def test_rate(self):
-        self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
-        self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_RESTING: 3,
-                                      TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 7})
-        self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, 1),
-                         self.params['m_r_destroys_bacterium_rate'] * 3.0 * 7.0 / (7 + self.params['m_r_destroys_bacterium_half_sat']))
-        self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 11})
-        self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1),
-                         self.params['m_r_destroys_bacterium_rate'] * 3.0 * 18.0 / (18 + self.params['m_r_destroys_bacterium_half_sat']))
+                               self.params['t_cell_destroys_macrophage_rate'] * 3.0 * 7.0 /
+                               (7 + self.params['t_cell_destroys_macrophage_half_sat']))
 
 
 if __name__ == '__main__':
