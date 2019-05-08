@@ -1,7 +1,6 @@
 from ..tbpulmonarynetwork import TBPulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
 from parameters import RATE, SIGMOID, HALF_SAT
-# TODO - more advanced dormancy dynamics
 
 
 class BacteriumChangeStateThroughOxygen(PatchTypeEvent):

@@ -8,6 +8,7 @@ class MetapopulationNetwork(networkx.Graph):
 
     COMPARTMENTS = 'compartments'
     ATTRIBUTES = 'attributes'
+    POSITION = 'position'
 
     def __init__(self, compartments, patch_attributes, edge_attributes, template=None):
         """
@@ -204,8 +205,11 @@ class TypedMetapopulationNetwork(MetapopulationNetwork):
         type are applied.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedMetapopulationNetwork.PATCH_TYPE: self._node[n][TypedMetapopulationNetwork.PATCH_TYPE],
-                                                TypedMetapopulationNetwork.COMPARTMENTS: {c: 0 for c in self._compartments},
-                                                TypedMetapopulationNetwork.ATTRIBUTES: {a: 0 for a in
-                                                                                        self._attribute_by_type[self._node[n][TypedMetapopulationNetwork.PATCH_TYPE]]}}
+        networkx.set_node_attributes(self, {n: {TypedMetapopulationNetwork.PATCH_TYPE:
+                                                    self._node[n][TypedMetapopulationNetwork.PATCH_TYPE],
+                                                TypedMetapopulationNetwork.COMPARTMENTS:
+                                                    {c: 0 for c in self._compartments},
+                                                TypedMetapopulationNetwork.ATTRIBUTES:
+                                                    {a: 0 for a in self._attribute_by_type[self._node[n]
+                                                     [TypedMetapopulationNetwork.PATCH_TYPE]]}}
                                             for n in self.nodes})
