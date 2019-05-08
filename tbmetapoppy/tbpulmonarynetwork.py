@@ -1,5 +1,6 @@
 from metapoppy.network import TypedMetapopulationNetwork
 import numpy
+import ConfigParser
 
 
 class TBPulmonaryNetwork(TypedMetapopulationNetwork):
@@ -75,7 +76,33 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
             self._y_max = max(ys)
             y_min = min(ys)
             self._y_range = self._y_max - y_min
+
         self._infected_patches = []
+
+    def output_positions(self, filename):
+        cp = ConfigParser.ConfigParser()
+        cp.add_section(TypedMetapopulationNetwork.POSITION)
+
+        minx = maxx = miny = maxy = None
+        for n, v in self._alveolar_positions.iteritems():
+            if not minx:
+                minx = v[0]
+                maxx = v[0]
+                miny = v[1]
+                maxy = v[1]
+            else:
+                minx = min(minx, v[0])
+                maxx = max(maxx, v[0])
+                miny = min(miny, v[1])
+                maxy = max(maxy, v[1])
+
+            cp.set(TypedMetapopulationNetwork.POSITION, str(n), str(v)[1:-1])
+
+        cp.set(TypedMetapopulationNetwork.POSITION, TBPulmonaryNetwork.LYMPH_PATCH,
+               str(maxx + (maxx-minx)/2.0) + ',' + str(miny + (maxy-miny)/2.0))
+
+        with open(filename, 'w') as file_pos:
+            cp.write(file_pos)
 
     def infected_patches(self):
         return self._infected_patches
@@ -95,6 +122,7 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
     def _build_2d_space_filling_tree(self, network_config):
         boundary = network_config[TBPulmonaryNetwork.BOUNDARY]
         if isinstance(boundary, str):
+            # TODO - unnecessary removal of brackets - just don't include in the first place
             boundary = [[float(a) for a in n[1:-1].split(",")] for n in boundary.split(":")]
         length_divisor = float(network_config[TBPulmonaryNetwork.LENGTH_DIVISOR])
         minimum_area = float(network_config[TBPulmonaryNetwork.MINIMUM_AREA])
@@ -267,9 +295,9 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
             self._infected_patches.append(patch_id)
         TypedMetapopulationNetwork.update_patch(self, patch_id, compartment_changes, attribute_changes)
         if self._node[patch_id][TypedMetapopulationNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH:
-            if compartment_changes and TBPulmonaryNetwork.MACROPHAGE_INFECTED in compartment_changes:
-                self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
-                        {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
+            # if compartment_changes and TBPulmonaryNetwork.MACROPHAGE_INFECTED in compartment_changes:
+            #     self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
+            #             {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
             if attribute_changes and TBPulmonaryNetwork.PERFUSION in attribute_changes:
                 self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
                                  {TBPulmonaryNetwork.PERFUSION: attribute_changes[TBPulmonaryNetwork.PERFUSION]})
