@@ -1,6 +1,6 @@
 from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
 from metapoppy.event import PatchTypeEvent
-from parameters import RATE, SIGMOID
+from parameters import RATE, SIGMOID, HALF_SAT
 import numpy
 
 
@@ -8,9 +8,12 @@ class Translocation(PatchTypeEvent):
 
     TRANSLOCATION_KEY = '_translocation_from_'
 
-    def __init__(self, patch_type, cell_type):
+    def __init__(self, patch_type, cell_type, influencing_comps=None):
         self._moving_compartment = cell_type
-        PatchTypeEvent.__init__(self, patch_type, [cell_type], [], [])
+        dep_comps = [cell_type]
+        if influencing_comps:
+            dep_comps += influencing_comps
+        PatchTypeEvent.__init__(self, patch_type, dep_comps, [], [])
         if cell_type in TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL:
             self._internal_compartment = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[cell_type]
         else:
@@ -66,7 +69,7 @@ class TranslocationLymphToLung(Translocation):
         return network.get_compartment_value(patch_id, self._moving_compartment)
 
     def _choose_neighbour(self, network, patch_id):
-        # Choosing based on infection and perfusion
+        # Choosing based on perfusion
         edges = network[patch_id]
         neighbours = []
         vals = []
@@ -77,42 +80,57 @@ class TranslocationLymphToLung(Translocation):
             vals.append(val)
             total += val
         # Choose a neighbour based on the values
-        return neighbours[numpy.random.choice(range(len(neighbours)), p=numpy.array(vals)/total)]
+        n = neighbours[numpy.random.choice(range(len(neighbours)), p=numpy.array(vals)/total)]
+        return n
 
 
-class TranslocationLymphToLungCytokineDriven(Translocation):
+class TCellTranslocationLymphToLung(Translocation):
     def __init__(self, cell_type):
-        Translocation.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type)
+        Translocation.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type,
+                               [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
 
     def _define_parameter_keys(self):
         self._sigmoid_key = self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + SIGMOID
-        return self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + RATE, [self._sigmoid_key]
+        self._half_sat_key = self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + HALF_SAT
+        return self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + RATE, \
+               [self._sigmoid_key, self._half_sat_key]
+
+    # def _calculate_state_variable_at_patch(self, network, patch_id):
+    #     cells = network.get_compartment_value(patch_id, self._moving_compartment)
+    #     if not cells:
+    #         return 0
+    #     infected_patches = network.infected_patches()
+    #     cytokine_count_lung = sum([network.get_edge_data(patch_id, n)[TBPulmonaryNetwork.CYTOKINE] for n in
+    #                                infected_patches])
+    #     cytokine_count_lymph = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
+    #     # Catch to avoid / 0 errors
+    #     if not cytokine_count_lymph and not cytokine_count_lung:
+    #         return 0
+    #     return cells * (float(cytokine_count_lung) ** self._parameters[self._sigmoid_key] /
+    #             (cytokine_count_lung ** self._parameters[self._sigmoid_key] +
+    #              cytokine_count_lymph ** self._parameters[self._sigmoid_key]))
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         cells = network.get_compartment_value(patch_id, self._moving_compartment)
         if not cells:
             return 0
-        infected_patches = network.infected_patches()
-        cytokine_count_lung = sum([network.get_edge_data(patch_id, n)[TBPulmonaryNetwork.CYTOKINE] for n in
-                                   infected_patches])
-        cytokine_count_lymph = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
+        dm = network.get_compartment_value(patch_id, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
         # Catch to avoid / 0 errors
-        if not cytokine_count_lymph and not cytokine_count_lung:
+        if not dm:
             return 0
-        return cells * (float(cytokine_count_lung) ** self._parameters[self._sigmoid_key] /
-                (cytokine_count_lung ** self._parameters[self._sigmoid_key] +
-                 cytokine_count_lymph ** self._parameters[self._sigmoid_key]))
+        sig = self._parameters[self._sigmoid_key]
+        return cells * (float(dm)**sig / (dm**sig + self._parameters[self._half_sat_key]**sig))
 
     def _choose_neighbour(self, network, patch_id):
         # Choosing based on infection and perfusion
         infected_patches = network.infected_patches()
-        edges = {n: network.get_edge_data(patch_id, n) for n in infected_patches}
+        edges = {n: network[patch_id][n][TBPulmonaryNetwork.PERFUSION] for n in infected_patches}
         neighbours = []
         vals = []
         total = 0
         for k,v in edges.iteritems():
             neighbours.append(k)
-            val = v[TBPulmonaryNetwork.CYTOKINE] * v[TBPulmonaryNetwork.PERFUSION]
+            val = network.get_compartment_value(k, TBPulmonaryNetwork.MACROPHAGE_INFECTED) * v
             vals.append(val)
             total += val
         # Choose a neighbour based on the values
