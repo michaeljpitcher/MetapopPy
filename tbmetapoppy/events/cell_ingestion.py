@@ -39,10 +39,16 @@ class CellIngestBacterium(Event):
         dormant = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
         total_bacteria = replicating + dormant
 
-        prob = numpy.array([replicating, dormant], dtype=numpy.dtype('float')) / total_bacteria
-        bacteria_type_chosen = numpy.random.choice([TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING,
-                                                    TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT],
-                                               p=prob)
+        r = numpy.random.random() * total_bacteria
+        if r < replicating:
+            bacteria_type_chosen = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
+        else:
+            bacteria_type_chosen = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
+
+        # prob = numpy.array([replicating, dormant], dtype=numpy.dtype('float')) / total_bacteria
+        # bacteria_type_chosen = numpy.random.choice([TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING,
+        #                                             TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT],
+        #                                        p=prob)
 
         r2 = numpy.random.random()
         if r2 < self._parameters[self._infection_prob_key]:
