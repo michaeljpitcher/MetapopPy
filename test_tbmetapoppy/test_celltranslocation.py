@@ -110,7 +110,7 @@ class TranslocationLymphToLungTestCase(unittest.TestCase):
 
 class TranslocationLymphToLungCytokineDrivenTestCase(unittest.TestCase):
     def setUp(self):
-        self.event = TranslocationLymphToLungCytokineDriven(TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        self.event = TCellTranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         self.params = {'t_a_translocation_from_lymph_patch_rate': 0.1,
                        't_a_translocation_from_lymph_patch_sigmoid': 2}
         self.event.set_parameters(self.params)

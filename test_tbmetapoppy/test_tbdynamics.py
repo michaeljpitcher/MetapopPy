@@ -116,7 +116,7 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertItemsEqual(tc_act[0]._triggers, [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
 
         # T-cell translocation
-        tc_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLymphToLungCytokineDriven) and
+        tc_transl = [e for e in self.dynamics._events if isinstance(e, TCellTranslocationLymphToLung) and
                      e._moving_compartment == TBPulmonaryNetwork.T_CELL_ACTIVATED]
         self.assertEqual(len(tc_transl), 1)
 

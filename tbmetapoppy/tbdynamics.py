@@ -22,6 +22,9 @@ class TBDynamics(Dynamics):
         pulmonary_network = TBPulmonaryNetwork(network_config)
         Dynamics.__init__(self, pulmonary_network)
 
+    def output_positions(self, filename):
+        self._prototype_network.output_positions(filename)
+
     def _create_events(self):
         """
         Create all TB related events, and assign relevant parameters to them
@@ -116,7 +119,7 @@ class TBDynamics(Dynamics):
 
         # T-cell translocation
         # ta_translocation = TCellTranslocationToLungByInfection()
-        ta_translocation = TranslocationLymphToLungCytokineDriven(TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        ta_translocation = TCellTranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         events.append(ta_translocation)
 
         # T-cell death
