@@ -1,5 +1,6 @@
 import unittest
 from tbmetapoppy import *
+import ConfigParser
 
 
 class TBDynamicsTestCase(unittest.TestCase):
@@ -131,7 +132,7 @@ class TBDynamicsTestCase(unittest.TestCase):
     def test_configure_setUp_run(self):
 
         # Assign random param values
-        params = {p: numpy.random.random() for p in self.dynamics.required_event_parameters()}
+        params = {}
 
         params[TBPulmonaryNetwork.VENTILATION_SKEW] = 1.1
         params[TBPulmonaryNetwork.PERFUSION_SKEW] = 2.2
@@ -141,35 +142,24 @@ class TBDynamicsTestCase(unittest.TestCase):
         params[TBDynamics.IC_BER_LOAD] = 1
         params[TBDynamics.IC_BED_LOAD] = 2
 
-        self.dynamics.configure(params)
+        # Import config file
+        config = ConfigParser.ConfigParser()
+        config.read('test_config.ini')
 
-        # Set Up
-        self.dynamics.setUp(params)
+        # Assign parameters to the experiment
+        for section in ['Event_Parameters', 'Network_Parameters', 'Initial_Conditions']:
+            for k, v in config.items(section):
+                # try to split the value by ",", if no "," exist, then it's just one value so use that value
+                param = v.split(",")
+                if len(param) == 1:
+                    params[k] = float(v)
+                else:
+                    raise Exception("Invalid parameter format: {0}".format(v))
 
-        # Test seed by rates
-
-        # mr_recruit_rate = params[]
-        #
-        # for p, v in self.dynamics.network().nodes(data=True):
-        #     if v[TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.ALVEOLAR_PATCH:
-        #         # TODO test pul atts
-        #         pass
-        #         # Test comp seed
-        #         self.assertEqual(v[TBPulmonaryNetwork.COMPARTMENTS][TBPulmonaryNetwork.MACROPHAGE_RESTING],
-        #                          int(round(v[TBPulmonaryNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION] *
-        #                                    (params[?]) / params[TBDynamics.RP_MR_DEATH])))
-        #         self.assertEqual(v[TBPulmonaryNetwork.COMPARTMENTS][TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE],
-        #                          int(round(v[TBPulmonaryNetwork.ATTRIBUTES][TBPulmonaryNetwork.PERFUSION] *
-        #                                    (params[TBDynamics.RP_DCI_RECRUITMENT]) / params[TBDynamics.RP_DCI_DEATH])))
-        #     elif v[TypedNetwork.PATCH_TYPE] == TBPulmonaryNetwork.LYMPH_PATCH:
-        #         self.assertEqual(v[TBPulmonaryNetwork.COMPARTMENTS][TBPulmonaryNetwork.T_CELL_NAIVE],
-        #                          int(round(params[TBDynamics.RP_TN_RECRUIT] / params[TBDynamics.RP_TN_DEATH])))
-        #     else:
-        #         raise Exception
-
-        # Do
         self.dynamics.set_maximum_time(10)
-        self.dynamics.do(params)
+
+        self.dynamics.set(params)
+        self.dynamics.run()
 
 
 if __name__ == '__main__':

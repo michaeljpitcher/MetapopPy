@@ -31,7 +31,8 @@ class PulmonaryNetworkTestCase(unittest.TestCase):
     def test_pulmonary_attribute_seeding(self):
         params = {TBPulmonaryNetwork.VENTILATION_SKEW: 3.5, TBPulmonaryNetwork.PERFUSION_SKEW: 3,
                   TBPulmonaryNetwork.DRAINAGE_SKEW: 2}
-        seeding = self.tree_network.get_pulmonary_att_seeding(params)
+        self.tree_network.calculate_pulmonary_attribute_values(params)
+        seeding = self.tree_network._pulmonary_att_seeding
 
         alv_patch_ids = self.tree_network.get_patches_by_type(TBPulmonaryNetwork.ALVEOLAR_PATCH)
 

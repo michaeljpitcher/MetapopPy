@@ -108,11 +108,12 @@ class TranslocationLymphToLungTestCase(unittest.TestCase):
                         self.network.get_compartment_value(4, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT))
 
 
-class TranslocationLymphToLungCytokineDrivenTestCase(unittest.TestCase):
+class TCellTranslocationLymphToLungTestCase(unittest.TestCase):
     def setUp(self):
         self.event = TCellTranslocationLymphToLung(TBPulmonaryNetwork.T_CELL_ACTIVATED)
         self.params = {'t_a_translocation_from_lymph_patch_rate': 0.1,
-                       't_a_translocation_from_lymph_patch_sigmoid': 2}
+                       't_a_translocation_from_lymph_patch_sigmoid': 2,
+                       't_a_translocation_from_lymph_patch_half_sat': 10}
         self.event.set_parameters(self.params)
 
         self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
@@ -126,34 +127,30 @@ class TranslocationLymphToLungCytokineDrivenTestCase(unittest.TestCase):
         # No t-cells
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH))
 
-        # Inf in lung, no t-cells
+        # No t-cells
         self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_INFECTED: 1})
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH))
 
-        # T-cells, no lung inf
-        self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_INFECTED: -1})
+        # T-cells, no DC
         self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.T_CELL_ACTIVATED: 7})
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH))
 
-        # T-cells, lung inf, no lymph inf
-        self.network.update_patch(1, {TBPulmonaryNetwork.MACROPHAGE_INFECTED: 13,
-                                      TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE: 13})
-        self.assertEqual(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH),
-                         self.params['t_a_translocation_from_lymph_patch_rate'] * 7.0)
-        no_lym_inf = self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH)
-
-        # T-cells, lung inf, lymph inf
-        self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.MACROPHAGE_INFECTED: 5,
-                                                                   TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE: 5})
+        # T-cells, DC
+        self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.DENDRITIC_CELL_MATURE: 13})
         self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH),
                          self.params['t_a_translocation_from_lymph_patch_rate'] * 7.0 *
-                               (13.0 ** self.params['t_a_translocation_from_lymph_patch_sigmoid'] /
-                                (13.0 ** self.params['t_a_translocation_from_lymph_patch_sigmoid'] +
-                                 5.0 ** self.params['t_a_translocation_from_lymph_patch_sigmoid'])))
-        lym_inf = self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH)
+                         ((13.0)**self.params['t_a_translocation_from_lymph_patch_sigmoid'])/
+                         ((13.0)**self.params['t_a_translocation_from_lymph_patch_sigmoid'] +
+                          self.params['t_a_translocation_from_lymph_patch_half_sat']**
+                          self.params['t_a_translocation_from_lymph_patch_sigmoid']))
 
-        # Rate drops when lymph infection
-        self.assertTrue(no_lym_inf > lym_inf)
+        self.network.update_patch(TBPulmonaryNetwork.LYMPH_PATCH, {TBPulmonaryNetwork.DENDRITIC_CELL_MATURE: 6})
+        self.assertAlmostEqual(self.event.calculate_rate_at_patch(self.network, TBPulmonaryNetwork.LYMPH_PATCH),
+                         self.params['t_a_translocation_from_lymph_patch_rate'] * 7.0 *
+                         ((19.0) ** self.params['t_a_translocation_from_lymph_patch_sigmoid']) /
+                         ((19.0) ** self.params['t_a_translocation_from_lymph_patch_sigmoid'] +
+                           self.params['t_a_translocation_from_lymph_patch_half_sat']**
+                           self.params['t_a_translocation_from_lymph_patch_sigmoid']))
 
     def test_perform(self):
         total = 1000

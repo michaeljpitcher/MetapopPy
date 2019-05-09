@@ -28,12 +28,12 @@ class SEIRDynamics(Epidemic):
     def _build_network(self, params):
         raise NotImplementedError
 
-    def _get_patch_seeding(self, params):
+    def _get_initial_patch_seeding(self, params):
         seed = {}
         for n in self.network().nodes():
             seed[n] = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SEIRDynamics.INIT_S],
                                                                  INFECTIOUS: params[SEIRDynamics.INIT_I]}}
         return seed
 
-    def _get_edge_seeding(self, params):
+    def _get_initial_edge_seeding(self, params):
         return {}

@@ -66,6 +66,7 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
                                             TBPulmonaryNetwork.PATCH_ATTRIBUTES, TBPulmonaryNetwork.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
+        self._pulmonary_att_seeding = {}
         self._topology = network_config[TBPulmonaryNetwork.TOPOLOGY]
         if self._topology == TBPulmonaryNetwork.SINGLE_PATCH:
             self._build_single_patch_network()
@@ -218,9 +219,9 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
             self.add_edge(TBPulmonaryNetwork.LYMPH_PATCH, index)
             index += 1
 
-    def get_pulmonary_att_seeding(self, params):
+    def calculate_pulmonary_attribute_values(self, params):
         """
-        Set the initial values for pulmonary attributes
+        Calculate the initial values for pulmonary attributes - to be set when a patch becomes active
         :param params:
         :return:
         """
@@ -235,6 +236,7 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
                                                                     TBPulmonaryNetwork.PERFUSION: perf,
                                                                     TBPulmonaryNetwork.OXYGEN_TENSION: o2,
                                                                     TBPulmonaryNetwork.DRAINAGE: drain}}}
+            self._pulmonary_att_seeding = seeding
             return seeding
 
         ventilation_skew = params[TBPulmonaryNetwork.VENTILATION_SKEW]
@@ -273,19 +275,21 @@ class TBPulmonaryNetwork(TypedMetapopulationNetwork):
                                    TBPulmonaryNetwork.PERFUSION: perf_value,
                                    TBPulmonaryNetwork.DRAINAGE: drain_value}
 
-        seeding = {}
+        self._pulmonary_att_seeding = {}
         # Normalise and assign
         for patch_id, values in temp_seeding.iteritems():
-            seeding[patch_id] = {TypedMetapopulationNetwork.ATTRIBUTES: {}}
+            self._pulmonary_att_seeding[patch_id] = {TypedMetapopulationNetwork.ATTRIBUTES: {}}
             v = values[TBPulmonaryNetwork.VENTILATION] / total_v
             q = values[TBPulmonaryNetwork.PERFUSION] / total_q
             o2 = v / q
-            seeding[patch_id][TypedMetapopulationNetwork.ATTRIBUTES] = {TBPulmonaryNetwork.VENTILATION: v,
-                                                                        TBPulmonaryNetwork.PERFUSION: q,
-                                                                        TBPulmonaryNetwork.OXYGEN_TENSION: o2,
-                                                                        TBPulmonaryNetwork.DRAINAGE:
-                                                                        values[TBPulmonaryNetwork.DRAINAGE]}
-        return seeding
+            self._pulmonary_att_seeding[patch_id][TypedMetapopulationNetwork.ATTRIBUTES] = \
+                                                   {TBPulmonaryNetwork.VENTILATION: v,
+                                                    TBPulmonaryNetwork.PERFUSION: q,
+                                                    TBPulmonaryNetwork.OXYGEN_TENSION: o2,
+                                                    TBPulmonaryNetwork.DRAINAGE: values[TBPulmonaryNetwork.DRAINAGE]}
+
+    def pulmonary_atts_for_patch(self, patch_id):
+        return self._pulmonary_att_seeding[patch_id]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         if (patch_id not in self._infected_patches and

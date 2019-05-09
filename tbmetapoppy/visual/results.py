@@ -21,5 +21,5 @@ class TBMetapoppyResults(MetapoppyResults):
         networkx.draw_networkx_nodes(G, self._pos, nodelist=[patch], node_color=(1.0, 0.0, 0.0), node_size=10)
 
     def draw_inactive_patches(self, G, patches):
-        # networkx.draw_networkx_nodes(G, pos, nodelist=patches, node_color='grey', node_size=5, alpha=0.1)
+        # networkx.draw_networkx_nodes(G, self._pos, nodelist=[p], node_color=(a, 0.0, 0.0), node_size=5)
         pass

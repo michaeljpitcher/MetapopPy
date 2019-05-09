@@ -119,7 +119,7 @@ class MetapopulationNetwork(networkx.Graph):
             for comp, change in compartment_changes.iteritems():
                 patch_data[MetapopulationNetwork.COMPARTMENTS][comp] += change
                 assert patch_data[MetapopulationNetwork.COMPARTMENTS][comp] >= 0, \
-                    "Compartment {0} cannot drop below zero".format(comp)
+                    "Compartment {0} cannot drop below zero {1} {2}".format(comp, patch_id, patch_data)
         if attribute_changes:
             for attr, change in attribute_changes.iteritems():
                 patch_data[MetapopulationNetwork.ATTRIBUTES][attr] += change

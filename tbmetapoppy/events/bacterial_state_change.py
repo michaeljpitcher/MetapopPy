@@ -34,6 +34,8 @@ class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
         sig = self._parameters[self._sigmoid_key]
         halfsat = self._parameters[self._half_sat_key]
         o2 = network.get_attribute_value(patch_id, TBPulmonaryNetwork.OXYGEN_TENSION)
+        if o2 == 0:
+            return bac
         return bac * ((o2 ** sig) / (halfsat ** sig + o2 ** sig))
 
     def perform(self, network, patch_id):

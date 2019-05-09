@@ -53,7 +53,7 @@ class NADynamics(Dynamics):
         self.event2 = NAEvent2()
         return [self.event1, self.event2]
 
-    def _get_patch_seeding(self, params):
+    def _get_initial_patch_seeding(self, params):
         seeding = {}
         value_comp_0 = params[NADynamics.INITIAL_COMP_0]
         value_comp_1 = params[NADynamics.INITIAL_COMP_1]
@@ -66,7 +66,10 @@ class NADynamics(Dynamics):
 
         return seeding
 
-    def _get_edge_seeding(self, params):
+    def _seed_activated_patch(self, patch_id, params):
+        return {}
+
+    def _get_initial_edge_seeding(self, params):
         seeding = {}
         for u,v in self._network.edges():
             seeding[(u,v)] = {edge_attributes[0]: params[NADynamics.INITIAL_EDGE_0],
@@ -259,11 +262,15 @@ class PropDynamics(Dynamics):
                   EventEdgeAttDep(edge_attributes[0])]
         return events
 
-    def _get_patch_seeding(self, params):
+    def _get_initial_patch_seeding(self, params):
         return {}
 
-    def _get_edge_seeding(self, params):
+    def _get_initial_edge_seeding(self, params):
         return {}
+
+    def _seed_activated_patch(self, patch_id, params):
+        return {}
+
 
 class PropagationTestCase(unittest.TestCase):
 

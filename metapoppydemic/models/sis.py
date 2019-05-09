@@ -7,6 +7,7 @@ from compartments import *
 class SISDynamics(Epidemic):
 
     INIT_S = 'initial_population_susceptible'
+    INITAL_INFECTION_LOCATION = 'initial_infection_location'
     INIT_I = 'initial_population_infected'
 
     def __init__(self, template_network):
@@ -27,12 +28,14 @@ class SISDynamics(Epidemic):
     def _build_network(self, params):
         raise NotImplementedError
 
-    def _get_patch_seeding(self, params):
-        seed = {}
-        for n in self.network().nodes():
-            seed[n] = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SISDynamics.INIT_S],
-                                                                 INFECTIOUS: params[SISDynamics.INIT_I]}}
+    def _get_initial_patch_seeding(self, params):
+        seed = {params[SISDynamics.INITAL_INFECTION_LOCATION]:
+                    {TypedMetapopulationNetwork.COMPARTMENTS: {INFECTIOUS: params[SISDynamics.INIT_I]}}}
         return seed
 
-    def _get_edge_seeding(self, params):
+    def _seed_activated_patch(self, patch_id, params):
+        seed = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SISDynamics.INIT_S]}}
+        return seed
+
+    def _get_initial_edge_seeding(self, params):
         return {}

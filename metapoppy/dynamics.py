@@ -139,8 +139,8 @@ class Dynamics(epyc.Experiment, object):
         self._network.set_handlers(lambda p, c, a: self._propagate_patch_update(p, c, a),
                                    lambda u, v, a: self._propagate_edge_update(u, v, a))
 
-        self._patch_seeding = self._get_patch_seeding(params)
-        self._edge_seeding = self._get_edge_seeding(params)
+        self._patch_seeding = self._get_initial_patch_seeding(params)
+        self._edge_seeding = self._get_initial_edge_seeding(params)
 
         # Configure events
         for e in self._events:
@@ -153,10 +153,10 @@ class Dynamics(epyc.Experiment, object):
     def _build_network(self, params):
         raise NotImplementedError
 
-    def _get_patch_seeding(self, params):
+    def _get_initial_patch_seeding(self, params):
         raise NotImplementedError
 
-    def _get_edge_seeding(self, params):
+    def _get_initial_edge_seeding(self, params):
         raise NotImplementedError
 
     def setUp(self, params):
@@ -270,6 +270,23 @@ class Dynamics(epyc.Experiment, object):
         else:
             # Add the rates for this patch as a new row (build a new table by concatenation)
             self._rate_table = numpy.concatenate((self._rate_table, rates), 0)
+
+        # Patch is activated, so seed it
+        # Get seeding
+        seeding = self._seed_activated_patch(patch_id, self.parameters())
+        if MetapopulationNetwork.COMPARTMENTS in seeding:
+            comp_seeding = seeding[MetapopulationNetwork.COMPARTMENTS]
+        else:
+            comp_seeding = None
+        if MetapopulationNetwork.ATTRIBUTES in seeding:
+            att_seeding = seeding[MetapopulationNetwork.ATTRIBUTES]
+        else:
+            att_seeding = None
+        # Update the patch with the seeding values
+        self._network.update_patch(patch_id, comp_seeding, att_seeding)
+
+    def _seed_activated_patch(self, patch_id, params):
+        raise NotImplementedError
 
     def do(self, params):
         """

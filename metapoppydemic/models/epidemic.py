@@ -15,8 +15,8 @@ class Epidemic(Dynamics):
     def _build_network(self, params):
         raise NotImplementedError
 
-    def _get_patch_seeding(self, params):
+    def _get_initial_patch_seeding(self, params):
         raise NotImplementedError
 
-    def _get_edge_seeding(self, params):
+    def _get_initial_edge_seeding(self, params):
         raise NotImplementedError
