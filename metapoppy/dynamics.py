@@ -6,6 +6,8 @@ import numpy
 import itertools
 import heapq
 
+LAMBDA = lambda: 0
+
 
 class Dynamics(epyc.Experiment, object):
     """
@@ -74,7 +76,6 @@ class Dynamics(epyc.Experiment, object):
 
         # Posted events - will occur at set times
         self._posted_events = []
-        self._next_posted_event_time = None
 
     def _create_events(self):
         """
@@ -185,7 +186,6 @@ class Dynamics(epyc.Experiment, object):
         self._network.reset()
 
         # Seed the network using the pre-calculated seeding
-
         for n in self._network.nodes:
             # Patch has a seeding
             if self._patch_seeding and n in self._patch_seeding:
@@ -260,6 +260,30 @@ class Dynamics(epyc.Experiment, object):
             elif self._patch_is_active(patch_id):
                 self._activate_patch(patch_id)
 
+    def update_parameter(self, parameter, change):
+        """
+        Change the value of a parameter (e.g. if time-dependent). Will update the relevant columns of the rate table
+        for all events which depend on this parameter.
+        :param parameter:
+        :param change:
+        :return:
+        """
+        params = self.parameters()
+        params[parameter] += change
+
+        # TODO: could be better with a parameter dependency table
+        # Loop through all events
+        for col in range(self._rate_table.shape[1]):
+            event = self._events[col]
+            # Check if changed parameter is needed by the event
+            if parameter in event.parameter_keys():
+                # Update the parameter value on the event
+                event.set_parameters(self._parameters)
+                for row in range(self._rate_table.shape[0]):
+                    # Recalculate the event rate at every patch
+                    patch_id = self._active_patches[row]
+                    self._rate_table[row][col] = event.calculate_rate_at_patch(self._network, patch_id)
+
     def _patch_is_active(self, patch_id):
         """
         Determine if the given patch is active (from the network). Default is that patches are always active, can be
@@ -307,7 +331,7 @@ class Dynamics(epyc.Experiment, object):
     def _seed_activated_patch(self, patch_id, params):
         raise NotImplementedError
 
-    def post_event(self, t, event, patch_id):
+    def post_event(self, t, event):
         """
         Post a event to occur at a set time at a given patch
         :param t:
@@ -315,9 +339,9 @@ class Dynamics(epyc.Experiment, object):
         :param patch_id:
         :return:
         """
-        heapq.heappush(self._posted_events, (t, event, patch_id))
-        # Posted events is a heap, so first item will always be the next event - get the time of this event
-        self._next_posted_event_time = self._posted_events[0][0]
+        assert isinstance(event, type(LAMBDA)) and event.__name__ == LAMBDA.__name__, \
+            "Posted event must be a lambda function"
+        heapq.heappush(self._posted_events, (t, event))
 
     def do(self, params):
         """
@@ -352,20 +376,17 @@ class Dynamics(epyc.Experiment, object):
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
             # If there's posted events scheduled to occur before the next event occurs - pick one and process it
-            if self._next_posted_event_time and time + dt > self._next_posted_event_time:
-                # TODO: process posted event -- maybe DynamicEvent and StaticEvent?
-                next_time, next_event, patch_id = heapq.heappop(self._posted_events)
-                if self._posted_events:
-                    self._next_posted_event_time = self._posted_events[0][0]
-                else:
-                    self._next_posted_event_time = None
-                # Perform the event
-                next_event.perform(self._network, patch_id)
-                # Time progresses to the time of posted event
-                time = next_time
-                # Event has been executed, go to next loop
-                # NOTE: cannot continue processing events as this event may have changed rates of dynamic events
-                continue
+            if self._posted_events:
+                next_time = self._posted_events[0][0]
+                if time + dt > next_time:
+                    next_time, next_event = heapq.heappop(self._posted_events)
+                    # Perform the event
+                    next_event(self)
+                    # Time progresses to the time of posted event
+                    time = next_time
+                    # Event has been executed, go to next loop
+                    # NOTE: cannot continue processing events as this event may have changed rates of dynamic events
+                    continue
 
             # Choose an event and patch based on the values in the rate table
             # TODO - numpy multinomial is faster than numpy choice (in python 2, maybe not in 3?)
@@ -383,6 +404,7 @@ class Dynamics(epyc.Experiment, object):
             # Record results if interval(s) exceeded
             while time >= next_record_interval and next_record_interval <= self._max_time:
                 record_results(results, next_record_interval)
+                # Avoid rounding issues
                 next_record_interval = round(next_record_interval + self._record_interval, 7)
 
             # Get the total rate by summing rates of all events at all patches
@@ -419,4 +441,3 @@ class Dynamics(epyc.Experiment, object):
 
         # Reset posted events
         self._posted_events = []
-        self._next_posted_event_time = None

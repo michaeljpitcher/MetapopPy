@@ -191,7 +191,18 @@ class DynamicsTestCase(unittest.TestCase):
         self.dynamics.setUp(params)
         self.dynamics.do(params)
 
+    def test_post_event(self):
+        letters = ['a','b','c','d','e','f','g','h','i']
+        strq = ''.join(numpy.random.choice(letters, 10, True))
 
+        def func(model):
+            return strq
+        self.dynamics.post_event(14.5, lambda a: func(a))
+        self.assertEqual(len(self.dynamics._posted_events), 1)
+        self.assertEqual(self.dynamics._posted_events[0][0], 14.5)
+
+        # Check we get the random string back
+        self.assertEqual(self.dynamics._posted_events[0][1](None), strq)
 
 
 class EventNoDep(Event):
