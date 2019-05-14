@@ -356,6 +356,7 @@ class Dynamics(epyc.Experiment, object):
         time = self._start_time
 
         def record_results(results, record_time):
+            # print "t=", record_time
             # TODO - we don't record edges / non-active patches
             results[record_time] = {}
             for p in self._active_patches:
@@ -381,7 +382,7 @@ class Dynamics(epyc.Experiment, object):
                 if time + dt > next_time:
                     next_time, next_event = heapq.heappop(self._posted_events)
                     # Perform the event
-                    next_event(self)
+                    next_event()
                     # Time progresses to the time of posted event
                     time = next_time
                     # Event has been executed, go to next loop
