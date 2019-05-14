@@ -4,6 +4,7 @@ from network import *
 import copy
 import numpy
 import itertools
+import heapq
 
 
 class Dynamics(epyc.Experiment, object):
@@ -71,6 +72,10 @@ class Dynamics(epyc.Experiment, object):
         self._max_time = self.DEFAULT_MAX_TIME
         self._record_interval = self.DEFAULT_RESULT_INTERVAL
 
+        # Posted events - will occur at set times
+        self._posted_events = []
+        self._next_posted_event_time = None
+
     def _create_events(self):
         """
         Create the events
@@ -79,9 +84,14 @@ class Dynamics(epyc.Experiment, object):
         raise NotImplementedError
 
     def required_event_parameters(self):
+        """
+        All parameters which are required by the model
+        :return:
+        """
         params = []
         for e in self._events:
             params += e.parameter_keys()
+        # Remove duplicates
         return list(set(params))
 
     def set_start_time(self, start_time):
@@ -118,8 +128,8 @@ class Dynamics(epyc.Experiment, object):
 
     def configure(self, params):
         """
-        Configure each param sample. Run once for every sample of parameter values. Creates a network (if needed),
-        attaches the update propagation mechanism and obtains the seedings required for each run.
+        Configure each param sample - runs once for every sample of parameter values. Creates a network (if needed),
+        attaches the update propagation mechanism and obtains the initial conditions (seedings) required for each run.
         :param params:
         :return:
         """
@@ -128,7 +138,7 @@ class Dynamics(epyc.Experiment, object):
         # No prototype provided so we must build a new network from the parameters
         if not self._prototype_network:
             self._network = self._build_network(params)
-        #  If a prototype has been provided and hasn't been set yet
+        # If a prototype has been provided and hasn't been set yet
         elif not self._network:
             self._network = self._prototype_network
 
@@ -139,6 +149,7 @@ class Dynamics(epyc.Experiment, object):
         self._network.set_handlers(lambda p, c, a: self._propagate_patch_update(p, c, a),
                                    lambda u, v, a: self._propagate_edge_update(u, v, a))
 
+        # Get the initial conditions
         self._patch_seeding = self._get_initial_patch_seeding(params)
         self._edge_seeding = self._get_initial_edge_seeding(params)
 
@@ -224,8 +235,16 @@ class Dynamics(epyc.Experiment, object):
         elif self._patch_is_active(patch_id):
             self._activate_patch(patch_id)
 
-    def _propagate_edge_update(self, patch, neighbour, edge_attribute_changes):
-        for patch_id in [patch, neighbour]:
+    def _propagate_edge_update(self, patch_u, patch_v, edge_attribute_changes):
+        """
+        If an edge has its attributes changed, propagate the update to events occurring at either end of the edge
+        that are dependent on the edge attributes changed
+        :param patch_u: 
+        :param patch_v: 
+        :param edge_attribute_changes:
+        :return: 
+        """
+        for patch_id in [patch_u, patch_v]:
             # Check if patch is active
             # TODO - more efficient way of checking if patch is active
             active = patch_id in self._active_patches
@@ -288,6 +307,18 @@ class Dynamics(epyc.Experiment, object):
     def _seed_activated_patch(self, patch_id, params):
         raise NotImplementedError
 
+    def post_event(self, t, event, patch_id):
+        """
+        Post a event to occur at a set time at a given patch
+        :param t:
+        :param event:
+        :param patch_id:
+        :return:
+        """
+        heapq.heappush(self._posted_events, (t, event, patch_id))
+        # Posted events is a heap, so first item will always be the next event - get the time of this event
+        self._next_posted_event_time = self._posted_events[0][0]
+
     def do(self, params):
         """
         Run a MetapopPy simulation. Uses Gillespie simulation - all combinations of events and patches are given a rate
@@ -319,6 +350,22 @@ class Dynamics(epyc.Experiment, object):
         while not self._at_equilibrium(time):
             # Calculate the timestep delta
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
+
+            # If there's posted events scheduled to occur before the next event occurs - pick one and process it
+            if self._next_posted_event_time and time + dt > self._next_posted_event_time:
+                # TODO: process posted event -- maybe DynamicEvent and StaticEvent?
+                next_time, next_event, patch_id = heapq.heappop(self._posted_events)
+                if self._posted_events:
+                    self._next_posted_event_time = self._posted_events[0][0]
+                else:
+                    self._next_posted_event_time = None
+                # Perform the event
+                next_event.perform(self._network, patch_id)
+                # Time progresses to the time of posted event
+                time = next_time
+                # Event has been executed, go to next loop
+                # NOTE: cannot continue processing events as this event may have changed rates of dynamic events
+                continue
 
             # Choose an event and patch based on the values in the rate table
             # TODO - numpy multinomial is faster than numpy choice (in python 2, maybe not in 3?)
@@ -369,3 +416,7 @@ class Dynamics(epyc.Experiment, object):
         self._rate_table = None
         self._active_patches = []
         self._row_for_patch = {}
+
+        # Reset posted events
+        self._posted_events = []
+        self._next_posted_event_time = None

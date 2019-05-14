@@ -190,6 +190,7 @@ class TBDynamics(Dynamics):
 
         if patch_id == TBPulmonaryNetwork.LYMPH_PATCH:
             # Attribute seeding
+            # TODO - check this works with dissemination from lymph to lung
             patch_seeding = {}
 
             lymph_recruit_rates = {c: params[self._lymph_recruit_keys[c]] for c in
