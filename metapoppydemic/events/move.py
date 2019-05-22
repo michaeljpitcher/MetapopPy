@@ -13,7 +13,7 @@ class Move(Event):
         return Move.MOVEMENT_RATE_KEY + self._mover, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        return network.get_compartment_value(patch_id, self._mover) * (len(network.edges([patch_id])) > 0)
+        return network.get_compartment_value(patch_id, self._mover) * len(network.edges([patch_id]))
 
     def perform(self, network, patch_id):
         # Moves along an edge at random
