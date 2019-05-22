@@ -11,6 +11,9 @@ class TBDynamics(Dynamics):
     IC_BER_LOAD = 'initial_bacterial_load_replicating'
     IC_BED_LOAD = 'initial_bacterial_load_dormant'
 
+    RECRUITMENT_DROP_PERCENTAGE = 'recruitment_drop_percentage'
+    RECRUITMENT_DROP_INTERVAL = 'recruitment_drop_interval'
+
     def __init__(self, network_config):
         self._lung_recruit_keys = {}
         self._lymph_recruit_keys = {}
@@ -129,6 +132,33 @@ class TBDynamics(Dynamics):
         events += [tn_death, ta_death]
 
         return events
+
+    def setUp(self, params):
+        Dynamics.setUp(self, params)
+
+        # Post event rate drops
+        drop_percent = params[TBDynamics.RECRUITMENT_DROP_PERCENTAGE]
+
+        def drop_rec_rate():
+            current_rate_mr_lung = self._parameters[self._lung_recruit_keys[TBPulmonaryNetwork.MACROPHAGE_RESTING]]
+            self.update_parameter(self._lung_recruit_keys[TBPulmonaryNetwork.MACROPHAGE_RESTING],
+                                  -1 * (current_rate_mr_lung * drop_percent))
+            current_rate_mr_lymph = self._parameters[self._lymph_recruit_keys[TBPulmonaryNetwork.MACROPHAGE_RESTING]]
+            self.update_parameter(self._lymph_recruit_keys[TBPulmonaryNetwork.MACROPHAGE_RESTING],
+                                  -1 * (current_rate_mr_lymph * drop_percent))
+
+            current_rate_di_lung = self._parameters[self._lung_recruit_keys[TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE]]
+            self.update_parameter(self._lung_recruit_keys[TBPulmonaryNetwork.DENDRITIC_CELL_IMMATURE],
+                                  -1 * (current_rate_di_lung * drop_percent))
+
+            current_rate_tn_lymph = self._parameters[self._lymph_recruit_keys[TBPulmonaryNetwork.T_CELL_NAIVE]]
+            self.update_parameter(self._lymph_recruit_keys[TBPulmonaryNetwork.T_CELL_NAIVE],
+                                  -1 * (current_rate_tn_lymph * drop_percent))
+
+        drop_interval = params[TBDynamics.RECRUITMENT_DROP_INTERVAL]
+        times = [self._start_time + (n * drop_interval) for n in range(1,int(self._max_time/drop_interval)+1)]
+        for t in times:
+            self.post_event(t, lambda: drop_rec_rate())
 
     def _get_initial_patch_seeding(self, params):
         """
