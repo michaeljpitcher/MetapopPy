@@ -1,4 +1,4 @@
-from .network import *
+from .environment import *
 
 
 class Event(object):
@@ -107,7 +107,7 @@ class PatchTypeEvent(Event):
         :param patch_id:
         :return:
         """
-        if network.node[patch_id][TypedMetapopulationNetwork.PATCH_TYPE] == self._patch_type:
+        if network.node[patch_id][TypedEnvironment.PATCH_TYPE] == self._patch_type:
             return Event.calculate_rate_at_patch(self, network, patch_id)
         else:
             return 0.0

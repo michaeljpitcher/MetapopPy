@@ -1,4 +1,4 @@
-from ..tbpulmonarynetwork import TBPulmonaryNetwork
+from ..tbpulmonaryenvironment import TBPulmonaryEnvironment
 from metapoppy.event import Event
 from parameters import RATE, HALF_SAT
 
@@ -9,7 +9,7 @@ class CellActivation(Event):
     def __init__(self, resting_cell, triggers):
         self._half_sat_key = None
         self._resting_cell = resting_cell
-        self._activated_cell = TBPulmonaryNetwork.ACTIVATED_CELL[self._resting_cell]
+        self._activated_cell = TBPulmonaryEnvironment.ACTIVATED_CELL[self._resting_cell]
         self._triggers = triggers
         Event.__init__(self, [self._resting_cell] + self._triggers, [], [])
 

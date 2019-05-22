@@ -1,4 +1,4 @@
-from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
+from tbmetapoppy.tbpulmonaryenvironment import TBPulmonaryEnvironment
 from metapoppy.event import PatchTypeEvent
 from parameters import RATE, SIGMOID, HALF_SAT
 import numpy
@@ -14,8 +14,8 @@ class Translocation(PatchTypeEvent):
         if influencing_comps:
             dep_comps += influencing_comps
         PatchTypeEvent.__init__(self, patch_type, dep_comps, [], [])
-        if cell_type in TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL:
-            self._internal_compartment = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[cell_type]
+        if cell_type in TBPulmonaryEnvironment.INTERNAL_BACTERIA_FOR_CELL:
+            self._internal_compartment = TBPulmonaryEnvironment.INTERNAL_BACTERIA_FOR_CELL[cell_type]
         else:
             self._internal_compartment = None
 
@@ -51,16 +51,16 @@ class Translocation(PatchTypeEvent):
 
 class TranslocationLungToLymph(Translocation):
     def __init__(self, cell_type):
-        Translocation.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, cell_type)
+        Translocation.__init__(self, TBPulmonaryEnvironment.ALVEOLAR_PATCH, cell_type)
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         return network.get_compartment_value(patch_id, self._moving_compartment) * \
-               network.get_attribute_value(patch_id, TBPulmonaryNetwork.DRAINAGE)
+               network.get_attribute_value(patch_id, TBPulmonaryEnvironment.DRAINAGE)
 
 
 class TranslocationLymphToLung(Translocation):
     def __init__(self, cell_type):
-        Translocation.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type)
+        Translocation.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type)
 
     def _define_parameter_keys(self):
         return self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + RATE, []
@@ -76,7 +76,7 @@ class TranslocationLymphToLung(Translocation):
         total = 0
         for k,v in edges.iteritems():
             neighbours.append(k)
-            val = v[TBPulmonaryNetwork.PERFUSION]
+            val = v[TBPulmonaryEnvironment.PERFUSION]
             vals.append(val)
             total += val
         # Choose a neighbour based on the values
@@ -86,8 +86,8 @@ class TranslocationLymphToLung(Translocation):
 
 class TCellTranslocationLymphToLung(Translocation):
     def __init__(self, cell_type):
-        Translocation.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type,
-                               [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE, TBPulmonaryNetwork.MACROPHAGE_INFECTED])
+        Translocation.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type,
+                               [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE, TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
 
     def _define_parameter_keys(self):
         self._sigmoid_key = self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + SIGMOID
@@ -114,7 +114,7 @@ class TCellTranslocationLymphToLung(Translocation):
         cells = network.get_compartment_value(patch_id, self._moving_compartment)
         if not cells:
             return 0
-        dm = network.get_compartment_value(patch_id, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
+        dm = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE)
         # Catch to avoid / 0 errors
         if not dm:
             return 0
@@ -124,13 +124,13 @@ class TCellTranslocationLymphToLung(Translocation):
     def _choose_neighbour(self, network, patch_id):
         # Choosing based on infection and perfusion
         infected_patches = network.infected_patches()
-        edges = {n: network[patch_id][n][TBPulmonaryNetwork.PERFUSION] for n in infected_patches}
+        edges = {n: network[patch_id][n][TBPulmonaryEnvironment.PERFUSION] for n in infected_patches}
         neighbours = []
         vals = []
         total = 0
         for k,v in edges.iteritems():
             neighbours.append(k)
-            val = network.get_compartment_value(k, TBPulmonaryNetwork.MACROPHAGE_INFECTED) * v
+            val = network.get_compartment_value(k, TBPulmonaryEnvironment.MACROPHAGE_INFECTED) * v
             vals.append(val)
             total += val
         # Choose a neighbour based on the values

@@ -1,4 +1,4 @@
-from ..tbpulmonarynetwork import TBPulmonaryNetwork
+from ..tbpulmonaryenvironment import TBPulmonaryEnvironment
 from metapoppy.event import PatchTypeEvent
 from parameters import RATE, SIGMOID, HALF_SAT
 
@@ -10,17 +10,17 @@ class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
 
     def __init__(self, replicating_to_dormant):
         if replicating_to_dormant:
-            self._compartment_from = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
-            self._compartment_to = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
+            self._compartment_from = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING
+            self._compartment_to = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT
             self._key_prefix = BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT
         else:
-            self._compartment_from = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
-            self._compartment_to = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
+            self._compartment_from = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT
+            self._compartment_to = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING
             self._key_prefix = BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING
         self._sigmoid_key = None
         self._half_sat_key = None
-        PatchTypeEvent.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, [self._compartment_from],
-                                [TBPulmonaryNetwork.OXYGEN_TENSION], [])
+        PatchTypeEvent.__init__(self, TBPulmonaryEnvironment.ALVEOLAR_PATCH, [self._compartment_from],
+                                [TBPulmonaryEnvironment.OXYGEN_TENSION], [])
 
     def _define_parameter_keys(self):
         self._sigmoid_key = self._key_prefix + SIGMOID
@@ -33,7 +33,7 @@ class BacteriumChangeStateThroughOxygen(PatchTypeEvent):
             return 0
         sig = self._parameters[self._sigmoid_key]
         halfsat = self._parameters[self._half_sat_key]
-        o2 = network.get_attribute_value(patch_id, TBPulmonaryNetwork.OXYGEN_TENSION)
+        o2 = network.get_attribute_value(patch_id, TBPulmonaryEnvironment.OXYGEN_TENSION)
         if o2 == 0:
             return bac
         return bac * ((o2 ** sig) / (halfsat ** sig + o2 ** sig))

@@ -1,4 +1,4 @@
-from ..tbpulmonarynetwork import *
+from ..tbpulmonaryenvironment import *
 from metapoppy.event import Event
 import numpy
 from parameters import HALF_SAT, RATE
@@ -11,14 +11,14 @@ class CellIngestBacterium(Event):
 
     def __init__(self, cell_type):
         self._cell_type = cell_type
-        if self._cell_type in TBPulmonaryNetwork.INFECTED_CELL:
-            self._infected_cell_type = TBPulmonaryNetwork.INFECTED_CELL[self._cell_type]
-            self._internalised_bac_type = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[self._infected_cell_type]
+        if self._cell_type in TBPulmonaryEnvironment.INFECTED_CELL:
+            self._infected_cell_type = TBPulmonaryEnvironment.INFECTED_CELL[self._cell_type]
+            self._internalised_bac_type = TBPulmonaryEnvironment.INTERNAL_BACTERIA_FOR_CELL[self._infected_cell_type]
         else:
             self._infected_cell_type = self._internalised_bac_type = None
         self._half_sat_key = None
-        Event.__init__(self, [self._cell_type, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT,
-                              TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING], [], [])
+        Event.__init__(self, [self._cell_type, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT,
+                              TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING], [], [])
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellIngestBacterium.INGEST_BACTERIUM + RATE
@@ -27,23 +27,23 @@ class CellIngestBacterium(Event):
         return rp_key, [self._half_sat_key, self._infection_prob_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        total_bac = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING) + \
-                network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
+        total_bac = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING) + \
+                    network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
         if not total_bac:
             return 0
         return network.get_compartment_value(patch_id, self._cell_type) * \
            (float(total_bac) / (total_bac + self._parameters[self._half_sat_key]))
 
     def perform(self, network, patch_id):
-        replicating = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING)
-        dormant = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT)
+        replicating = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING)
+        dormant = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
         total_bacteria = replicating + dormant
 
         r = numpy.random.random() * total_bacteria
         if r < replicating:
-            bacteria_type_chosen = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING
+            bacteria_type_chosen = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING
         else:
-            bacteria_type_chosen = TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT
+            bacteria_type_chosen = TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT
 
         # prob = numpy.array([replicating, dormant], dtype=numpy.dtype('float')) / total_bacteria
         # bacteria_type_chosen = numpy.random.choice([TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING,

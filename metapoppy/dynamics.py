@@ -1,6 +1,6 @@
 import epyc
 import math
-from network import *
+from environment import *
 import copy
 import numpy
 import itertools
@@ -143,7 +143,7 @@ class Dynamics(epyc.Experiment, object):
         elif not self._network:
             self._network = self._prototype_network
 
-        assert isinstance(self._network, MetapopulationNetwork), "Graph must be instance of MetapopPy Network class"
+        assert isinstance(self._network, Environment), "Graph must be instance of MetapopPy Network class"
         assert self._network.nodes(), "Empty network is invalid"
 
         # Attach the update handler to the network
@@ -191,12 +191,12 @@ class Dynamics(epyc.Experiment, object):
             # Patch has a seeding
             if self._patch_seeding and n in self._patch_seeding:
                 seed = self._patch_seeding[n]
-                if MetapopulationNetwork.COMPARTMENTS in seed:
-                    comp_seed = seed[MetapopulationNetwork.COMPARTMENTS]
+                if Environment.COMPARTMENTS in seed:
+                    comp_seed = seed[Environment.COMPARTMENTS]
                 else:
                     comp_seed = {}
-                if MetapopulationNetwork.ATTRIBUTES in seed:
-                    att_seed = seed[MetapopulationNetwork.ATTRIBUTES]
+                if Environment.ATTRIBUTES in seed:
+                    att_seed = seed[Environment.ATTRIBUTES]
                 else:
                     att_seed = {}
                 self._network.update_patch(n, comp_seed, att_seed)
@@ -319,12 +319,12 @@ class Dynamics(epyc.Experiment, object):
         # Patch is activated, so seed it
         # Get seeding
         seeding = self._seed_activated_patch(patch_id, self.parameters())
-        if MetapopulationNetwork.COMPARTMENTS in seeding:
-            comp_seeding = seeding[MetapopulationNetwork.COMPARTMENTS]
+        if Environment.COMPARTMENTS in seeding:
+            comp_seeding = seeding[Environment.COMPARTMENTS]
         else:
             comp_seeding = None
-        if MetapopulationNetwork.ATTRIBUTES in seeding:
-            att_seeding = seeding[MetapopulationNetwork.ATTRIBUTES]
+        if Environment.ATTRIBUTES in seeding:
+            att_seeding = seeding[Environment.ATTRIBUTES]
         else:
             att_seeding = None
         # Update the patch with the seeding values

@@ -1,4 +1,4 @@
-from tbmetapoppy.tbpulmonarynetwork import TBPulmonaryNetwork
+from tbmetapoppy.tbpulmonaryenvironment import TBPulmonaryEnvironment
 from metapoppy.event import PatchTypeEvent
 from parameters import RATE, HALF_SAT
 
@@ -26,23 +26,23 @@ class CellRecruitment(PatchTypeEvent):
 
 class StandardCellRecruitmentLung(CellRecruitment):
     def __init__(self, cell_type):
-        CellRecruitment.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, cell_type)
-        self._dependent_patch_attributes += [TBPulmonaryNetwork.PERFUSION]
+        CellRecruitment.__init__(self, TBPulmonaryEnvironment.ALVEOLAR_PATCH, cell_type)
+        self._dependent_patch_attributes += [TBPulmonaryEnvironment.PERFUSION]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.STANDARD_RECRUITMENT + "_" + self._patch_type + RATE
         return rp_key, []
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        return network.get_attribute_value(patch_id, TBPulmonaryNetwork.PERFUSION)
+        return network.get_attribute_value(patch_id, TBPulmonaryEnvironment.PERFUSION)
 
 
 class EnhancedCellRecruitmentLung(CellRecruitment):
     def __init__(self, cell_recruited):
         self._half_sat_key = None
         self._weight_key = None
-        CellRecruitment.__init__(self, TBPulmonaryNetwork.ALVEOLAR_PATCH, cell_recruited)
-        self._dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
+        CellRecruitment.__init__(self, TBPulmonaryEnvironment.ALVEOLAR_PATCH, cell_recruited)
+        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -52,18 +52,18 @@ class EnhancedCellRecruitmentLung(CellRecruitment):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
-        mi = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        ma = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED)
+        mi = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
+        ma = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED)
         if not (mi + ma):
             return 0
         ma_and_mi = ma + self._parameters[self._weight_key] * mi
-        return network.get_attribute_value(patch_id, TBPulmonaryNetwork.PERFUSION) * \
+        return network.get_attribute_value(patch_id, TBPulmonaryEnvironment.PERFUSION) * \
                (float(ma_and_mi) / (ma_and_mi + self._parameters[self._half_sat_key]))
 
 
 class StandardCellRecruitmentLymph(CellRecruitment):
     def __init__(self, cell_type):
-        CellRecruitment.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type)
+        CellRecruitment.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type)
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.STANDARD_RECRUITMENT + "_" + self._patch_type + RATE
@@ -77,8 +77,8 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
     def __init__(self, cell_type):
         self._half_sat_key = None
         self._weight_key = None
-        CellRecruitment.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, cell_type)
-        self._dependent_compartments += [TBPulmonaryNetwork.MACROPHAGE_INFECTED, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED]
+        CellRecruitment.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type)
+        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -88,8 +88,8 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
-        mi = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        ma = network.get_compartment_value(patch_id, TBPulmonaryNetwork.MACROPHAGE_ACTIVATED)
+        mi = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
+        ma = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED)
         if not (mi + ma):
             return 0
         ma_and_mi = ma + self._parameters[self._weight_key] * mi
@@ -99,8 +99,8 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
 class EnhancedTCellRecruitmentLymph(CellRecruitment):
     def __init__(self):
         self._half_sat_key = None
-        CellRecruitment.__init__(self, TBPulmonaryNetwork.LYMPH_PATCH, TBPulmonaryNetwork.T_CELL_NAIVE)
-        self._dependent_compartments += [TBPulmonaryNetwork.DENDRITIC_CELL_MATURE]
+        CellRecruitment.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, TBPulmonaryEnvironment.T_CELL_NAIVE)
+        self._dependent_compartments += [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -109,7 +109,7 @@ class EnhancedTCellRecruitmentLymph(CellRecruitment):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         # Get compartment value (will return sum of all values if enhancer is a list of compartments)
-        dcm = network.get_compartment_value(patch_id, TBPulmonaryNetwork.DENDRITIC_CELL_MATURE)
+        dcm = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE)
         if not dcm:
             return 0
         return float(dcm) / (dcm + self._parameters[self._half_sat_key])

@@ -1,5 +1,5 @@
 from metapoppy.event import Event
-from ..tbpulmonarynetwork import *
+from ..tbpulmonaryenvironment import *
 import numpy
 from parameters import RATE, HALF_SAT, INTRACELLULAR_REPLICATION_SIGMOID, MACROPHAGE_CAPACITY
 
@@ -9,7 +9,7 @@ class CellDeath(Event):
 
     def __init__(self, dying_compartment):
         self._dying_compartment = dying_compartment
-        assert dying_compartment not in TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL, \
+        assert dying_compartment not in TBPulmonaryEnvironment.INTERNAL_BACTERIA_FOR_CELL, \
             "Standard cell death not appropriate for {0} as it has internal bacteria".format(dying_compartment)
         Event.__init__(self, [self._dying_compartment], [], [])
 
@@ -29,7 +29,7 @@ class InfectedCellDeath(CellDeath):
 
     def __init__(self, dying_compartment):
         self._dying_compartment = dying_compartment
-        self._internal_bacteria = TBPulmonaryNetwork.INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
+        self._internal_bacteria = TBPulmonaryEnvironment.INTERNAL_BACTERIA_FOR_CELL[dying_compartment]
         self._bac_percent_to_destroy_key = None
         Event.__init__(self, [self._dying_compartment], [], [])
 
@@ -44,9 +44,9 @@ class InfectedCellDeath(CellDeath):
         bac_to_destroy = int(round(avg_bac_per_cell * self._parameters[self._bac_percent_to_destroy_key]))
         bac_to_release = avg_bac_per_cell - bac_to_destroy
         changes = {self._dying_compartment: -1, self._internal_bacteria: -1 * (bac_to_destroy + bac_to_release),
-                   TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: bac_to_release}
-        if self._dying_compartment == TBPulmonaryNetwork.MACROPHAGE_INFECTED:
-            changes[TBPulmonaryNetwork.CASEUM] = 1
+                   TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT: bac_to_release}
+        if self._dying_compartment == TBPulmonaryEnvironment.MACROPHAGE_INFECTED:
+            changes[TBPulmonaryEnvironment.CASEUM] = 1
         network.update_patch(patch_id, changes)
 
 
@@ -55,8 +55,8 @@ class MacrophageBursting(InfectedCellDeath):
     BURSTING = 'macrophage_bursting'
 
     def __init__(self):
-        InfectedCellDeath.__init__(self, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        self._dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
+        InfectedCellDeath.__init__(self, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
+        self._dependent_compartments += [TBPulmonaryEnvironment.BACTERIUM_INTRACELLULAR_MACROPHAGE]
 
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = MacrophageBursting.BURSTING + InfectedCellDeath.PERCENT_BACTERIA_DESTROYED
@@ -64,7 +64,7 @@ class MacrophageBursting(InfectedCellDeath):
                [self._bac_percent_to_destroy_key, MACROPHAGE_CAPACITY, INTRACELLULAR_REPLICATION_SIGMOID]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        bac = network.get_compartment_value(patch_id, TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE)
+        bac = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_INTRACELLULAR_MACROPHAGE)
         if not bac:
             return 0
         mac = network.get_compartment_value(patch_id, self._dying_compartment)
@@ -78,8 +78,8 @@ class TCellDestroysMacrophage(InfectedCellDeath):
     T_CELL_DESTROYS_MACROPHAGE = 't_cell_destroys_macrophage'
 
     def __init__(self):
-        InfectedCellDeath.__init__(self, TBPulmonaryNetwork.MACROPHAGE_INFECTED)
-        self._dependent_compartments += [TBPulmonaryNetwork.BACTERIUM_INTRACELLULAR_MACROPHAGE]
+        InfectedCellDeath.__init__(self, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
+        self._dependent_compartments += [TBPulmonaryEnvironment.BACTERIUM_INTRACELLULAR_MACROPHAGE]
 
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = TCellDestroysMacrophage.T_CELL_DESTROYS_MACROPHAGE + \
@@ -89,7 +89,7 @@ class TCellDestroysMacrophage(InfectedCellDeath):
                [self._bac_percent_to_destroy_key, self._half_sat_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        tcell = network.get_compartment_value(patch_id, TBPulmonaryNetwork.T_CELL_ACTIVATED)
+        tcell = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.T_CELL_ACTIVATED)
         if not tcell:
             return 0
         mac = network.get_compartment_value(patch_id, self._dying_compartment)

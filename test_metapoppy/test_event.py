@@ -30,7 +30,7 @@ class NAEvent(Event):
 class EventTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.network = MetapopulationNetwork(compartments, attributes, [])
+        self.network = Environment(compartments, attributes, [])
         self.network.add_node(1)
         self.network.reset()
         self.event = NAEvent(compartments[0], compartments[1])
@@ -38,7 +38,7 @@ class EventTestCase(unittest.TestCase):
     def test_calculate_rate(self):
         self.event.set_parameters({RP1_key: 0.1})
         self.assertFalse(self.event.calculate_rate_at_patch(self.network, 1))
-        self.network.node[1][MetapopulationNetwork.COMPARTMENTS][compartments[0]] = 10
+        self.network.node[1][Environment.COMPARTMENTS][compartments[0]] = 10
         self.assertEqual(self.event.calculate_rate_at_patch(self.network, 1), 0.1 * 10)
 
     def test_perform(self):
@@ -69,7 +69,7 @@ class PatchTypeEventTestCase(unittest.TestCase):
     def setUp(self):
         self.patch_types = ['type1', 'type2']
         self.typed_attributes = {self.patch_types[0]: attributes[0], self.patch_types[1]: attributes[1]}
-        self.network = TypedMetapopulationNetwork(compartments, self.typed_attributes, [])
+        self.network = TypedEnvironment(compartments, self.typed_attributes, [])
         self.network.add_node(1)
         self.network.set_patch_type(1, self.patch_types[0])
         self.network.add_node(2)
@@ -93,13 +93,13 @@ class PatchTypeEventTestCase(unittest.TestCase):
         self.assertFalse(self.event_type2.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_type2.calculate_rate_at_patch(self.network, 2))
 
-        self.network.node[1][MetapopulationNetwork.COMPARTMENTS][compartments[0]] = 10
+        self.network.node[1][Environment.COMPARTMENTS][compartments[0]] = 10
 
         self.assertAlmostEqual(self.event_type1.calculate_rate_at_patch(self.network, 1), params['test_type1'] * 10 *
                          (params[NAPatchTypeEvent.PAR1] + params[NAPatchTypeEvent.PAR2]))
         self.assertFalse(self.event_type2.calculate_rate_at_patch(self.network, 2))
 
-        self.network.node[2][MetapopulationNetwork.COMPARTMENTS][compartments[0]] = 9
+        self.network.node[2][Environment.COMPARTMENTS][compartments[0]] = 9
 
         self.assertFalse(self.event_type1.calculate_rate_at_patch(self.network, 2))
         self.assertAlmostEqual(self.event_type2.calculate_rate_at_patch(self.network, 2), params['test_type2'] * 9 *

@@ -1,4 +1,4 @@
 from dynamics import *
-from network import *
+from environment import *
 from event import *
 from visual import *

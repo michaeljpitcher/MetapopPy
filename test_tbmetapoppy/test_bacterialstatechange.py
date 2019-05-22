@@ -18,17 +18,17 @@ class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
         self.event_r_to_d.set_parameters(self.params)
         self.event_d_to_r.set_parameters(self.params)
 
-        self.network = TBPulmonaryNetwork({TBPulmonaryNetwork.TOPOLOGY: None})
+        self.network = TBPulmonaryEnvironment({TBPulmonaryEnvironment.TOPOLOGY: None})
         self.network.add_node(1)
-        self.network.set_patch_type(1, TBPulmonaryNetwork.ALVEOLAR_PATCH)
+        self.network.set_patch_type(1, TBPulmonaryEnvironment.ALVEOLAR_PATCH)
         self.network.reset()
 
     def test_rate(self):
-        self.network.update_patch(1, attribute_changes={TBPulmonaryNetwork.OXYGEN_TENSION: 1.4})
+        self.network.update_patch(1, attribute_changes={TBPulmonaryEnvironment.OXYGEN_TENSION: 1.4})
         self.assertFalse(self.event_d_to_r.calculate_rate_at_patch(self.network, 1))
         self.assertFalse(self.event_r_to_d.calculate_rate_at_patch(self.network, 1))
 
-        self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 2, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 2})
+        self.network.update_patch(1, {TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING: 2, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT: 2})
         r_to_d_1_4 = self.event_r_to_d.calculate_rate_at_patch(self.network, 1)
         self.assertEqual(r_to_d_1_4, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + RATE] * 2 * (
                     (1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID]) / (
@@ -40,7 +40,7 @@ class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
                 1.4 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID] + self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + HALF_SAT] ** self.params[
             BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_REPLICATING + SIGMOID])))
 
-        self.network.update_patch(1, attribute_changes={TBPulmonaryNetwork.OXYGEN_TENSION: 0.1})
+        self.network.update_patch(1, attribute_changes={TBPulmonaryEnvironment.OXYGEN_TENSION: 0.1})
         r_to_d_1_5 = self.event_r_to_d.calculate_rate_at_patch(self.network, 1)
         self.assertEqual(r_to_d_1_5, self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + RATE] * 2 * (
                 (1.5 ** self.params[BacteriumChangeStateThroughOxygen.BACTERIUM_CHANGE_TO_DORMANT + SIGMOID]) / (
@@ -56,10 +56,10 @@ class BacteriumChangeStateThroughOxygenTestCase(unittest.TestCase):
         self.assertTrue(d_to_r_1_4 < d_to_r_1_5) # Oxygen down, so more chance to switch to dormant
 
     def test_perform(self):
-        self.network.update_patch(1, {TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING: 10, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT: 10})
+        self.network.update_patch(1, {TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING: 10, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT: 10})
         self.event_r_to_d.perform(self.network, 1)
-        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_REPLICATING), 9)
-        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryNetwork.BACTERIUM_EXTRACELLULAR_DORMANT), 11)
+        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING), 9)
+        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT), 11)
 
 
 

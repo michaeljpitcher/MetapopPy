@@ -9,7 +9,7 @@ class NetworkTestCase(unittest.TestCase):
         self.compartments = ['a','b','c']
         self.patch_attributes = ['d','e','f']
         self.edge_attributes = ['g', 'h', 'i']
-        self.network = MetapopulationNetwork(self.compartments, self.patch_attributes, self.edge_attributes)
+        self.network = Environment(self.compartments, self.patch_attributes, self.edge_attributes)
 
     def test_reset(self):
         self.network.add_nodes_from(range(1, 8))
@@ -19,13 +19,13 @@ class NetworkTestCase(unittest.TestCase):
         self.network.reset()
 
         for n in range(1, 8):
-            self.assertItemsEqual(self.network.node[n].keys(), [MetapopulationNetwork.COMPARTMENTS, MetapopulationNetwork.ATTRIBUTES])
-            self.assertItemsEqual(self.network.node[n][MetapopulationNetwork.COMPARTMENTS].keys(), self.compartments)
+            self.assertItemsEqual(self.network.node[n].keys(), [Environment.COMPARTMENTS, Environment.ATTRIBUTES])
+            self.assertItemsEqual(self.network.node[n][Environment.COMPARTMENTS].keys(), self.compartments)
             for c in self.compartments:
-                self.assertEqual(self.network.node[n][MetapopulationNetwork.COMPARTMENTS][c], 0)
-            self.assertItemsEqual(self.network.node[n][MetapopulationNetwork.ATTRIBUTES].keys(), self.patch_attributes)
+                self.assertEqual(self.network.node[n][Environment.COMPARTMENTS][c], 0)
+            self.assertItemsEqual(self.network.node[n][Environment.ATTRIBUTES].keys(), self.patch_attributes)
             for a in self.patch_attributes:
-                self.assertEqual(self.network.node[n][MetapopulationNetwork.ATTRIBUTES][a], 0.0)
+                self.assertEqual(self.network.node[n][Environment.ATTRIBUTES][a], 0.0)
 
         for (u, v) in edges:
             data = self.network.get_edge_data(u, v)
@@ -36,8 +36,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_get_compartment_value(self):
         self.network.add_node(1)
         self.network.reset()
-        self.network.node[1][MetapopulationNetwork.COMPARTMENTS][self.compartments[0]] = 99
-        self.network.node[1][MetapopulationNetwork.COMPARTMENTS][self.compartments[1]] = 2
+        self.network.node[1][Environment.COMPARTMENTS][self.compartments[0]] = 99
+        self.network.node[1][Environment.COMPARTMENTS][self.compartments[1]] = 2
         self.assertEqual(self.network.get_compartment_value(1, self.compartments[0]), 99)
 
         # Multiple compartments
@@ -46,8 +46,8 @@ class NetworkTestCase(unittest.TestCase):
     def test_get_attribute_value(self):
         self.network.add_node(1)
         self.network.reset()
-        self.network.node[1][MetapopulationNetwork.ATTRIBUTES][self.patch_attributes[0]] = 99
-        self.network.node[1][MetapopulationNetwork.ATTRIBUTES][self.patch_attributes[1]] = 2
+        self.network.node[1][Environment.ATTRIBUTES][self.patch_attributes[0]] = 99
+        self.network.node[1][Environment.ATTRIBUTES][self.patch_attributes[1]] = 2
         self.assertEqual(self.network.get_attribute_value(1, self.patch_attributes[0]), 99)
 
         # Multiple attributes
@@ -108,7 +108,7 @@ class TypedNetworkTestCase(unittest.TestCase):
         self.compartments = ['a', 'b', 'c']
         self.patch_attributes = {self.patch_types[0]: ['d', 'e'], self.patch_types[1]: ['f']}
         self.edge_attributes = ['g', 'h', 'i']
-        self.network = TypedMetapopulationNetwork(self.compartments, self.patch_attributes, self.edge_attributes)
+        self.network = TypedEnvironment(self.compartments, self.patch_attributes, self.edge_attributes)
 
     def test_set_get_patch_type(self):
         self.network.add_nodes_from([1,2,3])
@@ -131,12 +131,12 @@ class TypedNetworkTestCase(unittest.TestCase):
         self.network.set_patch_type(4, self.patch_types[2])
         self.network.reset()
         for _,d in self.network.nodes(data=True):
-            if d[TypedMetapopulationNetwork.PATCH_TYPE] == self.patch_types[0]:
-                self.assertItemsEqual(d[MetapopulationNetwork.ATTRIBUTES], self.patch_attributes[self.patch_types[0]])
-            elif d[TypedMetapopulationNetwork.PATCH_TYPE] == self.patch_types[1]:
-                self.assertItemsEqual(d[MetapopulationNetwork.ATTRIBUTES], self.patch_attributes[self.patch_types[1]])
-            elif d[TypedMetapopulationNetwork.PATCH_TYPE] == self.patch_types[2]:
-                self.assertFalse(d[MetapopulationNetwork.ATTRIBUTES])
+            if d[TypedEnvironment.PATCH_TYPE] == self.patch_types[0]:
+                self.assertItemsEqual(d[Environment.ATTRIBUTES], self.patch_attributes[self.patch_types[0]])
+            elif d[TypedEnvironment.PATCH_TYPE] == self.patch_types[1]:
+                self.assertItemsEqual(d[Environment.ATTRIBUTES], self.patch_attributes[self.patch_types[1]])
+            elif d[TypedEnvironment.PATCH_TYPE] == self.patch_types[2]:
+                self.assertFalse(d[Environment.ATTRIBUTES])
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import epyc
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
-from ..network import *
+from ..environment import *
 
 
 class MetapoppyResults(object):
