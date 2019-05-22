@@ -178,6 +178,7 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
+
         # Default setup
         epyc.Experiment.setUp(self, params)
 
@@ -200,7 +201,7 @@ class Dynamics(epyc.Experiment, object):
                     att_seed = {}
                 self._network.update_patch(n, comp_seed, att_seed)
             # Patch does not have a seeding, need to check if it is active
-            elif self._patch_is_active(n):
+            elif not n in self._active_patches and self._patch_is_active(n):
                 self._activate_patch(n)
 
         if self._edge_seeding:
@@ -209,6 +210,7 @@ class Dynamics(epyc.Experiment, object):
 
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
+
 
     def _propagate_patch_update(self, patch_id, compartment_changes, patch_attribute_changes):
         """
