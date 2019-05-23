@@ -15,8 +15,8 @@ class TBPulmonaryEnvironment(TypedEnvironment):
     PATCH_ATTRIBUTES = {ALVEOLAR_PATCH: [VENTILATION, PERFUSION, OXYGEN_TENSION, DRAINAGE]}
 
     # Edge attributes
-    CYTOKINE = 'cytokine'
-    EDGE_ATTRIBUTES = [PERFUSION, CYTOKINE]
+    # CYTOKINE = 'cytokine'
+    EDGE_ATTRIBUTES = [PERFUSION]
 
     # Configuration
     TOPOLOGY = 'topology'
@@ -62,8 +62,12 @@ class TBPulmonaryEnvironment(TypedEnvironment):
                                   DENDRITIC_CELL_MATURE: BACTERIUM_INTRACELLULAR_DENDRITIC}
 
     def __init__(self, network_config):
-        TypedEnvironment.__init__(self, TBPulmonaryEnvironment.TB_COMPARTMENTS,
-                                            TBPulmonaryEnvironment.PATCH_ATTRIBUTES, TBPulmonaryEnvironment.EDGE_ATTRIBUTES)
+        """
+        Create a pulmonary environment for studying TB.
+        :param network_config:
+        """
+        TypedEnvironment.__init__(self, TBPulmonaryEnvironment.TB_COMPARTMENTS, TBPulmonaryEnvironment.PATCH_ATTRIBUTES,
+                                  TBPulmonaryEnvironment.EDGE_ATTRIBUTES)
 
         self._alveolar_positions = {}
         self._pulmonary_att_seeding = {}
@@ -81,6 +85,11 @@ class TBPulmonaryEnvironment(TypedEnvironment):
         self._infected_patches = []
 
     def output_positions(self, filename):
+        """
+        Write the positions of all nodes to a config file (to avoid building a topology over and over)
+        :param filename:
+        :return:
+        """
         cp = ConfigParser.ConfigParser()
         cp.add_section(TypedEnvironment.POSITION)
 
@@ -106,9 +115,17 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             cp.write(file_pos)
 
     def infected_patches(self):
+        """
+        Get all infected patches
+        :return:
+        """
         return self._infected_patches
 
     def _build_single_patch_network(self):
+        """
+        Build a topology where the lung is a single patch
+        :return:
+        """
         # Create lymph patch
         self.add_node(TBPulmonaryEnvironment.LYMPH_PATCH)
         self.set_patch_type(TBPulmonaryEnvironment.LYMPH_PATCH, TBPulmonaryEnvironment.LYMPH_PATCH)
@@ -121,6 +138,16 @@ class TBPulmonaryEnvironment(TypedEnvironment):
         self.add_edge(TBPulmonaryEnvironment.LYMPH_PATCH, TBPulmonaryEnvironment.ALVEOLAR_PATCH)
 
     def _build_2d_space_filling_tree(self, network_config):
+        """
+        Create a 2D space filling tree to form the topology. Process:
+        - Takes a boundary value, a start point on the boundary, a length divisor and a minimum area.
+        - From start point, find another point on the boundary such that line from start point evenly bisects area.
+        - Place a new point on the line, of distance length divisor of whole length.
+        - Now we have (evenly sized) areas, and a start point for both
+        - Repeat, until the size of the areas drops below the minimum area
+        :param network_config:
+        :return:
+        """
         boundary = network_config[TBPulmonaryEnvironment.BOUNDARY]
         if isinstance(boundary, str):
             # TODO - unnecessary removal of brackets - just don't include in the first place
@@ -137,21 +164,21 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             :param points:
             :return:
             """
-            x = [a for (a, b) in points]  # x coordinates
-            y = [b for (a, b) in points]  # y coordinates
+            x = [q[0] for q in points]  # x coordinates
+            y = [q[1] for q in points]  # y coordinates
             return 0.5 * numpy.abs(numpy.dot(x, numpy.roll(y, 1)) - numpy.dot(y, numpy.roll(x, 1)))
 
         def _find_halfway(parent_polygon, parent_size, tipping_point):
             # TODO - method is not perfect and requires rounding of values
-            mid_point = ((parent_polygon[tipping_point][0] + parent_polygon[tipping_point - 1][0]) / 2.0,
-                         (parent_polygon[tipping_point][1] + parent_polygon[tipping_point - 1][1]) / 2.0)
+            middle_point = ((parent_polygon[tipping_point][0] + parent_polygon[tipping_point - 1][0]) / 2.0,
+                            (parent_polygon[tipping_point][1] + parent_polygon[tipping_point - 1][1]) / 2.0)
 
-            area_using_midpoint = round(polygon_area(parent_polygon[0: tipping_point] + [mid_point]), 10)
+            area_using_midpoint = round(polygon_area(parent_polygon[0: tipping_point] + [middle_point]), 10)
 
             if area_using_midpoint == round(parent_size / 2.0, 10):
-                return mid_point
+                return middle_point
             else:
-                new_polygon = parent_polygon[0: tipping_point] + [mid_point] + parent_polygon[tipping_point:]
+                new_polygon = parent_polygon[0: tipping_point] + [middle_point] + parent_polygon[tipping_point:]
                 if area_using_midpoint < parent_size / 2.0:
                     tipping_point += 1
                 return _find_halfway(new_polygon, parent_size, tipping_point)
@@ -232,10 +259,10 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             o2 = float(vent)/perf
             drain = params[TBPulmonaryEnvironment.DRAINAGE]
             seeding = {TBPulmonaryEnvironment.ALVEOLAR_PATCH: {TypedEnvironment.ATTRIBUTES:
-                                                                   {TBPulmonaryEnvironment.VENTILATION: vent,
-                                                                    TBPulmonaryEnvironment.PERFUSION: perf,
-                                                                    TBPulmonaryEnvironment.OXYGEN_TENSION: o2,
-                                                                    TBPulmonaryEnvironment.DRAINAGE: drain}}}
+                                                               {TBPulmonaryEnvironment.VENTILATION: vent,
+                                                                TBPulmonaryEnvironment.PERFUSION: perf,
+                                                                TBPulmonaryEnvironment.OXYGEN_TENSION: o2,
+                                                                TBPulmonaryEnvironment.DRAINAGE: drain}}}
             self._pulmonary_att_seeding = seeding
             return seeding
 
@@ -260,7 +287,7 @@ class TBPulmonaryEnvironment(TypedEnvironment):
         diffs = {k: maxs[k] - mins[k] for k in mins.keys()}
 
         # Calculate values - 1 + (y_max - y) * (att_max - att_min)/(y_max - y_min)
-        for index, (_,y_pos) in self._alveolar_positions.iteritems():
+        for index, (_, y_pos) in self._alveolar_positions.iteritems():
             temp_seeding[index] = {}
             vent_value = mins[TBPulmonaryEnvironment.VENTILATION] + (self._y_max - y_pos) * (
                     diffs[TBPulmonaryEnvironment.VENTILATION] / self._y_range)
@@ -283,15 +310,28 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             q = values[TBPulmonaryEnvironment.PERFUSION] / total_q
             o2 = v / q
             self._pulmonary_att_seeding[patch_id][TypedEnvironment.ATTRIBUTES] = \
-                                                   {TBPulmonaryEnvironment.VENTILATION: v,
-                                                    TBPulmonaryEnvironment.PERFUSION: q,
-                                                    TBPulmonaryEnvironment.OXYGEN_TENSION: o2,
-                                                    TBPulmonaryEnvironment.DRAINAGE: values[TBPulmonaryEnvironment.DRAINAGE]}
+                {TBPulmonaryEnvironment.VENTILATION: v,
+                 TBPulmonaryEnvironment.PERFUSION: q,
+                 TBPulmonaryEnvironment.OXYGEN_TENSION: o2,
+                 TBPulmonaryEnvironment.DRAINAGE: values[TBPulmonaryEnvironment.DRAINAGE]}
 
     def pulmonary_atts_for_patch(self, patch_id):
+        """
+        For a given patch, return the seeded pulmonary attributes
+        :param patch_id:
+        :return:
+        """
         return self._pulmonary_att_seeding[patch_id]
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
+        """
+        Update a patch on the network. Also adds patch to list of infected patches, and updates the edge if the
+        perfusion value of a lung patch has been amended
+        :param patch_id: ID of patch
+        :param compartment_changes: compartments changed
+        :param attribute_changes: attributes changed
+        :return:
+        """
         if (patch_id not in self._infected_patches and
            self._node[patch_id][TypedEnvironment.PATCH_TYPE] == TBPulmonaryEnvironment.ALVEOLAR_PATCH and
            compartment_changes and any(x in TBPulmonaryEnvironment.BACTERIA for x in compartment_changes)):
@@ -303,9 +343,13 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             #     self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
             #             {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
             if attribute_changes and TBPulmonaryEnvironment.PERFUSION in attribute_changes:
-                self.update_edge(patch_id, TBPulmonaryEnvironment.LYMPH_PATCH,
-                                 {TBPulmonaryEnvironment.PERFUSION: attribute_changes[TBPulmonaryEnvironment.PERFUSION]})
+                val = attribute_changes[TBPulmonaryEnvironment.PERFUSION]
+                self.update_edge(patch_id, TBPulmonaryEnvironment.LYMPH_PATCH, {TBPulmonaryEnvironment.PERFUSION: val})
 
     def reset(self):
+        """
+        Reset the environment. Also clears the infected patches list.
+        :return:
+        """
         self._infected_patches = []
         TypedEnvironment.reset(self)

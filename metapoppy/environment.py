@@ -54,13 +54,18 @@ class Environment(networkx.Graph):
         """
         Given a lambda function as an update handler, assign it to the network. Function will be called when an update
         is performed
-        :param handler:
+        :param patch_handler: function to call when a patch is updated
+        :param edge_handler: function to call when an edge is updated
         :return:
         """
         self._patch_handler = patch_handler
         self._edge_handler = edge_handler
 
     def reset(self):
+        """
+        Reset the whole network. Split into functions for patches and edges so that they may be overridden.
+        :return:
+        """
         self._reset_patches()
         self._reset_edges()
 
@@ -78,7 +83,7 @@ class Environment(networkx.Graph):
         Reset all edges to zero attribute values.
         :return:
         """
-        networkx.set_edge_attributes(self, {(u,v): {a: 0.0 for a in self._edge_attributes} for (u,v) in self.edges})
+        networkx.set_edge_attributes(self, {(u, v): {a: 0.0 for a in self._edge_attributes} for (u, v) in self.edges})
 
     def get_compartment_value(self, patch_id, compartment):
         """
@@ -158,7 +163,7 @@ class TypedEnvironment(Environment):
 
     def __init__(self, compartments, patch_attributes_by_type, edge_attributes):
         """
-        Create a network
+        Create a metapopulation
         :param compartments: List of population compartments
         :param patch_attributes_by_type: List of patch attributes, grouped by patch type
         :param edge_attributes: List of edge attributes
@@ -207,10 +212,8 @@ class TypedEnvironment(Environment):
         type are applied.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedEnvironment.PATCH_TYPE:
-                                                    self._node[n][TypedEnvironment.PATCH_TYPE],
-                                                TypedEnvironment.COMPARTMENTS:
-                                                    {c: 0 for c in self._compartments},
+        networkx.set_node_attributes(self, {n: {TypedEnvironment.PATCH_TYPE: self._node[n][TypedEnvironment.PATCH_TYPE],
+                                                TypedEnvironment.COMPARTMENTS: {c: 0 for c in self._compartments},
                                                 TypedEnvironment.ATTRIBUTES:
                                                     {a: 0 for a in self._attribute_by_type[self._node[n]
                                                      [TypedEnvironment.PATCH_TYPE]]}}

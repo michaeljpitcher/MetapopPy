@@ -1,5 +1,4 @@
 from metapoppy.dynamics import Dynamics
-from .tbpulmonaryenvironment import *
 from tbmetapoppy.events import *
 
 
@@ -84,7 +83,8 @@ class TBDynamics(Dynamics):
         # Macrophage activation
         mr_activation_bac = CellActivation(TBPulmonaryEnvironment.MACROPHAGE_RESTING,
                                            TBPulmonaryEnvironment.EXTRACELLULAR_BACTERIA)
-        mr_activation_ta = CellActivation(TBPulmonaryEnvironment.MACROPHAGE_RESTING, [TBPulmonaryEnvironment.T_CELL_ACTIVATED])
+        mr_activation_ta = CellActivation(TBPulmonaryEnvironment.MACROPHAGE_RESTING,
+                                          [TBPulmonaryEnvironment.T_CELL_ACTIVATED])
         events += [mr_activation_bac, mr_activation_ta]
 
         # Macrophage death
@@ -116,8 +116,9 @@ class TBDynamics(Dynamics):
         events.append(tn_recruit_enhanced)
 
         # T-cell activation
-        tn_activation = CellActivation(TBPulmonaryEnvironment.T_CELL_NAIVE, [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE,
-                                                                             TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
+        tn_activation = CellActivation(TBPulmonaryEnvironment.T_CELL_NAIVE,
+                                       [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE,
+                                        TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
         events.append(tn_activation)
 
         # T-cell translocation
@@ -156,7 +157,7 @@ class TBDynamics(Dynamics):
                                   -1 * (current_rate_tn_lymph * drop_percent))
 
         drop_interval = params[TBDynamics.RECRUITMENT_DROP_INTERVAL]
-        times = [self._start_time + (n * drop_interval) for n in range(1,int(self._max_time/drop_interval)+1)]
+        times = [self._start_time + (n * drop_interval) for n in range(1, int(self._max_time/drop_interval)+1)]
         for t in times:
             self.post_event(t, lambda: drop_rec_rate())
 
@@ -204,7 +205,7 @@ class TBDynamics(Dynamics):
         :return:
         """
         return patch_id == TBPulmonaryEnvironment.LYMPH_PATCH or \
-               sum([self._network.get_compartment_value(patch_id, n) for n in TBPulmonaryEnvironment.BACTERIA]) > 0
+                sum([self._network.get_compartment_value(patch_id, n) for n in TBPulmonaryEnvironment.BACTERIA]) > 0
 
     def _seed_activated_patch(self, patch_id, params):
         """
@@ -225,7 +226,7 @@ class TBDynamics(Dynamics):
 
             lymph_recruit_rates = {c: params[self._lymph_recruit_keys[c]] for c in
                                    [TBPulmonaryEnvironment.MACROPHAGE_RESTING, TBPulmonaryEnvironment.T_CELL_NAIVE]}
-            patch_seeding[TypedMetapopulationNetwork.COMPARTMENTS] = \
+            patch_seeding[TypedEnvironment.COMPARTMENTS] = \
                 {c: int(round(lymph_recruit_rates[c] / death_rates[c])) for c in lymph_recruit_rates}
 
         else:
@@ -233,9 +234,10 @@ class TBDynamics(Dynamics):
             patch_seeding = self._network.pulmonary_atts_for_patch(patch_id)
 
             lung_recruit_rates = {c: params[self._lung_recruit_keys[c]] for c in
-                                  [TBPulmonaryEnvironment.MACROPHAGE_RESTING, TBPulmonaryEnvironment.DENDRITIC_CELL_IMMATURE]}
-            perf = patch_seeding[TypedMetapopulationNetwork.ATTRIBUTES][TBPulmonaryEnvironment.PERFUSION]
-            patch_seeding[TypedMetapopulationNetwork.COMPARTMENTS] = \
+                                  [TBPulmonaryEnvironment.MACROPHAGE_RESTING,
+                                   TBPulmonaryEnvironment.DENDRITIC_CELL_IMMATURE]}
+            perf = patch_seeding[TypedEnvironment.ATTRIBUTES][TBPulmonaryEnvironment.PERFUSION]
+            patch_seeding[TypedEnvironment.COMPARTMENTS] = \
                 {c: int(round(perf * (lung_recruit_rates[c] / death_rates[c]))) for c in lung_recruit_rates}
 
         return patch_seeding

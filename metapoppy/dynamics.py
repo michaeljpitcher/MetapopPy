@@ -6,6 +6,7 @@ import numpy
 import itertools
 import heapq
 
+# Lambda - used to ensure that posted event is a lambda function (see PostEvent function)
 LAMBDA = lambda: 0
 
 
@@ -42,7 +43,7 @@ class Dynamics(epyc.Experiment, object):
         epyc.Experiment.__init__(self)
 
         # Initialise variables
-        self._network = self._rate_table = self._patch_seeding = self._edge_seeding =None
+        self._network = self._rate_table = self._patch_seeding = self._edge_seeding = None
 
         self._row_for_patch = {}
         self._active_patches = []
@@ -201,7 +202,7 @@ class Dynamics(epyc.Experiment, object):
                     att_seed = {}
                 self._network.update_patch(n, comp_seed, att_seed)
             # Patch does not have a seeding, need to check if it is active
-            elif not n in self._active_patches and self._patch_is_active(n):
+            elif n not in self._active_patches and self._patch_is_active(n):
                 self._activate_patch(n)
 
         if self._edge_seeding:
@@ -210,7 +211,6 @@ class Dynamics(epyc.Experiment, object):
 
         # Check that at least one patch is active
         assert any(self._active_patches), "No patches are active"
-
 
     def _propagate_patch_update(self, patch_id, compartment_changes, patch_attribute_changes):
         """
@@ -336,9 +336,8 @@ class Dynamics(epyc.Experiment, object):
     def post_event(self, t, event):
         """
         Post a event to occur at a set time at a given patch
-        :param t:
-        :param event:
-        :param patch_id:
+        :param t: time to occur
+        :param event: the event occurring
         :return:
         """
         assert isinstance(event, type(LAMBDA)) and event.__name__ == LAMBDA.__name__, \
@@ -357,13 +356,13 @@ class Dynamics(epyc.Experiment, object):
 
         time = self._start_time
 
-        def record_results(results, record_time):
+        def record_results(current_data, record_time):
             # print "t=", record_time
             # TODO - we don't record edges / non-active patches
-            results[record_time] = {}
+            current_data[record_time] = {}
             for p in self._active_patches:
-                results[record_time][p] = copy.deepcopy(self._network.node[p])
-            return results
+                current_data[record_time][p] = copy.deepcopy(self._network.node[p])
+            return current_data
 
         results = record_results(results, time)
         # Avoid rounding issues with time interval by rounding to 7 decimal places
@@ -428,7 +427,7 @@ class Dynamics(epyc.Experiment, object):
         """
         return t >= self._max_time
 
-    def tearDown( self ):
+    def tearDown(self):
         """
         Finish a run for a repetition. Runs once for every repetition within a parameter sample. Resets all values ready
         for the next run.

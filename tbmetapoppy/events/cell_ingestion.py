@@ -27,8 +27,8 @@ class CellIngestBacterium(Event):
         return rp_key, [self._half_sat_key, self._infection_prob_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        total_bac = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING) + \
-                    network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
+        total_bac = network.get_compartment_value(patch_id, [TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING,
+                                                             TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT])
         if not total_bac:
             return 0
         return network.get_compartment_value(patch_id, self._cell_type) * \

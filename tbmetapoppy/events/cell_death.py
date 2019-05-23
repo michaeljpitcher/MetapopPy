@@ -1,6 +1,5 @@
 from metapoppy.event import Event
 from ..tbpulmonaryenvironment import *
-import numpy
 from parameters import RATE, HALF_SAT, INTRACELLULAR_REPLICATION_SIGMOID, MACROPHAGE_CAPACITY
 
 
@@ -39,8 +38,8 @@ class InfectedCellDeath(CellDeath):
         return self._dying_compartment + CellDeath.DEATH + RATE, [self._bac_percent_to_destroy_key]
 
     def perform(self, network, patch_id):
-        avg_bac_per_cell = int(round(float(network.get_compartment_value(patch_id, self._internal_bacteria)) / \
-                           network.get_compartment_value(patch_id, self._dying_compartment)))
+        avg_bac_per_cell = int(round(float(network.get_compartment_value(patch_id, self._internal_bacteria)) /
+                            network.get_compartment_value(patch_id, self._dying_compartment)))
         bac_to_destroy = int(round(avg_bac_per_cell * self._parameters[self._bac_percent_to_destroy_key]))
         bac_to_release = avg_bac_per_cell - bac_to_destroy
         changes = {self._dying_compartment: -1, self._internal_bacteria: -1 * (bac_to_destroy + bac_to_release),
@@ -61,7 +60,7 @@ class MacrophageBursting(InfectedCellDeath):
     def _define_parameter_keys(self):
         self._bac_percent_to_destroy_key = MacrophageBursting.BURSTING + InfectedCellDeath.PERCENT_BACTERIA_DESTROYED
         return MacrophageBursting.BURSTING + RATE, \
-               [self._bac_percent_to_destroy_key, MACROPHAGE_CAPACITY, INTRACELLULAR_REPLICATION_SIGMOID]
+                [self._bac_percent_to_destroy_key, MACROPHAGE_CAPACITY, INTRACELLULAR_REPLICATION_SIGMOID]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         bac = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_INTRACELLULAR_MACROPHAGE)
@@ -86,11 +85,11 @@ class TCellDestroysMacrophage(InfectedCellDeath):
                                            InfectedCellDeath.PERCENT_BACTERIA_DESTROYED
         self._half_sat_key = TCellDestroysMacrophage.T_CELL_DESTROYS_MACROPHAGE + HALF_SAT
         return TCellDestroysMacrophage.T_CELL_DESTROYS_MACROPHAGE + RATE, \
-               [self._bac_percent_to_destroy_key, self._half_sat_key]
+                [self._bac_percent_to_destroy_key, self._half_sat_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
-        tcell = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.T_CELL_ACTIVATED)
-        if not tcell:
+        t_cell = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.T_CELL_ACTIVATED)
+        if not t_cell:
             return 0
         mac = network.get_compartment_value(patch_id, self._dying_compartment)
-        return mac * (float(tcell) / (tcell + self._parameters[self._half_sat_key]))
+        return mac * (float(t_cell) / (t_cell + self._parameters[self._half_sat_key]))

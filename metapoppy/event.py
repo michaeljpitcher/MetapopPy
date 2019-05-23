@@ -26,7 +26,7 @@ class Event(object):
         self._reaction_parameter_key, self._parameter_keys = self._define_parameter_keys()
         self._parameters = {}
         if self._parameter_keys:
-            self._parameters = {p:0.0 for p in self._parameter_keys}
+            self._parameters = {p: 0.0 for p in self._parameter_keys}
         self._reaction_parameter = 0.0
 
     def get_dependent_compartments(self):
@@ -72,7 +72,7 @@ class Event(object):
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
         """
-        Determine the state variable at patch (i.e. number of possible occurrences). Must be overriden as specific to
+        Determine the state variable at patch (i.e. number of possible occurrences). Must be overridden as specific to
         each event type.
         :param network:
         :param patch_id:
@@ -82,7 +82,7 @@ class Event(object):
 
     def perform(self, network, patch_id):
         """
-        Event is performed at a patch, updating it (and other patches). Must be overriden as specific to each event
+        Event is performed at a patch, updating it (and other patches). Must be overridden as specific to each event
         type.
         :param network:
         :param patch_id:
@@ -112,9 +112,12 @@ class PatchTypeEvent(Event):
         else:
             return 0.0
 
+    def _define_parameter_keys(self):
+        raise NotImplementedError
+
     def _calculate_state_variable_at_patch(self, network, patch_id):
         """
-        Determine the state variable at patch (i.e. number of possible occurrences). Must be overriden as specific to
+        Determine the state variable at patch (i.e. number of possible occurrences). Must be overridden as specific to
         each event type.
         :param network:
         :param patch_id:
@@ -124,7 +127,7 @@ class PatchTypeEvent(Event):
 
     def perform(self, network, patch_id):
         """
-        Event is performed at a patch, updating it (and other patches). Must be overriden as specific to each event
+        Event is performed at a patch, updating it (and other patches). Must be overridden as specific to each event
         type.
         :param network:
         :param patch_id:
