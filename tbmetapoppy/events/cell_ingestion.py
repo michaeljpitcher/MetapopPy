@@ -35,7 +35,8 @@ class CellIngestBacterium(Event):
            (float(total_bac) / (total_bac + self._parameters[self._half_sat_key]))
 
     def perform(self, network, patch_id):
-        replicating = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING)
+        replicating = network.get_compartment_value(patch_id,
+                                                    TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING)
         dormant = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
         total_bacteria = replicating + dormant
 

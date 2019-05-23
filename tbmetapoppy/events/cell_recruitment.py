@@ -42,7 +42,8 @@ class EnhancedCellRecruitmentLung(CellRecruitment):
         self._half_sat_key = None
         self._weight_key = None
         CellRecruitment.__init__(self, TBPulmonaryEnvironment.ALVEOLAR_PATCH, cell_recruited)
-        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
+        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED,
+                                         TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE
@@ -78,7 +79,8 @@ class EnhancedCellRecruitmentLymph(CellRecruitment):
         self._half_sat_key = None
         self._weight_key = None
         CellRecruitment.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type)
-        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED, TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
+        self._dependent_compartments += [TBPulmonaryEnvironment.MACROPHAGE_INFECTED,
+                                         TBPulmonaryEnvironment.MACROPHAGE_ACTIVATED]
 
     def _define_parameter_keys(self):
         rp_key = self._cell_type + CellRecruitment.ENHANCED_RECRUITMENT + "_" + self._patch_type + RATE

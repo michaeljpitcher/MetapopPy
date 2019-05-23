@@ -74,7 +74,7 @@ class TranslocationLymphToLung(Translocation):
         neighbours = []
         vals = []
         total = 0
-        for k,v in edges.iteritems():
+        for k, v in edges.iteritems():
             neighbours.append(k)
             val = v[TBPulmonaryEnvironment.PERFUSION]
             vals.append(val)
@@ -87,7 +87,8 @@ class TranslocationLymphToLung(Translocation):
 class TCellTranslocationLymphToLung(Translocation):
     def __init__(self, cell_type):
         Translocation.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type,
-                               [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE, TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
+                               [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE,
+                                TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
 
     def _define_parameter_keys(self):
         self._sigmoid_key = self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + SIGMOID
@@ -128,11 +129,10 @@ class TCellTranslocationLymphToLung(Translocation):
         neighbours = []
         vals = []
         total = 0
-        for k,v in edges.iteritems():
+        for k, v in edges.iteritems():
             neighbours.append(k)
             val = network.get_compartment_value(k, TBPulmonaryEnvironment.MACROPHAGE_INFECTED) * v
             vals.append(val)
             total += val
         # Choose a neighbour based on the values
         return neighbours[numpy.random.choice(range(len(neighbours)), p=numpy.array(vals)/total)]
-
