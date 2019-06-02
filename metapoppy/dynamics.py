@@ -210,7 +210,7 @@ class Dynamics(epyc.Experiment, object):
                 self._network.update_edge(u, v, seed)
 
         # Check that at least one patch is active
-        assert any(self._active_patches), "No patches are active"
+        assert len(self._active_patches) > 0, "No patches are active"
 
     def _propagate_patch_update(self, patch_id, compartment_changes, patch_attribute_changes):
         """
