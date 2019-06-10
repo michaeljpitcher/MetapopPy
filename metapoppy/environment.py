@@ -74,8 +74,8 @@ class Environment(networkx.Graph):
         Reset all patches to zero population and attribute values.
         :return:
         """
-        networkx.set_node_attributes(self, {n: {TypedEnvironment.COMPARTMENTS: {c: 0 for c in self._compartments},
-                                                TypedEnvironment.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
+        networkx.set_node_attributes(self, {n: {Environment.COMPARTMENTS: {c: 0 for c in self._compartments},
+                                                Environment.ATTRIBUTES: {a: 0.0 for a in self._patch_attributes}}
                                             for n in self.nodes})
 
     def _reset_edges(self):
