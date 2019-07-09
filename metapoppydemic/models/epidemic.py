@@ -6,7 +6,7 @@ from compartments import *
 class Epidemic(Dynamics):
 
     def __init__(self, compartments, template_network):
-        g = MetapopulationNetwork(compartments, [], [], template=template_network)
+        g = Environment(compartments, [], [], template=template_network)
         Dynamics.__init__(self, g)
 
     def _create_events(self):

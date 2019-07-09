@@ -31,7 +31,7 @@ class SEIRDynamics(Epidemic):
     def _get_initial_patch_seeding(self, params):
         seed = {}
         for n in self.network().nodes():
-            seed[n] = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SEIRDynamics.INIT_S],
+            seed[n] = {TypedEnvironment.COMPARTMENTS: {SUSCEPTIBLE: params[SEIRDynamics.INIT_S],
                                                                  INFECTIOUS: params[SEIRDynamics.INIT_I]}}
         return seed
 

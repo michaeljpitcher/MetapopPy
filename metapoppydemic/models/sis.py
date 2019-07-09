@@ -30,11 +30,11 @@ class SISDynamics(Epidemic):
 
     def _get_initial_patch_seeding(self, params):
         seed = {params[SISDynamics.INITAL_INFECTION_LOCATION]:
-                    {TypedMetapopulationNetwork.COMPARTMENTS: {INFECTIOUS: params[SISDynamics.INIT_I]}}}
+                    {TypedEnvironment.COMPARTMENTS: {INFECTIOUS: params[SISDynamics.INIT_I]}}}
         return seed
 
     def _seed_activated_patch(self, patch_id, params):
-        seed = {TypedMetapopulationNetwork.COMPARTMENTS: {SUSCEPTIBLE: params[SISDynamics.INIT_S]}}
+        seed = {TypedEnvironment.COMPARTMENTS: {SUSCEPTIBLE: params[SISDynamics.INIT_S]}}
         return seed
 
     def _get_initial_edge_seeding(self, params):
