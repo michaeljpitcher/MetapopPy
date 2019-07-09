@@ -60,6 +60,12 @@ class Event(object):
         for p in self._parameters:
             self._parameters[p] = parameter_values[p]
 
+    def update_parameter(self, parameter, value):
+        if parameter == self._reaction_parameter_key:
+            self._reaction_parameter = value
+        else:
+            self._parameters[parameter] = value
+
     def calculate_rate_at_patch(self, network, patch_id):
         """
         Calculate the rate of this event at this patch. Calculation is reaction parameter (single value, defined at
