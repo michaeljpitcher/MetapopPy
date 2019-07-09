@@ -1,10 +1,13 @@
 import json
 import epyc
+import ConfigParser
+
 
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
 from ..environment import *
+
 
 
 class MetapoppyResults(object):
@@ -42,6 +45,11 @@ class MetapoppyResults(object):
 
     def set_node_positions(self, pos):
         self._pos = pos
+
+    def set_node_positions_from_file(self, filename):
+        cp = ConfigParser.ConfigParser()
+        cp.read(filename)
+        self._pos = {v: [float(x) for x in p.split(', ')] for v, p in cp.items(TypedEnvironment.POSITION)}
 
     def create_network(self, vis_folder):
         param_sample = 0
@@ -84,8 +92,8 @@ class MetapoppyResults(object):
     def setup_frame(self, ax, timestep):
         pass
 
-    def draw_active_patch(self, G, patch, data):
-        networkx.draw_networkx_nodes(G, self._pos, nodelist=[patch], node_color='red', node_size=10)
+    def draw_active_patch(self, G, patch, data, ax):
+        networkx.draw_networkx_nodes(G, self._pos, ax=ax, nodelist=[patch], node_color='red', node_size=5)
 
-    def draw_inactive_patches(self, G, patches):
-        networkx.draw_networkx_nodes(G, self._pos, nodelist=patches, node_color='grey', node_size=5, alpha=0.1)
+    def draw_inactive_patches(self, G, patches, ax):
+        networkx.draw_networkx_nodes(G, self._pos, ax=ax, nodelist=patches, node_color='grey', node_size=5, alpha=0.1)
