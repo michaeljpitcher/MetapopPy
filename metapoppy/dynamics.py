@@ -5,6 +5,7 @@ import copy
 import numpy
 import itertools
 import heapq
+import sys
 
 # Lambda - used to ensure that posted event is a lambda function (see PostEvent function)
 LAMBDA = lambda: 0
@@ -262,17 +263,16 @@ class Dynamics(epyc.Experiment, object):
             elif self._patch_is_active(patch_id):
                 self._activate_patch(patch_id)
 
-    def update_parameter(self, parameter, change):
+    def update_parameter(self, parameter, value):
         """
         Change the value of a parameter (e.g. if time-dependent). Will update the relevant columns of the rate table
         for all events which depend on this parameter.
         :param parameter:
-        :param change:
+        :param value:
         :return:
         """
-        params = self.parameters()
-        params[parameter] += change
-
+        # params = self.parameters()
+        # params[parameter] = value
         # TODO: could be better with a parameter dependency table
         # Loop through all events
         for col in range(self._rate_table.shape[1]):
@@ -280,7 +280,7 @@ class Dynamics(epyc.Experiment, object):
             # Check if changed parameter is needed by the event
             if parameter in event.parameter_keys():
                 # Update the parameter value on the event
-                event.set_parameters(self._parameters)
+                event.update_parameter(parameter, value)
                 for row in range(self._rate_table.shape[0]):
                     # Recalculate the event rate at every patch
                     patch_id = self._active_patches[row]
@@ -307,8 +307,8 @@ class Dynamics(epyc.Experiment, object):
         self._active_patches.append(patch_id)
 
         # Create a row of rates - value in each column is rate of an event at this patch
-        rates = numpy.array([e.calculate_rate_at_patch(self._network, patch_id) for e in self._events]).reshape(1, len(
-            self._events))
+        rates = numpy.array([e.calculate_rate_at_patch(self._network, patch_id) for e in self._events],
+                            dtype=numpy.float).reshape(1, len(self._events))
         if self._rate_table is None:
             # This row becomes the rate table if it's currently empty
             self._rate_table = rates
@@ -333,7 +333,7 @@ class Dynamics(epyc.Experiment, object):
     def _seed_activated_patch(self, patch_id, params):
         raise NotImplementedError
 
-    def post_event(self, t, event):
+    def post_event(self, t, event, attributes):
         """
         Post a event to occur at a set time at a given patch
         :param t: time to occur
@@ -342,7 +342,7 @@ class Dynamics(epyc.Experiment, object):
         """
         assert isinstance(event, type(LAMBDA)) and event.__name__ == LAMBDA.__name__, \
             "Posted event must be a lambda function"
-        heapq.heappush(self._posted_events, (t, event))
+        heapq.heappush(self._posted_events, (t, event, attributes))
 
     def do(self, params):
         """
@@ -352,12 +352,18 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
+        # TODO - debug remove
+        numpy.random.seed(103)
         results = {}
 
         time = self._start_time
 
+        debug = True
+
         def record_results(current_data, record_time):
-            # print "t=", record_time
+            if debug:
+                sys.stdout.write("\rt: {0}".format(record_time))
+                sys.stdout.flush()
             # TODO - we don't record edges / non-active patches
             current_data[record_time] = {}
             for p in self._active_patches:
@@ -373,7 +379,7 @@ class Dynamics(epyc.Experiment, object):
 
         num_events = len(self._events)
 
-        while not self._at_equilibrium(time):
+        while time < self._max_time and not self._end_simulation(time):
             # Calculate the timestep delta
             dt = (1.0 / total_network_rate) * math.log(1.0 / numpy.random.random())
 
@@ -381,13 +387,17 @@ class Dynamics(epyc.Experiment, object):
             if self._posted_events:
                 next_time = self._posted_events[0][0]
                 if time + dt > next_time:
-                    next_time, next_event = heapq.heappop(self._posted_events)
+                    next_time, next_event, next_atts = heapq.heappop(self._posted_events)
                     # Perform the event
-                    next_event()
+                    if len(next_atts) > 0:
+                        next_event(next_atts)
+                    else:
+                        next_event()
                     # Time progresses to the time of posted event
                     time = next_time
                     # Event has been executed, go to next loop
                     # NOTE: cannot continue processing events as this event may have changed rates of dynamic events
+                    total_network_rate = numpy.sum(self._rate_table)
                     continue
 
             # Choose an event and patch based on the values in the rate table
@@ -418,14 +428,13 @@ class Dynamics(epyc.Experiment, object):
 
         return results
 
-    def _at_equilibrium(self, t):
+    def _end_simulation(self, t):
         """
-        Function to end simulation. Default is when max time is exceeded, can be overriden to end on a certain
-        condition.
+        Function to end simulation.Can be overridden to end on a certain condition.
         :param t: Current simulated time
         :return: True to finish simulation
         """
-        return t >= self._max_time
+        return False
 
     def tearDown(self):
         """
