@@ -15,8 +15,8 @@ class TBPulmonaryEnvironment(TypedEnvironment):
     PATCH_ATTRIBUTES = {ALVEOLAR_PATCH: [VENTILATION, PERFUSION, OXYGEN_TENSION, DRAINAGE]}
 
     # Edge attributes
-    # CYTOKINE = 'cytokine'
-    EDGE_ATTRIBUTES = [PERFUSION]
+    CYTOKINE = 'cytokine'
+    EDGE_ATTRIBUTES = [PERFUSION, CYTOKINE]
 
     # Configuration
     TOPOLOGY = 'topology'
@@ -109,7 +109,7 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             cp.set(TypedEnvironment.POSITION, str(n), str(v)[1:-1])
 
         cp.set(TypedEnvironment.POSITION, TBPulmonaryEnvironment.LYMPH_PATCH,
-               str(maxx + (maxx-minx)/2.0) + ',' + str(miny + (maxy-miny)/2.0))
+               str(maxx + (maxx-minx)/2.0) + ', ' + str(miny + (maxy-miny)/2.0))
 
         with open(filename, 'w') as file_pos:
             cp.write(file_pos)
@@ -314,14 +314,7 @@ class TBPulmonaryEnvironment(TypedEnvironment):
                  TBPulmonaryEnvironment.PERFUSION: q,
                  TBPulmonaryEnvironment.OXYGEN_TENSION: o2,
                  TBPulmonaryEnvironment.DRAINAGE: values[TBPulmonaryEnvironment.DRAINAGE]}
-
-    def pulmonary_atts_for_patch(self, patch_id):
-        """
-        For a given patch, return the seeded pulmonary attributes
-        :param patch_id:
-        :return:
-        """
-        return self._pulmonary_att_seeding[patch_id]
+        return self._pulmonary_att_seeding
 
     def update_patch(self, patch_id, compartment_changes=None, attribute_changes=None):
         """
@@ -339,9 +332,9 @@ class TBPulmonaryEnvironment(TypedEnvironment):
             self._infected_patches.append(patch_id)
         TypedEnvironment.update_patch(self, patch_id, compartment_changes, attribute_changes)
         if self._node[patch_id][TypedEnvironment.PATCH_TYPE] == TBPulmonaryEnvironment.ALVEOLAR_PATCH:
-            # if compartment_changes and TBPulmonaryNetwork.MACROPHAGE_INFECTED in compartment_changes:
-            #     self.update_edge(patch_id, TBPulmonaryNetwork.LYMPH_PATCH,
-            #             {TBPulmonaryNetwork.CYTOKINE: compartment_changes[TBPulmonaryNetwork.MACROPHAGE_INFECTED]})
+            if compartment_changes and TBPulmonaryEnvironment.MACROPHAGE_INFECTED in compartment_changes:
+                self.update_edge(patch_id, TBPulmonaryEnvironment.LYMPH_PATCH,
+                        {TBPulmonaryEnvironment.CYTOKINE: compartment_changes[TBPulmonaryEnvironment.MACROPHAGE_INFECTED]})
             if attribute_changes and TBPulmonaryEnvironment.PERFUSION in attribute_changes:
                 val = attribute_changes[TBPulmonaryEnvironment.PERFUSION]
                 self.update_edge(patch_id, TBPulmonaryEnvironment.LYMPH_PATCH, {TBPulmonaryEnvironment.PERFUSION: val})
