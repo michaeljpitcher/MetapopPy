@@ -27,14 +27,3 @@ class TBDynamicsWithHIV(TBDynamics):
 
         self.post_event(self._start_time, lambda a: update_rate(a), [initial_tn_rate])
         self.post_event(hiv_initial_time, lambda a: update_rate(a), [new_tn_rate])
-        
-        # def place_bac():
-        #     self._network.update_patch(44000, {TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_REPLICATING: 2})
-        #
-        # # TODO - debug remove
-        # self.post_event(50.0, lambda: place_bac(), [])
-
-    def _end_simulation(self, t):
-        # DEBUG - remove
-        return any([i for i in self._network._infected_patches if
-                    self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >= 20000])

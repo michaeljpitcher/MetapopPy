@@ -67,8 +67,9 @@ class TranslocationLungToLymphTestCase(unittest.TestCase):
 
 class TranslocationLymphToLungTestCase(unittest.TestCase):
     def setUp(self):
-        self.event = TranslocationLymphToLung(TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
-        self.params = {'b_ed_translocation_from_lymph_patch_rate': 0.1}
+        self.event = BacteriaTranslocationLymphToLung(TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
+        self.params = {'b_ed_translocation_from_lymph_patch_rate': 0.1,
+                       'caseum_half_sat': 50}
         self.event.set_parameters(self.params)
 
         self.network = TBPulmonaryEnvironment({TBPulmonaryEnvironment.TOPOLOGY: None})

@@ -58,14 +58,14 @@ class TranslocationLungToLymph(Translocation):
                network.get_attribute_value(patch_id, TBPulmonaryEnvironment.DRAINAGE)
 
 
-class BacteriaTranslocationLymphToLung(Translocation):
+class TranslocationLymphToLung(Translocation):
     TRANSLOCATION_CASEUM_HALF_SAT = 'caseum_half_sat'
 
     def __init__(self, cell_type):
         Translocation.__init__(self, TBPulmonaryEnvironment.LYMPH_PATCH, cell_type, [TBPulmonaryEnvironment.SOLID_CASEUM])
 
     def _define_parameter_keys(self):
-        self._caseum_key = BacteriaTranslocationLymphToLung.TRANSLOCATION_CASEUM_HALF_SAT
+        self._caseum_key = TranslocationLymphToLung.TRANSLOCATION_CASEUM_HALF_SAT
         return self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + RATE, [self._caseum_key]
 
     def _calculate_state_variable_at_patch(self, network, patch_id):
@@ -78,14 +78,14 @@ class BacteriaTranslocationLymphToLung(Translocation):
         edges = network[patch_id]
         neighbours = []
         vals = []
-        total = 0
+        # total = 0
         for k, v in edges.iteritems():
             neighbours.append(k)
             val = v[TBPulmonaryEnvironment.PERFUSION]
             vals.append(float(val))
-            total += val
+            # total += val
         # Choose a neighbour
-        n = numpy.random.choice(neighbours, p=numpy.array(vals)/total)
+        n = numpy.random.choice(neighbours, p=vals)
         return n
 
 
@@ -101,31 +101,31 @@ class TCellTranslocationLymphToLung(Translocation):
         return self._moving_compartment + Translocation.TRANSLOCATION_KEY + self._patch_type + RATE, \
                [self._sigmoid_key, self._half_sat_key]
 
-    # def _calculate_state_variable_at_patch(self, network, patch_id):
-    #     cells = network.get_compartment_value(patch_id, self._moving_compartment)
-    #     if not cells:
-    #         return 0
-    #     infected_patches = network.infected_patches()
-    #     cytokine_count_lung = sum([network.get_edge_data(patch_id, n)[TBPulmonaryEnvironment.CYTOKINE] for n in
-    #                                infected_patches])
-    #     cytokine_count_lymph = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
-    #     # Catch to avoid / 0 errors
-    #     if not cytokine_count_lymph and not cytokine_count_lung:
-    #         return 0
-    #     return cells * (float(cytokine_count_lung) ** self._parameters[self._sigmoid_key] /
-    #             (cytokine_count_lung ** self._parameters[self._sigmoid_key] +
-    #              cytokine_count_lymph ** self._parameters[self._sigmoid_key]))
-
     def _calculate_state_variable_at_patch(self, network, patch_id):
         cells = network.get_compartment_value(patch_id, self._moving_compartment)
         if not cells:
             return 0
-        dm = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE)
+        infected_patches = network.infected_patches()
+        cytokine_count_lung = sum([network.get_edge_data(patch_id, n)[TBPulmonaryEnvironment.CYTOKINE] for n in
+                                   infected_patches])
+        cytokine_count_lymph = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.MACROPHAGE_INFECTED)
         # Catch to avoid / 0 errors
-        if not dm:
+        if not cytokine_count_lymph and not cytokine_count_lung:
             return 0
-        sig = self._parameters[self._sigmoid_key]
-        return cells * (float(dm)**sig / (dm**sig + self._parameters[self._half_sat_key]**sig))
+        return cells * (float(cytokine_count_lung) ** self._parameters[self._sigmoid_key] /
+                (cytokine_count_lung ** self._parameters[self._sigmoid_key] +
+                 cytokine_count_lymph ** self._parameters[self._sigmoid_key]))
+
+    # def _calculate_state_variable_at_patch(self, network, patch_id):
+    #     cells = network.get_compartment_value(patch_id, self._moving_compartment)
+    #     if not cells:
+    #         return 0
+    #     dm = network.get_compartment_value(patch_id, TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE)
+    #     # Catch to avoid / 0 errors
+    #     if not dm:
+    #         return 0
+    #     sig = self._parameters[self._sigmoid_key]
+    #     return cells * (float(dm)**sig / (dm**sig + self._parameters[self._half_sat_key]**sig))
 
     def _choose_neighbour(self, network, patch_id):
         # Choosing based on infection and perfusion

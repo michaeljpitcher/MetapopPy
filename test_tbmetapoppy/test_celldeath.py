@@ -67,7 +67,7 @@ class InfectedCellDeathTestCase(unittest.TestCase):
         self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_INTRACELLULAR_MACROPHAGE),
                          10 - exp_kill - exp_rel)
         self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT), exp_rel)
-        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.CASEUM), 1)
+        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.SOLID_CASEUM), 1)
 
         self.network.reset()
         self.network.update_patch(1, {TBPulmonaryEnvironment.MACROPHAGE_INFECTED: 4,
@@ -80,7 +80,7 @@ class InfectedCellDeathTestCase(unittest.TestCase):
                          10 - exp_kill - exp_rel)
         self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT),
                          exp_rel)
-        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.CASEUM), 1)
+        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.SOLID_CASEUM), 1)
 
         self.network.reset()
         self.network.update_patch(1, {TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE: 4,
@@ -93,7 +93,7 @@ class InfectedCellDeathTestCase(unittest.TestCase):
                          4 - exp_kill - exp_rel)
         self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT),
                          exp_rel)
-        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.CASEUM), 0)
+        self.assertEqual(self.network.get_compartment_value(1, TBPulmonaryEnvironment.SOLID_CASEUM), 0)
 
 
 class MacrophageBurstingTestCase(unittest.TestCase):

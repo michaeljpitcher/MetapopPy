@@ -217,3 +217,8 @@ class TBDynamics(Dynamics):
 
     def _get_initial_edge_seeding(self, params):
         pass
+
+    def _end_simulation(self, t):
+        # DEBUG - remove
+        return any([i for i in self._network._infected_patches if
+                    self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >= 20000])

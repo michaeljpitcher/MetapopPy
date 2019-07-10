@@ -45,7 +45,7 @@ class InfectedCellDeath(CellDeath):
         changes = {self._dying_compartment: -1, self._internal_bacteria: -1 * (bac_to_destroy + bac_to_release),
                    TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT: bac_to_release}
         if self._dying_compartment == TBPulmonaryEnvironment.MACROPHAGE_INFECTED:
-            changes[TBPulmonaryEnvironment.CASEUM] = 1
+            changes[TBPulmonaryEnvironment.SOLID_CASEUM] = 1
         network.update_patch(patch_id, changes)
 
 

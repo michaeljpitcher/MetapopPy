@@ -6,3 +6,4 @@ from cell_recruitment import *
 from cell_activation import *
 from parameters import *
 from translocation import *
+from caseum_liquify import *
