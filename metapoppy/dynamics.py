@@ -352,8 +352,6 @@ class Dynamics(epyc.Experiment, object):
         :param params:
         :return:
         """
-        # TODO - debug remove
-        numpy.random.seed(103)
         results = {}
 
         time = self._start_time
