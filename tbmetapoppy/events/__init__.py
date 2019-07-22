@@ -1,4 +1,4 @@
-from bacterial_replication import *
+from replication import *
 from bacterial_state_change import *
 from cell_death import *
 from cell_ingestion import *
