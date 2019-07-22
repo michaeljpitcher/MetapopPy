@@ -3,12 +3,12 @@ import matplotlib.animation
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
-from metapoppy.visual.results import MetapoppyResults
+from metapoppy.visual.visuals import MetapoppyVisuals
 
 
-class TBMetapoppyResults(MetapoppyResults):
+class TBMetapoppyVisuals(MetapoppyVisuals):
     def __init__(self):
-        MetapoppyResults.__init__(self)
+        MetapoppyVisuals.__init__(self)
         self._boundary = None
         self.plot_vals = {}
         self._cav = {}

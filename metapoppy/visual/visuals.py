@@ -3,6 +3,8 @@ import epyc
 import ConfigParser
 
 
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
@@ -10,7 +12,7 @@ from ..environment import *
 
 
 
-class MetapoppyResults(object):
+class MetapoppyVisuals(object):
     def __init__(self):
         self._repetitions = 0
         self._parameters = []
