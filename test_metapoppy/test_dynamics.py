@@ -195,9 +195,10 @@ class DynamicsTestCase(unittest.TestCase):
         letters = ['a','b','c','d','e','f','g','h','i']
         strq = ''.join(numpy.random.choice(letters, 10, True))
 
-        def func(model):
+        def func(atts):
             return strq
-        self.dynamics.post_event(14.5, lambda a: func(a))
+
+        self.dynamics.post_event(14.5, lambda a: func(a), [])
         self.assertEqual(len(self.dynamics._posted_events), 1)
         self.assertEqual(self.dynamics._posted_events[0][0], 14.5)
 
@@ -297,82 +298,79 @@ class PropagationTestCase(unittest.TestCase):
                   EventPatchAttDep.__name__: 0.3, EventEdgeAttDep.__name__: 0.4}
         self.dynamics.configure(params)
         self.dynamics.setUp(params)
-#
-        # No values so check rates - NoDep should have value, rest should be 0
-        nodepevent = [q for q in self.dynamics._events if isinstance(q, EventNoDep)][0]
-        patchcompdep = [q for q in self.dynamics._events if isinstance(q, EventPatchCompDep)][0]
-        patchattdep = [q for q in self.dynamics._events if isinstance(q, EventPatchAttDep)][0]
-        edgeattdep = [q for q in self.dynamics._events if isinstance(q, EventEdgeAttDep)][0]
 
-        # Only the non-dependent event has any rate
-        nodep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == nodepevent]
-        for (r,e,p) in nodep_vals:
+        # No values so check rates - NoDep should have value, rest should be 0
+        nodep_rates = self.dynamics._rate_table[:,0]
+        patchcompdep_rates = self.dynamics._rate_table[:,1]
+        patchattdep_rates = self.dynamics._rate_table[:,2]
+        edgeattdep_rates = self.dynamics._rate_table[:,3]
+        for r in nodep_rates:
             self.assertEqual(r, params[EventNoDep.__name__] * 1)
-        rest = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] != nodepevent]
-        for (r,e,p) in rest:
-            self.assertEqual(r, 0)
+        for r in patchcompdep_rates:
+            self.assertFalse(r)
+        for r in patchattdep_rates:
+            self.assertFalse(r)
+        for r in edgeattdep_rates:
+            self.assertFalse(r)
 
         # Update compartment
         self.network.update_patch(self.nodes[0], {compartments[0]: 1})
         self.network.update_patch(self.nodes[1], {compartments[0]: 2})
         self.network.update_patch(self.nodes[2], {compartments[0]: 3})
 
-        # Non-dependent has rate
-        nodep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == nodepevent]
-        for (r, e, p) in nodep_vals:
+        nodep_rates = self.dynamics._rate_table[:,0]
+        patchcompdep_rates = self.dynamics._rate_table[:,1]
+        patchattdep_rates = self.dynamics._rate_table[:,2]
+        edgeattdep_rates = self.dynamics._rate_table[:,3]
+        for r in nodep_rates:
             self.assertEqual(r, params[EventNoDep.__name__] * 1)
-        # Compartment dependent has rate
-        compdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == patchcompdep]
-        for (r, e, p) in compdep_vals:
+        for i in range(len(patchcompdep_rates)):
+            r = patchcompdep_rates[i]
+            p = self.dynamics._active_patches[i]
             self.assertEqual(r, params[EventPatchCompDep.__name__] * self.network.node[p][Environment.COMPARTMENTS][compartments[0]])
-        # Rest have no rate
-        rest = self.dynamics._rate_table[(self.dynamics._rate_table[Dynamics.EVENT] != patchcompdep) & (self.dynamics._rate_table[Dynamics.EVENT] != nodepevent)]
-        for (r, e, p) in rest:
-            self.assertEqual(r, 0)
+        for r in patchattdep_rates:
+            self.assertFalse(r)
+        for r in edgeattdep_rates:
+            self.assertFalse(r)
 
         # Update attribute
         self.network.update_patch(self.nodes[0], attribute_changes={patch_attributes[0]: 4})
         self.network.update_patch(self.nodes[1], attribute_changes={patch_attributes[0]: 5})
         self.network.update_patch(self.nodes[2], attribute_changes={patch_attributes[0]: 6})
 
-        # Non-dependent has rate
-        nodep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == nodepevent]
-        for (r, e, p) in nodep_vals:
+        nodep_rates = self.dynamics._rate_table[:,0]
+        patchcompdep_rates = self.dynamics._rate_table[:,1]
+        patchattdep_rates = self.dynamics._rate_table[:,2]
+        edgeattdep_rates = self.dynamics._rate_table[:,3]
+        for r in nodep_rates:
             self.assertEqual(r, params[EventNoDep.__name__] * 1)
-        # Compartment dependent has rate
-        compdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == patchcompdep]
-        for (r, e, p) in compdep_vals:
+        for i in range(len(patchcompdep_rates)):
+            r = patchcompdep_rates[i]
+            p = self.dynamics._active_patches[i]
             self.assertEqual(r, params[EventPatchCompDep.__name__] * self.network.node[p][Environment.COMPARTMENTS][compartments[0]])
-        # Patch attribute dependent has rate
-        attdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == patchattdep]
-        for (r, e, p) in attdep_vals:
+        for i in range(len(patchattdep_rates)):
+            r = patchattdep_rates[i]
+            p = self.dynamics._active_patches[i]
             self.assertEqual(r, params[EventPatchAttDep.__name__] * self.network.node[p][Environment.ATTRIBUTES][patch_attributes[0]])
-        # Edge attribute dependent has no rate
-        edgeattdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == edgeattdep]
-        for (r, e, p) in edgeattdep_vals:
-            self.assertEqual(r, 0)
+        for r in edgeattdep_rates:
+            self.assertFalse(r)
 
-#
         self.network.update_edge(self.nodes[0], self.nodes[1], {edge_attributes[0]: 11})
         self.network.update_edge(self.nodes[1], self.nodes[2], {edge_attributes[0]: 13})
 
-        # Non-dependent has rate
-        nodep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == nodepevent]
-        for (r, e, p) in nodep_vals:
+        for r in nodep_rates:
             self.assertEqual(r, params[EventNoDep.__name__] * 1)
-        # Compartment dependent has rate
-        compdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == patchcompdep]
-        for (r, e, p) in compdep_vals:
-            self.assertEqual(r, params[EventPatchCompDep.__name__] * self.network.node[p][Environment.COMPARTMENTS][
-                compartments[0]])
-        # Patch attribute dependent has rate
-        attdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == patchattdep]
-        for (r, e, p) in attdep_vals:
-            self.assertEqual(r, params[EventPatchAttDep.__name__] * self.network.node[p][Environment.ATTRIBUTES][
-                patch_attributes[0]])
-        # Edge attribute dependent has no rate
-        edgeattdep_vals = self.dynamics._rate_table[self.dynamics._rate_table[Dynamics.EVENT] == edgeattdep]
-        for (r, e, p) in edgeattdep_vals:
+        for i in range(len(patchcompdep_rates)):
+            r = patchcompdep_rates[i]
+            p = self.dynamics._active_patches[i]
+            self.assertEqual(r, params[EventPatchCompDep.__name__] * self.network.node[p][Environment.COMPARTMENTS][compartments[0]])
+        for i in range(len(patchattdep_rates)):
+            r = patchattdep_rates[i]
+            p = self.dynamics._active_patches[i]
+            self.assertEqual(r, params[EventPatchAttDep.__name__] * self.network.node[p][Environment.ATTRIBUTES][patch_attributes[0]])
+        for i in range(len(edgeattdep_rates)):
+            r = edgeattdep_rates[i]
+            p = self.dynamics._active_patches[i]
             v = sum([a[edge_attributes[0]] for a in self.network[p].values()])
             self.assertEqual(r, params[EventEdgeAttDep.__name__] * v)
 
