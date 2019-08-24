@@ -44,7 +44,7 @@ class TBDynamics(Dynamics):
         events += [bed_to_ber, ber_to_bed]
 
         # Bacterial translocation - lymph to lung
-        bed_translocation = BacteriaTranslocationLymphToLung(TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
+        bed_translocation = TranslocationLymphToLungBlood(TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT)
         events.append(bed_translocation)
 
         # Dendritic cell recruitment
@@ -118,13 +118,17 @@ class TBDynamics(Dynamics):
                                         TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
         events.append(tn_activation)
 
+        # T-cell replication
         ta_rep = Replication(TBPulmonaryEnvironment.T_CELL_ACTIVATED)
         events.append(ta_rep)
 
         # T-cell translocation
-        # ta_translocation = TCellTranslocationToLungByInfection()
-        ta_translocation = TCellTranslocationLymphToLung(TBPulmonaryEnvironment.T_CELL_ACTIVATED)
-        events.append(ta_translocation)
+        # TODO - currently two options, needs a decision
+        ta_translocation_cyt = TranslocationLymphToLungCytokine(TBPulmonaryEnvironment.T_CELL_ACTIVATED)
+        events.append(ta_translocation_cyt)
+
+        ta_translocation_dm = TranslocationLymphToLungDendritic(TBPulmonaryEnvironment.T_CELL_ACTIVATED)
+        events.append(ta_translocation_dm)
 
         # T-cell death
         tn_death = CellDeath(TBPulmonaryEnvironment.T_CELL_NAIVE)
@@ -219,6 +223,25 @@ class TBDynamics(Dynamics):
         pass
 
     def _end_simulation(self, t):
-        # DEBUG - remove
+        # TODO DEBUG - remove 20000 limit
         return any([i for i in self._network._infected_patches if
-                    self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >= 20000])
+                    self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >= 20000]) or \
+                    self._network.get_compartment_value(TBPulmonaryEnvironment.LYMPH_PATCH,
+                                                        TBPulmonaryEnvironment.BACTERIA) >= 20000
+
+    # def setUp(self, params):
+    #     # TODO - debug, remove
+    #     Dynamics.setUp(self, params)
+    #
+    #     def seed(loc):
+    #         self._network.update_patch(loc[0], {TBPulmonaryEnvironment.BACTERIUM_EXTRACELLULAR_DORMANT: 1})
+    #
+    #     locations = [11112,11113,11114,11115,11116,11117,11118,11119,11120]
+    #
+    #     # Get params
+    #     bac = params['bac_seed']
+    #     counter = 0
+    #     while counter < bac:
+    #         loc = locations[counter]
+    #         self.post_event(35 + (counter*2), lambda a: seed(a), [loc])
+    #         counter += 1
