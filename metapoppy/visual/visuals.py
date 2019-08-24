@@ -4,7 +4,7 @@ import ConfigParser
 
 
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
