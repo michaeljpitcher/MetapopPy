@@ -54,7 +54,7 @@ class TBDynamicsTestCase(unittest.TestCase):
 
         # DC translocation
         dc_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLungToLymph) and
-                     e._moving_compartment == TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE]
+                     e._cell_type == TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE]
         self.assertEqual(len(dc_transl), 1)
 
         for d in TBPulmonaryEnvironment.DENDRITIC_CELLS:
@@ -102,7 +102,7 @@ class TBDynamicsTestCase(unittest.TestCase):
 
         # Macrophage translocation
         mac_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLungToLymph) and
-                      e._moving_compartment == TBPulmonaryEnvironment.MACROPHAGE_INFECTED]
+                      e._cell_type == TBPulmonaryEnvironment.MACROPHAGE_INFECTED]
         self.assertEqual(len(mac_transl), 1)
 
         #  T-cell recruitment
@@ -117,8 +117,8 @@ class TBDynamicsTestCase(unittest.TestCase):
         self.assertItemsEqual(tc_act[0]._triggers, [TBPulmonaryEnvironment.DENDRITIC_CELL_MATURE, TBPulmonaryEnvironment.MACROPHAGE_INFECTED])
 
         # T-cell translocation
-        tc_transl = [e for e in self.dynamics._events if isinstance(e, TCellTranslocationLymphToLung) and
-                     e._moving_compartment == TBPulmonaryEnvironment.T_CELL_ACTIVATED]
+        tc_transl = [e for e in self.dynamics._events if isinstance(e, TranslocationLymphToLungCytokine) and
+                     e._cell_type == TBPulmonaryEnvironment.T_CELL_ACTIVATED]
         self.assertEqual(len(tc_transl), 1)
 
         # T-cell death
