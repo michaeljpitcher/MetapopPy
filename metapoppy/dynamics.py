@@ -344,6 +344,16 @@ class Dynamics(epyc.Experiment, object):
             "Posted event must be a lambda function"
         heapq.heappush(self._posted_events, (t, event, attributes))
 
+    def _record_results(self, current_data, record_time, debug=False):
+        if debug:
+            sys.stdout.write("\rt: {0}".format(record_time))
+            sys.stdout.flush()
+        # TODO - we don't record edges / non-active patches
+        current_data[record_time] = {}
+        for p in self._active_patches:
+            current_data[record_time][p] = copy.deepcopy(self._network.node[p])
+        return current_data
+
     def do(self, params):
         """
         Run a MetapopPy simulation. Uses Gillespie simulation - all combinations of events and patches are given a rate
@@ -356,19 +366,7 @@ class Dynamics(epyc.Experiment, object):
 
         time = self._start_time
 
-        debug = True
-
-        def record_results(current_data, record_time):
-            if debug:
-                sys.stdout.write("\rt: {0}".format(record_time))
-                sys.stdout.flush()
-            # TODO - we don't record edges / non-active patches
-            current_data[record_time] = {}
-            for p in self._active_patches:
-                current_data[record_time][p] = copy.deepcopy(self._network.node[p])
-            return current_data
-
-        results = record_results(results, time)
+        results = self._record_results(results, time)
         # Avoid rounding issues with time interval by rounding to 7 decimal places
         next_record_interval = round(time + self._record_interval, 7)
 
@@ -413,7 +411,7 @@ class Dynamics(epyc.Experiment, object):
 
             # Record results if interval(s) exceeded
             while time >= next_record_interval and next_record_interval <= self._max_time:
-                record_results(results, next_record_interval)
+                self._record_results(results, next_record_interval)
                 # Avoid rounding issues
                 next_record_interval = round(next_record_interval + self._record_interval, 7)
 
