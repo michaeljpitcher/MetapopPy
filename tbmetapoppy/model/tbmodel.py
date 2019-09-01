@@ -17,12 +17,17 @@ class TBDynamics(Dynamics):
 
         self._perf_seed = {}
 
+        self._total_bac_cutoff = -1
+
         # Build network
         pulmonary_network = TBPulmonaryEnvironment(network_config)
         Dynamics.__init__(self, pulmonary_network)
 
     def output_positions(self, filename):
         self._prototype_network.output_positions(filename)
+
+    def set_bacterial_cutoff(self, value):
+        self._total_bac_cutoff = value
 
     def _create_events(self):
         """
@@ -223,11 +228,16 @@ class TBDynamics(Dynamics):
         pass
 
     def _end_simulation(self, t):
-        # TODO DEBUG - remove 20000 limit
-        return any([i for i in self._network._infected_patches if
-                    self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >= 20000]) or \
+        if self._total_bac_cutoff == -1:
+            return False
+        else:
+            # End simulation if any lung patch of the lymph patch exceeds the bacteria threshold
+            return any([i for i in self._network.infected_patches() if
+                        self._network.get_compartment_value(i, TBPulmonaryEnvironment.BACTERIA) >=
+                        self._total_bac_cutoff]) or \
                     self._network.get_compartment_value(TBPulmonaryEnvironment.LYMPH_PATCH,
-                                                        TBPulmonaryEnvironment.BACTERIA) >= 20000
+                                                        TBPulmonaryEnvironment.BACTERIA) >= \
+                    self._total_bac_cutoff
 
     # def setUp(self, params):
     #     # TODO - debug, remove
